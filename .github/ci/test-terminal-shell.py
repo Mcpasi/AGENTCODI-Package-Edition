@@ -184,6 +184,17 @@ public final class RenderTerminal {
                 self.assert_matches_reference()
                 self.assertIn(text, self.rendered().replace("\n", ""))
 
+    def test_left_movements_after_the_right_margin_match_the_reference(self):
+        for movement in (b"\b", b"\x1b[D", b"\x1b[2D", b"\b\b", b"\x1b[20D"):
+            with self.subTest(movement=movement):
+                self.reference = pyte.HistoryScreen(8, 3, history=4096)
+                self.stream = pyte.ByteStream(self.reference)
+                data = b"12345678" + movement + b"Z"
+                self.events = bytearray(struct.pack(">iii", 2, 3, 8)
+                                        + struct.pack(">ii", 1, len(data)) + data)
+                self.stream.feed(data)
+                self.assert_matches_reference()
+
     def test_tab_completion_remains_available(self):
         (Path(self.workspace.name) / "completion-fixture-unique.txt").write_text(
             "completion-success\n")
@@ -238,7 +249,7 @@ public final class RenderTerminal {
             "Package: diagnostic-fixture\nStatus: hold reinstreq installed\n"
             "Architecture: arm64\nVersion: 1.2-3\n"
             "Maintainer: Test <fixture@example.invalid>\nDescription: fixture\n\n")
-        # These live shell variables are deliberately not exported.
+        # Read PREFIX from the live shell without exporting it.
         self.send(("unset PREFIX; PREFIX=" + shlex.quote(str(prefix))
                    + "; PATH=$PREFIX/bin:$PATH\n").encode())
         return prefix

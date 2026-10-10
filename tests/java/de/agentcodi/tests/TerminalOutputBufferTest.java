@@ -23,6 +23,7 @@ public final class TerminalOutputBufferTest {
         carriageReturnAtFinishDoesNotInsertANewline();
         wrapsAtThePtyMargin();
         cancelsPendingWrapWithCarriageReturnAndBackspace();
+        movesLeftFromTheLastCellAfterPendingWrap();
         interpretsSplitAnsiCursorSequences();
         erasesLinesAndDisplayWithoutMovingTheCursor();
         tabsAdvanceToCellStops();
@@ -44,7 +45,7 @@ public final class TerminalOutputBufferTest {
         savesAndRestoresTheCursor();
         editsCharactersWithoutLeavingStaleCells();
         characterEditsPreserveCompleteWideGlyphs();
-        return 31;
+        return 32;
     }
 
     private static void backspaceMovesWithoutDeletingAndPreservesUnicode() {
@@ -106,7 +107,27 @@ public final class TerminalOutputBufferTest {
         TestSupport.assertEquals("A2345678", buffer.snapshot(), "CR cancels pending autowrap");
         buffer.clear();
         append(buffer, "12345678\bZ");
-        TestSupport.assertEquals("1234567Z", buffer.snapshot(), "BS cancels pending autowrap");
+        TestSupport.assertEquals("123456Z8", buffer.snapshot(),
+            "BS cancels pending autowrap and moves left from the last cell");
+    }
+
+    private static void movesLeftFromTheLastCellAfterPendingWrap() {
+        TerminalOutputBuffer buffer = terminal(3, 8);
+        append(buffer, "12345678\u001b[DZ");
+        TestSupport.assertEquals("123456Z8", buffer.snapshot(),
+            "cursor-left cancels pending wrap before moving one column");
+        buffer.clear();
+        append(buffer, "12345678\u001b[2DZ");
+        TestSupport.assertEquals("12345Z78", buffer.snapshot(),
+            "cursor-left counts from the physical last cell");
+        buffer.clear();
+        append(buffer, "12345678\b\bZ");
+        TestSupport.assertEquals("12345Z78", buffer.snapshot(),
+            "repeated backspaces leave untouched cells intact");
+        buffer.clear();
+        append(buffer, "12345678\u001b[20DZ");
+        TestSupport.assertEquals("Z2345678", buffer.snapshot(),
+            "cursor-left still stops at the left margin");
     }
 
     private static void interpretsSplitAnsiCursorSequences() {
