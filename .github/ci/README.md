@@ -284,8 +284,8 @@ installations remain covered by the separate Package catalog workflow. The forme
 `community-codex-release.json` fixes `DioNanos/codex-termux` release
 `v0.156.1-termux.1`, source commit, archive digest, native ELF hashes,
 the APK host-name relocation and both generated schema hashes. These are the
-active runtime pins. Both Community jobs run only on
-this repository's `main`.
+active runtime pins. Both Community jobs run on
+all branches and pull requests in this repository.
 
 `inspect-community-codex.py` verifies the GitHub asset digest, the resolved
 tag and downloaded archive bytes before reading entries. It rejects missing

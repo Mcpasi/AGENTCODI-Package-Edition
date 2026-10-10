@@ -21,7 +21,7 @@ until it is updated.
 
 APK, APK Release, Package catalog, source archive checks and Community license
 research use this repository's `main`. The Tests workflow runs on all branches
-and pull requests; its Community runtime and package toolchain jobs require `main`.
+and pull requests, including the Community runtime and package toolchain jobs.
 Package bootstrap and Signed APT repository are reusable workflows called
 locally. Artifact reuse and publication diagnostics query the current
 `GITHUB_REPOSITORY` and validate the producer's repository and branch.

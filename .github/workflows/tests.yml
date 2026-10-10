@@ -142,7 +142,6 @@ jobs:
 
   community-codex:
     name: Community Codex release inspection
-    if: github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
     timeout-minutes: 15
     steps:
@@ -171,7 +170,6 @@ jobs:
 
   community-runtime:
     name: Community ARM64 Bionic runtime
-    if: github.ref == 'refs/heads/main'
     runs-on: ubuntu-24.04-arm
     timeout-minutes: 20
     steps:
@@ -237,7 +235,6 @@ jobs:
 
   package-build-contract:
     name: Package recipe and toolchain contracts
-    if: github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
     timeout-minutes: 30
     steps:
