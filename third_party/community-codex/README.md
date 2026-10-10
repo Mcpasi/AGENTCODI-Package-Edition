@@ -100,7 +100,7 @@ changes APT recipes, DEBs, repository snapshots or the Community binaries.
 APK assembly and verification use the committed files and need no source
 download or expiring CI artifact.
 
-The branch-only [collection workflow](../../.github/workflows/community-license-research.yml)
+The [collection workflow](../../.github/workflows/community-license-research.yml) on `main`
 uses the committed, checksum-verified V8/standard-library seed and freshly
 resolves the pinned Cargo source. It needs no expiring artifact as input.
 It runs four license-selection/attribution regressions and produces an

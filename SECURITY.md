@@ -1,4 +1,4 @@
-> **Package Edition / Power-user version:** This branch offers only Full access. Programs running with this app's permissions can also access files outside the workspace and Codex account data. This is part of the edition's documented model. Approval dialogs do not provide a filesystem sandbox. See the [README](README.md) and [roadmap](ROADMAP-package-edition.md).
+> **Package Edition / Power-user version:** This edition offers only Full access. Programs running with this app's permissions can also access files outside the workspace and Codex account data. This is part of the edition's documented model. Approval dialogs do not provide a filesystem sandbox. See the [README](README.md) and [roadmap](ROADMAP-package-edition.md).
 
 # Security Policy
 
@@ -47,24 +47,24 @@ backported.
 | Modified, repackaged, or unofficial APKs | No |
 
 Install released APKs only from the official
-[AGENTCODI GitHub Releases](https://github.com/Mcpasi/AGENTCODI/releases) page and
+[Package Edition GitHub Releases](https://github.com/Mcpasi/AGENTCODI-Package-Edition/releases) page and
 update to the latest release before reporting an issue that may already be fixed.
 The current Package Edition release is **0.1.2** (Android `versionCode 5`),
-published as an experimental prerelease from `Mcpasi/package-edition`:
-[AGENTCODI Package Edition V0.1.2](https://github.com/Mcpasi/AGENTCODI/releases/tag/v0.1.2-package.3).
+published as an experimental prerelease:
+[AGENTCODI Package Edition V0.1.2](https://github.com/Mcpasi/AGENTCODI-Package-Edition/releases/tag/v0.1.2-package.3).
 Physical Android device tests for version 0.1.2 passed.
 The first Package Edition release was published on 2026-10-06 as
-[AGENTCODI Package Edition V0.1.0](https://github.com/Mcpasi/AGENTCODI/releases/tag/v0.1.0-package.3),
-an early-version prerelease tagged `v0.1.0-package.3`, from
-`Mcpasi/package-edition`. Its signed release APK has SHA-256
+[AGENTCODI Package Edition V0.1.0](https://github.com/Mcpasi/AGENTCODI-Package-Edition/releases/tag/v0.1.0-package.3),
+an early-version prerelease tagged `v0.1.0-package.3`. The retained release
+pages link to the original signed APK downloads. The 0.1.0 APK has SHA-256
 `028679df0ebeb2f1a5f9d8b373320122cba1778e67e0f198ac877c2771bc25ed`.
-Separate debug APKs remain official branch CI artifacts. When testing one,
-verify its branch commit and successful build run and include both in a report.
+Separate debug APKs remain official repository CI artifacts. When testing one,
+verify its source commit and successful build run and include both in a report.
 
 From `0.1.0-package.3`, development APKs use a
 [public AOSP test signing identity](scripts/debug-signing/README.md) to keep the
 same certificate across cold builds. Its signature does not authenticate an
-official artifact: verify the branch commit, successful CI run and APK SHA-256
+official artifact: verify the source commit, successful CI run and APK SHA-256
 published by that run. The release builder requires an external private key
 and rejects this public certificate. Earlier CI builds used random debug keys
 that were not retained; switching an existing installation requires its original
@@ -76,8 +76,10 @@ from the public development identity.
 
 ## Reporting a vulnerability
 
-Please use GitHub's
-[private vulnerability reporting](https://github.com/Mcpasi/AGENTCODI/security/advisories/new).
+Please use the shared AGENTCODI
+[private vulnerability reporting](https://github.com/Mcpasi/AGENTCODI/security/advisories/new)
+channel for Package Edition reports. Private reporting is currently enabled
+in the original AGENTCODI repository; include this repository's name in your report.
 Do not disclose a suspected vulnerability in a public issue, discussion, pull
 request, or social-media post.
 
@@ -96,7 +98,7 @@ keys, access tokens, passwords, signing material, or other live credentials. If 
 secret was exposed while testing, revoke it before continuing.
 
 Ordinary bugs and feature requests that have no security impact belong in
-[GitHub Issues](https://github.com/Mcpasi/AGENTCODI/issues).
+[Package Edition GitHub Issues](https://github.com/Mcpasi/AGENTCODI-Package-Edition/issues).
 
 ## Scope
 

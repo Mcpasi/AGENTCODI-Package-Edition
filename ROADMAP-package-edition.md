@@ -1,6 +1,11 @@
 # Roadmap: AGENTCODI Package Edition
 
-Status: 2026-10-09. Only branch `Mcpasi/package-edition`; no merge into `main`.
+Status: 2026-10-10. Development and releases use `main` in
+`Mcpasi/AGENTCODI-Package-Edition`. Repository operation and workflow inputs
+are documented in the [setup guide](.github/ci/PACKAGE_EDITION_SETUP.md).
+
+The dated records below retain historical CI links and branch names from the
+original AGENTCODI repository.
 
 ### Package Edition 0.1.2: responsive chat and terminal (published)
 
@@ -8,7 +13,7 @@ Current release identity: `0.1.2`, Android `versionCode 5`, application ID
 `de.agentcodi.pkg`. **Experimental prerelease (published). Device tests: passed
 on physical Android hardware.**
 
-[AGENTCODI Package Edition V0.1.2](https://github.com/Mcpasi/AGENTCODI/releases/tag/v0.1.2-package.3)
+[AGENTCODI Package Edition V0.1.2](https://github.com/Mcpasi/AGENTCODI-Package-Edition/releases/tag/v0.1.2-package.3)
 was published on 2026-10-08, tagged `v0.1.2-package.3`.
 
 - Terminal output wraps to the available screen width. Long command input uses
