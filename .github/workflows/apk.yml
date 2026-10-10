@@ -72,7 +72,7 @@ jobs:
     uses: ./.github/workflows/bootstrap.yml
     with:
       # Reuse only this repository's verified builds; old repository runs are not portable.
-      source_run_id: ${{ inputs.source_run_id || 0 }}
+      source_run_id: ${{ fromJSON(format('{0}', inputs.source_run_id || 0)) }}
   apk:
     needs: bootstrap
     name: Debug APK
