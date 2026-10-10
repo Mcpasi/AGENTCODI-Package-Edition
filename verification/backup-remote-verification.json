@@ -1,0 +1,29 @@
+{
+  "backup_branch": "migration-backup",
+  "backup_commit": "bcdfc6c6695735a3dbec327bb820b1e34ba320af",
+  "remote_tree_identical": true,
+  "remote_tree_truncated": false,
+  "files_verified": 10472,
+  "bytes_verified": 1091351278,
+  "apk_restore_original_checksums_passed": true,
+  "target_tests_run": "38053904875",
+  "target_tests_conclusion": "success",
+  "verified_at": "2026-10-10T13:09:16.135236+00:00",
+  "source_branch_heads_unchanged": true,
+  "source_expected_heads": {
+    "refs/heads/main": "ff27ec7c30d373a864e845e9a7ceeae3380dd103",
+    "refs/heads/Mcpasi/package-edition": "e656567e62492ebfa2129718034c04d32cf6f1f8"
+  },
+  "target_main_exact_source_package_commit": true,
+  "all_three_package_tags_identical": true,
+  "public_release_tags": [
+    "migration-snapshot-2026-10-10",
+    "v0.1.2-package.3",
+    "V.0.1.1-package.3",
+    "v0.1.0-package.3"
+  ],
+  "native_asset_uploads_blocked_http_status": 401,
+  "artifact_preservation_transport": "git",
+  "apt_active_endpoint_unchanged": true,
+  "private_secrets_not_exported": true
+}

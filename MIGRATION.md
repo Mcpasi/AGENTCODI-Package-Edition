@@ -123,6 +123,14 @@ braucht es dann frisch signierte Release-Metadaten mit demselben privaten Schlü
   Git-Historie. Es gibt keine zusätzlichen Git-Submodule oder Git-LFS-Pointer.
 - **Externe Website:** `https://devsblog.com/` bleibt der vorhandene Verweis.
 
+## Abschließender Fernnachweis
+
+Der vollständige Sicherungs-Commit [bcdfc6c6695735a3dbec327bb820b1e34ba320af](https://github.com/Mcpasi/AGENTCODI-Package-Edition/tree/bcdfc6c6695735a3dbec327bb820b1e34ba320af) wurde über die GitHub-Git-Tree-API gegen sämtliche lokalen Blob-IDs, Dateigrößen und Dateimodi geprüft: 10.472 Dateien, 1.091.351.278 Bytes, vollständig identischer Baum. Alle drei APKs wurden aus den Teilstücken wiederhergestellt und gegen die Original-SHA-256-Werte geprüft. Der anschließende Commit fügt nur diesen Fernnachweis hinzu.
+
+Die Quell-Branchköpfe und alle drei Package-Tags wurden abschließend erneut verglichen. Vier öffentliche Release-Einträge sind im Ziel vorhanden: die drei Package-Versionen und die Umzugs-Sicherung. Package-Release-Seiten bieten bis zur Behebung der Upload-Anbindung direkte Links zu den erhaltenen Original-APKs sowie zur lokalen Sicherung im neuen Repository.
+
+Details: [verification/backup-remote-verification.json](verification/backup-remote-verification.json).
+
 ## Übergabe an Schritt 2
 
 Alle Workflow-Dateien, Release-Links und APT-URLs im Code bleiben unverändert.
