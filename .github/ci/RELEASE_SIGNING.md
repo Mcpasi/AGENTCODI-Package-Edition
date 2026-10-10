@@ -3,9 +3,9 @@
 # Signed Package Edition release APK
 
 The [APK Release](../workflows/apk-release.yml) workflow runs exclusively
-on `Mcpasi/package-edition`. It uses the same container, pinned build inputs
+on this repository's `main`. It uses the same container, pinned build inputs
 and verified bootstrap as the debug build and invokes
-`scripts/build-release-apk.sh`. This requires no changes to `main`.
+`scripts/build-release-apk.sh`. The original repository is not changed.
 
 The first public Package Edition APK was published on 2026-10-06 as
 [AGENTCODI Package Edition V0.1.0](https://github.com/Mcpasi/AGENTCODI/releases/tag/v0.1.0-package.3),
@@ -59,24 +59,25 @@ committed. The workflow generates no replacement key. The public AOSP test
 key and Android debug certificates are rejected by the release build.
 
 As in the existing APK workflow, `AGENTCODI_INPUTS_TOKEN` is used only for
-the private build-input mirror. If pinned inputs are available upstream,
-they can also be retrieved without this token.
+the private build-input mirror. Several pinned files are no longer in the
+rolling upstream pool, so the migrated repository needs this read token;
+access is checked before compiler builds. See [migration setup](PACKAGE_EDITION_MIGRATION.md).
 
 <a id="build-starten-und-apk-herunterladen"></a>
 
 ## Start the build and download the APK
 
-Relevant pushes to `Mcpasi/package-edition` start **APK Release** automatically.
-The original setup commit already started a run. While secrets are missing,
-the run stops with their names before bootstrap/container build. After adding
-the secrets, restart that run through **Actions → APK Release → Re-run all
-jobs**; no code change is needed.
+Select **Actions → APK Release → Run workflow → main**. Set `source_run_id=0`
+for the first build in this repository; old-repository run IDs cannot be reused.
+A later successful bootstrap or catalog run in this repository can be selected
+only while its artifacts remain available and its recipe inputs match. Reuse
+still validates producer identity, source inputs, successful jobs and hashes.
 
-Later changes to app, modules, scripts or release-build inputs start a new
-run. The workflow also includes `workflow_dispatch`; GitHub exposes its
-manual start only once the workflow file is known on the default branch.
-For this workflow configured solely on the edition branch, push and rerunning
-an existing run are the available entry points. Do not change `main` for this.
+Relevant pushes to `main` also start **APK Release** automatically. While secrets
+are missing, the run stops with their names before bootstrap/container build.
+The migration commit deliberately skips push workflows so the repository owner
+can activate Pages and start the initial catalog and release builds in order.
+See [migration setup](PACKAGE_EDITION_MIGRATION.md) for that sequence.
 
 After a successful build, these artifacts are available:
 

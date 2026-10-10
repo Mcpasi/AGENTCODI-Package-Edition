@@ -4,7 +4,7 @@
 
 ### Codex workflows on Android with a real local toolchain
 
-[Downloads](https://github.com/Mcpasi/AGENTCODI/releases/tag/v0.1.2-package.3) · [Website](https://devsblog.com/) · [Issues](../../issues) · [Roadmap](ROADMAP-package-edition.md)
+[Downloads](https://github.com/Mcpasi/AGENTCODI-Package-Edition/releases) · [Website](https://devsblog.com/) · [Issues](../../issues) · [Roadmap](ROADMAP-package-edition.md)
 
 ![Android](https://img.shields.io/badge/Android-10%2B-3DDC84?logo=android&logoColor=white)
 ![Architecture](https://img.shields.io/badge/Architecture-ARM64-555555)
@@ -17,6 +17,11 @@
 AGENTCODI Package Edition brings Codex workflows to Android with an interactive terminal, installable development tools, workspace management, MCP support, and a native local app-server.
 
 The Package Edition has its own application ID, `de.agentcodi.pkg`, so it can be installed alongside the regular AGENTCODI app.
+
+Package Edition now lives in this repository's `main` branch. New builds target
+the APT address below; the published 0.1.2 APK still uses the original address.
+Activate GitHub Pages and publish the new signed catalog before installing a new
+build. See the [migration setup and workflow inputs](.github/ci/PACKAGE_EDITION_MIGRATION.md).
 
 **[Package Edition 0.1.2](https://github.com/Mcpasi/AGENTCODI/releases/tag/v0.1.2-package.3) is published as an experimental prerelease.**
 **Device tests for version 0.1.2: passed on physical Android hardware.**
@@ -116,7 +121,7 @@ dpkg-query -W
 The dedicated signed repository is:
 
 ```text
-https://mcpasi.github.io/AGENTCODI/apt/package-edition
+https://mcpasi.github.io/AGENTCODI-Package-Edition/apt/package-edition
 ```
 
 Signing fingerprint:
@@ -264,8 +269,9 @@ See:
 
 ## Project branches
 
-`Mcpasi/package-edition` contains the Package Edition development and release line.
+`main` in this repository contains the Package Edition development and release line.
 
-`main` continues to contain the regular AGENTCODI edition.
+The regular AGENTCODI edition and the preserved original Package Edition branch
+remain in [Mcpasi/AGENTCODI](https://github.com/Mcpasi/AGENTCODI).
 
 The two editions have separate Android application IDs and can be installed side by side.

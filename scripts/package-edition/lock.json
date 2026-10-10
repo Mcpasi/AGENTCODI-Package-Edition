@@ -38,7 +38,7 @@
   },
   "repository": {
     "name": "agentcodi-package",
-    "url": "https://mcpasi.github.io/AGENTCODI/apt/package-edition",
+    "url": "https://mcpasi.github.io/AGENTCODI-Package-Edition/apt/package-edition",
     "suite": "stable",
     "component": "main",
     "signed_by": "/data/data/de.agentcodi.pkg/files/usr/etc/apt/keyrings/agentcodi-package.gpg",

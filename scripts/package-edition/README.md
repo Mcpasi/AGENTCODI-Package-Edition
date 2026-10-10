@@ -77,7 +77,7 @@ separate step.
 Both `repo.json` and the APT recipe use the dedicated HTTPS endpoint:
 
 ```text
-https://mcpasi.github.io/AGENTCODI/apt/package-edition
+https://mcpasi.github.io/AGENTCODI-Package-Edition/apt/package-edition
 stable main
 ```
 
@@ -204,8 +204,9 @@ the same recipe tree. The Python group also ships python-ensurepip-wheels from t
 headless (no Tk, Git GUI or optional Perl/Python integrations), adds Android-compatible Node bin shebangs to npm revision 1, and pins npm's Git tag to
 d12b9434dd010b5fb7044c3cc149cdda317813f8. Bootstrap recipes are unaffected.
 
-Pushes can reuse a successful same-branch source job from the producer run pinned in the workflow if
-its artifact is still available and its source-build inputs match. A change
+Source builds default to a fresh build in this repository. Manual runs can
+select a successful main-branch producer with source_run_id when its artifact
+is still available and its source-build inputs match. A change
 limited to Git's or npm's recipe can be ignored for another group only when
 that producer's audited package list proves the affected recipe was never built.
 A changed root selection additionally requires matching built-DEB hashes and
@@ -240,7 +241,7 @@ The signed publication workflow below adds repository authentication and
 lifecycle checks.
 
 Pushes affecting package sources or CI start the workflow automatically on
-Mcpasi/package-edition; workflow_dispatch is also available on that branch.
+main; workflow_dispatch is also available on that branch.
 Build failures retain produced DEBs and preparation for diagnosis. New catalog
 groups must have pinned recipes, a closed dependency graph, prefix/ELF evidence
 and a Bionic lifecycle smoke before publication. These jobs do not assert
@@ -249,7 +250,7 @@ contract and artifact hashes make inputs and results inspectable.
 
 ## Signed APT repository and trust
 
-Initial commissioning status (2026-10-05): the [catalog run](https://github.com/Mcpasi/AGENTCODI/actions/runs/37336548937)
+Historical commissioning in the original repository (2026-10-05): the [catalog run](https://github.com/Mcpasi/AGENTCODI/actions/runs/37336548937)
 passes all fourteen signing/build/runtime/publication jobs, including real ARM64/Bionic
 HTTPS installation, removal, reinstallation, upgrade and rejection tests.
 Its [signed site artifact](https://github.com/Mcpasi/AGENTCODI/actions/runs/37336548937/artifacts/11357750277)
@@ -361,8 +362,8 @@ accepts the affected catalog run ID.
 GitHub Pages must use **GitHub Actions** and the `github-pages` environment
 must allow this branch. The deploy job has `pages: write` and
 `id-token: write`. Its complete site artifact contains `apt/package-edition`
-and replaces the existing AGENTCODI Pages site; incorporate any other site
-content before enabling publication. No `gh-pages` branch is used.
+and replaces this repository's Pages site; incorporate any other site
+content before enabling publication. The original repository's site is separate. No `gh-pages` branch is used.
 
 After deployment, the public HTTPS endpoint is checked against the committed
 key, Release expiry, current run/commit, metadata/by-hash checksums, offered
@@ -379,10 +380,13 @@ preserving old pool, sources and index hashes. Downgrades and changing published
 bytes without a version bump are rejected. If the artifact expires, restore a
 verified complete previous snapshot before proceeding.
 
+For first publication after migration, follow
+[repository setup](../../.github/ci/PACKAGE_EDITION_MIGRATION.md).
+
 Refresh and publish before the seven-day Release expiry even when package
 versions are unchanged. The manual workflow is the renewal mechanism on this
 branch. Select `repository_action=publish` and set `source_run_id` to the
-previous successful catalog run linked from `ROADMAP-package-edition.md` to reuse its
+previous successful catalog run in this repository to reuse its
 verified source-built DEBs when inputs are unchanged. Keep
 `repository_previous_run_id=0` for automatic snapshot selection.
 `source_run_id=0` deliberately performs fresh compiler builds; changing

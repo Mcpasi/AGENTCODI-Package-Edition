@@ -27,7 +27,10 @@ public final class PackageBootstrapTest {
         preservesConflictingExistingFile();
         migratesMissingTrustWithoutReplacingPackageData();
         rejectsCorruptTrustMigrationAndRetries();
-        return 8;
+        migratesManagedRepositoryAcrossApkUpdate();
+        preservesCustomRepositorySources();
+        rejectsSymlinkDuringRepositoryMigration();
+        return 11;
     }
 
     private static void preservesPrefixAcrossRestartAndApkUpdate() throws Exception {
@@ -50,6 +53,73 @@ public final class PackageBootstrapTest {
         if (Files.readAllBytes(custom)[0] != 42
             || !new String(Files.readAllBytes(status), StandardCharsets.UTF_8).startsWith("user")) {
             throw new AssertionError("APK update replaced package data");
+        }
+    }
+
+    private static final String LEGACY_SOURCE =
+        "deb [arch=aarch64 signed-by=/data/data/de.agentcodi.pkg/files/usr/etc/apt/keyrings/agentcodi-package.gpg] "
+        + "https://mcpasi.github.io/AGENTCODI/apt/package-edition stable main";
+    private static final String CURRENT_SOURCE =
+        "deb [arch=aarch64 signed-by=/data/data/de.agentcodi.pkg/files/usr/etc/apt/keyrings/agentcodi-package.gpg] "
+        + "https://mcpasi.github.io/AGENTCODI-Package-Edition/apt/package-edition stable main";
+
+    private static void migratesManagedRepositoryAcrossApkUpdate() throws Exception {
+        WorkspaceLayout layout = WorkspaceLayout.create(Files.createTempDirectory("bootstrap-repo-move").toFile());
+        install(layout, fixture(false), prefix -> { });
+        Path root = layout.getPackagePrefix().toPath();
+        Path source = root.resolve("etc/apt/sources.list");
+        String custom = "# User comment\ndeb https://example.invalid/custom stable main\n";
+        Files.write(source, (LEGACY_SOURCE + "\n" + custom).getBytes(StandardCharsets.UTF_8));
+        Path status = root.resolve("var/lib/dpkg/status");
+        Files.write(status, "user-installed-package\n".getBytes(StandardCharsets.UTF_8));
+        byte[] key = Files.readAllBytes(root.resolve("etc/apt/keyrings/agentcodi-package.gpg"));
+        for (int attempt = 0; attempt < 2; attempt++) {
+            PackageBootstrap.prepare(layout, new ByteArrayInputStream(new byte[0]),
+                new ByteArrayInputStream(new byte[0]),
+                prefix -> { throw new IOException("Repository migration must preserve the configured prefix"); });
+            if (!new String(Files.readAllBytes(source), StandardCharsets.UTF_8).equals(CURRENT_SOURCE + "\n" + custom)
+                || !new String(Files.readAllBytes(status), StandardCharsets.UTF_8).equals("user-installed-package\n")
+                || !java.util.Arrays.equals(key, Files.readAllBytes(root.resolve("etc/apt/keyrings/agentcodi-package.gpg")))) {
+                throw new AssertionError("Repository migration changed packages, keyring or custom source lines");
+            }
+        }
+    }
+
+    private static void preservesCustomRepositorySources() throws Exception {
+        WorkspaceLayout layout = WorkspaceLayout.create(Files.createTempDirectory("bootstrap-custom-repo").toFile());
+        install(layout, fixture(false), prefix -> { });
+        Path source = layout.getPackagePrefix().toPath().resolve("etc/apt/sources.list");
+        for (String text : new String[] {
+            CURRENT_SOURCE + "\n",
+            "# " + LEGACY_SOURCE + "\n",
+            LEGACY_SOURCE.replace("stable main", "custom main") + "\n",
+            "deb https://example.invalid/custom stable main\n"
+        }) {
+            byte[] original = text.getBytes(StandardCharsets.UTF_8);
+            Files.write(source, original);
+            PackageBootstrap.prepare(layout, new ByteArrayInputStream(new byte[0]),
+                new ByteArrayInputStream(new byte[0]), prefix -> { });
+            if (!java.util.Arrays.equals(original, Files.readAllBytes(source))) {
+                throw new AssertionError("Customized repository source was replaced");
+            }
+        }
+    }
+
+    private static void rejectsSymlinkDuringRepositoryMigration() throws Exception {
+        WorkspaceLayout layout = WorkspaceLayout.create(Files.createTempDirectory("bootstrap-repo-link").toFile());
+        install(layout, fixture(false), prefix -> { });
+        Path outside = Files.createTempFile("bootstrap-outside-sources", ".list");
+        byte[] original = (LEGACY_SOURCE + "\n").getBytes(StandardCharsets.UTF_8);
+        Files.write(outside, original);
+        Path source = layout.getPackagePrefix().toPath().resolve("etc/apt/sources.list");
+        Files.createSymbolicLink(source, outside);
+        try {
+            PackageBootstrap.prepare(layout, new ByteArrayInputStream(new byte[0]),
+                new ByteArrayInputStream(new byte[0]), prefix -> { });
+            throw new AssertionError("Repository migration followed a symlink");
+        } catch (IOException expected) { }
+        if (!java.util.Arrays.equals(original, Files.readAllBytes(outside))) {
+            throw new AssertionError("Repository migration modified an external file");
         }
     }
 

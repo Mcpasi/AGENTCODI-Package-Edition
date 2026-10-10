@@ -99,7 +99,7 @@ def config():
         raise ValueError("Pages site size limit must not exceed one GB")
     if not re.fullmatch(r"[0-9]+(?:[.+~-][0-9A-Za-z]+)*", settings["keyring_version"]):
         raise ValueError("Invalid keyring package version")
-    if (lock["repository"]["url"] != "https://mcpasi.github.io/AGENTCODI/apt/package-edition"
+    if (lock["repository"]["url"] != "https://mcpasi.github.io/AGENTCODI-Package-Edition/apt/package-edition"
             or lock["repository"]["suite"] != "stable"
             or lock["repository"]["component"] != "main"):
         raise ValueError("Unexpected edition repository identity")

@@ -24,7 +24,7 @@ concurrency:
 jobs:
   snapshot:
     name: Build signed APT repository
-    if: github.ref == 'refs/heads/Mcpasi/package-edition'
+    if: github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
     timeout-minutes: 40
     permissions:
@@ -64,7 +64,7 @@ jobs:
           set -euo pipefail
           selected="$REQUESTED_RUN_ID"
           if [ "$selected" -eq 0 ]; then
-            gh api --paginate "repos/$GITHUB_REPOSITORY/actions/runs?branch=Mcpasi%2Fpackage-edition&status=completed&per_page=100" \
+            gh api --paginate "repos/$GITHUB_REPOSITORY/actions/runs?branch=main&status=completed&per_page=100" \
               --jq '.workflow_runs[].id' > "$RUNNER_TEMP/prior-runs.txt"
             while read -r candidate; do
               if gh api --paginate "repos/$GITHUB_REPOSITORY/actions/runs/$candidate/jobs?per_page=100" \
@@ -78,7 +78,7 @@ jobs:
           if [ "$selected" -gt 0 ]; then
             gh api "repos/$GITHUB_REPOSITORY/actions/runs/$selected" > "$RUNNER_TEMP/previous-repository-run.json"
             jq -e --arg repo "$GITHUB_REPOSITORY" '
-              .head_branch == "Mcpasi/package-edition" and .head_repository.full_name == $repo
+              .head_branch == "main" and .head_repository.full_name == $repo
               and (.event == "push" or .event == "workflow_dispatch") and .status == "completed"
             ' "$RUNNER_TEMP/previous-repository-run.json" >/dev/null
             gh api --paginate "repos/$GITHUB_REPOSITORY/actions/runs/$selected/jobs?per_page=100" \

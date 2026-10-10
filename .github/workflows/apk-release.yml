@@ -4,7 +4,7 @@ name: APK Release
 on:
   push:
     branches:
-      - 'Mcpasi/package-edition'
+      - 'main'
     paths:
       - 'NOTICE.md'
       - 'app/**'
@@ -26,6 +26,11 @@ on:
       - '.github/ci/restore-ndk-sysroot.sh'
       - '.github/ci/ndk-29-inputs.tsv'
   workflow_dispatch:
+    inputs:
+      source_run_id:
+        description: 'Successful bootstrap run in this repository; zero rebuilds from pinned sources'
+        type: number
+        default: 0
 
 permissions:
   contents: read
@@ -37,14 +42,18 @@ concurrency:
 
 jobs:
   signing:
-    name: Validate release signing secrets
-    if: github.ref == 'refs/heads/Mcpasi/package-edition'
+    name: Validate release signing and build-input access
+    if: github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
     timeout-minutes: 5
     steps:
       - uses: actions/checkout@v4
         with:
           persist-credentials: false
+      - name: Check the private build-input mirror before compiler builds
+        env:
+          GH_TOKEN: ${{ secrets.AGENTCODI_INPUTS_TOKEN }}
+        run: bash .github/ci/check-build-inputs-access.sh
       - name: Check signing secrets before starting the build
         env:
           AGENTCODI_RELEASE_KEYSTORE_BASE64: ${{ secrets.AGENTCODI_RELEASE_KEYSTORE_BASE64 }}
@@ -58,8 +67,8 @@ jobs:
     needs: signing
     uses: ./.github/workflows/bootstrap.yml
     with:
-      # Reuse only after the existing same-branch recipe, job and artifact gates pass.
-      source_run_id: 37493949315
+      # The reusable workflow validates this repository's recipes, jobs and artifact hashes.
+      source_run_id: ${{ inputs.source_run_id || 0 }}
 
   release:
     needs: bootstrap

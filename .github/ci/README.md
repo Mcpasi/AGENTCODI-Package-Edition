@@ -234,7 +234,7 @@ the image is:
   they are bionic binaries. On an arm64 runner all of this runs natively,
   without qemu.
 
-The APK workflow builds only on `Mcpasi/package-edition` pushes that change
+The APK workflow builds only on this repository's `main` pushes that change
 app, module, script, test or build-input paths. Documentation and Community
 audit-driver changes do not restart an unchanged APK build.
 Manual runs default to a preflight-only run.
@@ -248,8 +248,10 @@ API-29 C++/JNI/zlib probe. It has no retired guard/manual-linker or process-
 confinement probes. The final image copies only the Termux prefix, without
 home/cache data, package lists or the temporary reconstructed sysroot DEB.
 
-It needs a repository secret `AGENTCODI_INPUTS_TOKEN` with read access to the
-mirror.
+Private mirror access uses `AGENTCODI_INPUTS_TOKEN` with read access
+to that repository. Several pinned inputs have left the rolling upstream
+pool and need the mirror; see
+[repository migration setup](PACKAGE_EDITION_MIGRATION.md).
 
 The rolling Termux pool no longer supplies `ndk-sysroot` 29-3.
 `restore-ndk-sysroot.sh` reconstructs its headers and link inputs from the
@@ -283,7 +285,7 @@ installations remain covered by the separate Package catalog workflow. The forme
 `v0.156.1-termux.1`, source commit, archive digest, native ELF hashes,
 the APK host-name relocation and both generated schema hashes. These are the
 active runtime pins. Both Community jobs run only on
-`Mcpasi/package-edition`.
+this repository's `main`.
 
 `inspect-community-codex.py` verifies the GitHub asset digest, the resolved
 tag and downloaded archive bytes before reading entries. It rejects missing
@@ -455,8 +457,8 @@ The public AOSP test material is a build fixture under
 [`scripts/debug-signing`](../../scripts/debug-signing/README.md), not an
 external private release key or packaged app asset. The full APK build checks
 the actual signer again. The APK workflow reuses the successful same-branch
-bootstrap source run `37493949315` only after the existing recipe, job,
-artifact and checksum provenance gates pass; it still assembles and tests the
+bootstrap from a selected successful run in this repository only after the
+existing recipe, job, artifact and checksum provenance gates pass; it still assembles and tests the
 current APK. The fixture proves the signing prerequisite for Android updates.
 It performs no physical device installation, upgrade or data-retention test.
 Previously random CI signing identities cannot be recovered from APKs alone.

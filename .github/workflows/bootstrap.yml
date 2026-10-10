@@ -12,7 +12,7 @@ permissions:
 jobs:
   build:
     name: Build ARM64 package bootstrap
-    if: github.ref == 'refs/heads/Mcpasi/package-edition'
+    if: github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
     timeout-minutes: 180
     steps:
@@ -30,8 +30,8 @@ jobs:
             echo 'Previous source build unavailable; rebuilding.'
             exit 0
           fi
-          if ! jq -e --arg repo "$GITHUB_REPOSITORY" '.head_branch == "Mcpasi/package-edition" and .event == "push" and .head_repository.full_name == $repo' "$RUNNER_TEMP/source-run.json" >/dev/null; then
-            echo 'Previous source build is not a trusted edition push; rebuilding.'
+          if ! jq -e --arg repo "$GITHUB_REPOSITORY" '.head_branch == "main" and (.event == "push" or .event == "workflow_dispatch") and .head_repository.full_name == $repo' "$RUNNER_TEMP/source-run.json" >/dev/null; then
+            echo 'Previous source build is not a trusted main build; rebuilding.'
             exit 0
           fi
           source_sha="$(jq -r .head_sha "$RUNNER_TEMP/source-run.json")"

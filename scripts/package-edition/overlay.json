@@ -55,7 +55,7 @@
         },
         {
           "old": "\t{\n\t\techo \"# The main termux repository, with cloudflare cache\"\n\t\techo \"deb https://packages-cf.termux.dev/apt/termux-main/ stable main\"\n\t\techo \"# The main termux repository, without cloudflare cache\"\n\t\techo \"# deb https://packages.termux.dev/apt/termux-main/ stable main\"\n\t} > $TERMUX_PREFIX/etc/apt/sources.list",
-          "new": "\tmkdir -p \"$TERMUX_PREFIX/etc/apt/keyrings\"\n\tprintf '%s\\n' 'deb [arch=aarch64 signed-by=/data/data/de.agentcodi.pkg/files/usr/etc/apt/keyrings/agentcodi-package.gpg] https://mcpasi.github.io/AGENTCODI/apt/package-edition stable main' > \"$TERMUX_PREFIX/etc/apt/sources.list\""
+          "new": "\tmkdir -p \"$TERMUX_PREFIX/etc/apt/keyrings\"\n\tprintf '%s\\n' 'deb [arch=aarch64 signed-by=/data/data/de.agentcodi.pkg/files/usr/etc/apt/keyrings/agentcodi-package.gpg] https://mcpasi.github.io/AGENTCODI-Package-Edition/apt/package-edition stable main' > \"$TERMUX_PREFIX/etc/apt/sources.list\""
         },
         {
           "old": "TERMUX_PKG_BUILD_DEPENDS=\"docbook-xsl,libdb\"",
@@ -297,7 +297,7 @@
       "replacements": [
         {
           "old": "TERMUX_PKG_SRCURL=\"http://download.savannah.gnu.org/releases/attr/attr-${TERMUX_PKG_VERSION}.tar.gz\"",
-          "new": "TERMUX_PKG_SRCURL=https://raw.githubusercontent.com/Mcpasi/AGENTCODI/c267f933121e9fba5991b797a510aa7601a37b9b/third_party/package-source-archives/attr-2.6.0.tar.gz"
+          "new": "TERMUX_PKG_SRCURL=https://raw.githubusercontent.com/Mcpasi/AGENTCODI-Package-Edition/c267f933121e9fba5991b797a510aa7601a37b9b/third_party/package-source-archives/attr-2.6.0.tar.gz"
         },
         {
           "old": "TERMUX_PKG_LICENSE=\"GPL-2.0\"",
@@ -315,7 +315,7 @@
       "replacements": [
         {
           "old": "TERMUX_PKG_SRCURL=https://download.savannah.gnu.org/releases/acl/acl-${TERMUX_PKG_VERSION}.tar.gz",
-          "new": "TERMUX_PKG_SRCURL=https://raw.githubusercontent.com/Mcpasi/AGENTCODI/c267f933121e9fba5991b797a510aa7601a37b9b/third_party/package-source-archives/acl-2.4.0.tar.gz"
+          "new": "TERMUX_PKG_SRCURL=https://raw.githubusercontent.com/Mcpasi/AGENTCODI-Package-Edition/c267f933121e9fba5991b797a510aa7601a37b9b/third_party/package-source-archives/acl-2.4.0.tar.gz"
         },
         {
           "old": "TERMUX_PKG_LICENSE=\"LGPL-2.1, GPL-2.0\"",

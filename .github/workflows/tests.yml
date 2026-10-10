@@ -60,7 +60,7 @@ jobs:
       # verifier, so they run unchanged on a hosted runner.
       - name: Check architecture contracts
         run: |
-          for script in scripts/build-debug-apk.sh scripts/build-release-apk.sh .github/ci/build-release-apk.sh scripts/check-architecture.sh .github/ci/generate-build-inputs.sh .github/ci/fetch-build-inputs.sh .github/ci/verify-build-inputs.sh .github/ci/container-preflight.sh .github/ci/restore-ndk-sysroot.sh; do
+          for script in scripts/build-debug-apk.sh scripts/build-release-apk.sh .github/ci/build-release-apk.sh scripts/check-architecture.sh .github/ci/generate-build-inputs.sh .github/ci/fetch-build-inputs.sh .github/ci/verify-build-inputs.sh .github/ci/check-build-inputs-access.sh .github/ci/container-preflight.sh .github/ci/restore-ndk-sysroot.sh; do
             bash -n "$script"
           done
           ./scripts/check-architecture.sh
@@ -142,7 +142,7 @@ jobs:
 
   community-codex:
     name: Community Codex release inspection
-    if: github.ref == 'refs/heads/Mcpasi/package-edition'
+    if: github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
     timeout-minutes: 15
     steps:
@@ -171,7 +171,7 @@ jobs:
 
   community-runtime:
     name: Community ARM64 Bionic runtime
-    if: github.ref == 'refs/heads/Mcpasi/package-edition'
+    if: github.ref == 'refs/heads/main'
     runs-on: ubuntu-24.04-arm
     timeout-minutes: 20
     steps:
@@ -237,7 +237,7 @@ jobs:
 
   package-build-contract:
     name: Package recipe and toolchain contracts
-    if: github.ref == 'refs/heads/Mcpasi/package-edition'
+    if: github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
     timeout-minutes: 30
     steps:

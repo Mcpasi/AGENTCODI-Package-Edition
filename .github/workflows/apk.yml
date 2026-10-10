@@ -15,7 +15,7 @@ name: APK
 on:
   push:
     branches:
-      - 'Mcpasi/package-edition'
+      - 'main'
     paths:
       - 'app/**'
       - 'modules/**'
@@ -39,6 +39,10 @@ on:
         description: 'Only check the container, do not build'
         type: boolean
         default: true
+      source_run_id:
+        description: 'Successful bootstrap run in this repository; zero rebuilds from pinned sources'
+        type: number
+        default: 0
 
 permissions:
   contents: read
@@ -49,11 +53,26 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  build-inputs:
+    name: Validate archived build-input access
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - name: Check the private build-input mirror before compiler builds
+        env:
+          GH_TOKEN: ${{ secrets.AGENTCODI_INPUTS_TOKEN }}
+        run: bash .github/ci/check-build-inputs-access.sh
   bootstrap:
+    needs: build-inputs
+    if: github.ref == 'refs/heads/main'
     uses: ./.github/workflows/bootstrap.yml
     with:
-      # Same-branch source-built bootstrap; the reusable workflow verifies recipes and hashes.
-      source_run_id: 37493949315
+      # Reuse only this repository's verified builds; old repository runs are not portable.
+      source_run_id: ${{ inputs.source_run_id || 0 }}
   apk:
     needs: bootstrap
     name: Debug APK

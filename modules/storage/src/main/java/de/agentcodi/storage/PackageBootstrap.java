@@ -32,6 +32,12 @@ public final class PackageBootstrap {
     private static final String UNPACKED = ".agentcodi-bootstrap-unpacked";
     private static final String READY = ".agentcodi-bootstrap-ready";
     private static final String TRUST_KEY = "etc/apt/keyrings/agentcodi-package.gpg";
+    private static final String LEGACY_REPOSITORY_URL =
+        "https://mcpasi.github.io/AGENTCODI/apt/package-edition";
+    private static final String REPOSITORY_URL =
+        "https://mcpasi.github.io/AGENTCODI-Package-Edition/apt/package-edition";
+    private static final String REPOSITORY_SOURCE =
+        "deb [arch=aarch64 signed-by=/data/data/de.agentcodi.pkg/files/usr/etc/apt/keyrings/agentcodi-package.gpg] ";
     private static final long MAX_TOTAL = 256L * 1024 * 1024;
 
     public interface Configurator {
@@ -62,6 +68,7 @@ public final class PackageBootstrap {
             }
             if (marker(target, READY)) {
                 installMissingTrustKey(target, archive, manifest);
+                migrateRepositorySource(target);
                 removeTree(stage);
                 removeTree(backup);
                 return;
@@ -84,9 +91,65 @@ public final class PackageBootstrap {
             }
             // An interrupted or failed dpkg configuration is retried on the next start.
             configurator.configure(target.toFile());
+            migrateRepositorySource(target);
             writeMarker(target.resolve(READY));
             removeTree(backup);
             removeTree(stage);
+        }
+    }
+
+    /** Move only the edition's original source line; retain packages and custom sources. */
+    private static void migrateRepositorySource(Path target) throws IOException {
+        Path directory = target.resolve("etc");
+        requireDirectoryOrAbsent(directory);
+        if (!Files.exists(directory)) {
+            return;
+        }
+        directory = directory.resolve("apt");
+        requireDirectoryOrAbsent(directory);
+        if (!Files.exists(directory)) {
+            return;
+        }
+        Path source = directory.resolve("sources.list");
+        requireRegularOrAbsent(source);
+        if (!Files.exists(source) || Files.size(source) > 64 * 1024) {
+            return;
+        }
+        byte[] original = Files.readAllBytes(source);
+        String text = new String(original, StandardCharsets.UTF_8);
+        if (!java.util.Arrays.equals(original, text.getBytes(StandardCharsets.UTF_8))) {
+            return;
+        }
+        String[] lines = text.split("\n", -1);
+        boolean changed = false;
+        for (int index = 0; index < lines.length; index++) {
+            if (lines[index].equals(REPOSITORY_SOURCE + LEGACY_REPOSITORY_URL + " stable main")) {
+                lines[index] = REPOSITORY_SOURCE + REPOSITORY_URL + " stable main";
+                changed = true;
+            }
+        }
+        if (!changed) {
+            return;
+        }
+        Path temporary = Files.createTempFile(directory, ".agentcodi-sources-", ".tmp");
+        try {
+            byte[] updated = String.join("\n", lines).getBytes(StandardCharsets.UTF_8);
+            try (FileChannel file = FileChannel.open(temporary, StandardOpenOption.WRITE)) {
+                java.nio.ByteBuffer bytes = java.nio.ByteBuffer.wrap(updated);
+                while (bytes.hasRemaining()) {
+                    file.write(bytes);
+                }
+                file.force(true);
+            }
+            Files.setPosixFilePermissions(temporary, Files.getPosixFilePermissions(source));
+            requireRegularOrAbsent(source);
+            if (!java.util.Arrays.equals(original, Files.readAllBytes(source))) {
+                return;
+            }
+            Files.move(temporary, source, StandardCopyOption.ATOMIC_MOVE,
+                StandardCopyOption.REPLACE_EXISTING);
+        } finally {
+            Files.deleteIfExists(temporary);
         }
     }
 

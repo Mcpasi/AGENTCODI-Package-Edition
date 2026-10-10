@@ -1,7 +1,7 @@
 name: Community license source research
 on:
   push:
-    branches: ['Mcpasi/package-edition']
+    branches: ['main']
     paths:
       - '.github/workflows/community-license-research.yml'
       - '.github/ci/collect-community-licenses.py'
@@ -14,7 +14,7 @@ permissions:
   actions: read
 jobs:
   collect:
-    if: github.ref == 'refs/heads/Mcpasi/package-edition'
+    if: github.ref == 'refs/heads/main'
     runs-on: ubuntu-24.04
     timeout-minutes: 40
     steps:

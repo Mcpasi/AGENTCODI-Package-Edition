@@ -1,6 +1,7 @@
 # Final Package Edition test contract
 
-Only Mcpasi/package-edition is changed. This contract does not authorize a PR,
+Package Edition lives on this repository's main after migration from the
+preserved Mcpasi/AGENTCODI branch. This contract does not authorize a PR,
 merge, APK release or APT publication. Minimum API is 29, target SDK is 28,
 installation ID is de.agentcodi.pkg, and Full access is the sole runtime mode.
 

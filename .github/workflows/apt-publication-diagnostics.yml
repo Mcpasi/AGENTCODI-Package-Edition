@@ -1,33 +1,31 @@
 name: APT publication diagnostics
 on:
-  push:
-    branches: ['Mcpasi/package-edition']
-    paths: ['.github/workflows/apt-publication-diagnostics.yml']
   workflow_dispatch:
     inputs:
       run_id:
         description: 'Edition catalog run whose publication failed before runner startup'
         type: number
-        default: 37330895026
+        required: true
 permissions:
   contents: read
   actions: read
   checks: read
 jobs:
   diagnose:
-    if: github.ref == 'refs/heads/Mcpasi/package-edition'
+    if: github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
     timeout-minutes: 5
     steps:
       - name: Read publication preflight annotations
         env:
           GH_TOKEN: ${{ github.token }}
-          TARGET_RUN_ID: ${{ inputs.run_id || 37330895026 }}
+          TARGET_RUN_ID: ${{ inputs.run_id }}
         run: |
           set -euo pipefail
+          [ "$TARGET_RUN_ID" -gt 0 ] || { echo 'Select a publication run from this repository.' >&2; exit 1; }
           gh api "repos/$GITHUB_REPOSITORY/actions/runs/$TARGET_RUN_ID" > "$RUNNER_TEMP/run.json"
           jq -e --arg repo "$GITHUB_REPOSITORY" '
-            .head_branch == "Mcpasi/package-edition" and .head_repository.full_name == $repo
+            .head_branch == "main" and .head_repository.full_name == $repo
           ' "$RUNNER_TEMP/run.json" >/dev/null
           gh api --paginate "repos/$GITHUB_REPOSITORY/actions/runs/$TARGET_RUN_ID/jobs?per_page=100" \
             --jq '.jobs[] | select(.name | endswith("Publish signed APT repository")) | .check_run_url' \

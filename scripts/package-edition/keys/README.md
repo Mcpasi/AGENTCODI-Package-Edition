@@ -1,7 +1,7 @@
 # Public APT trust anchors
 
 Commit the ASCII-armored **public** key as `agentcodi-package.asc` in this
-directory, exclusively on `Mcpasi/package-edition`. Never commit a private
+directory on this repository's `main`. Never commit a private
 key or passphrase.
 
 Record its full uppercase primary-key fingerprint in `../repository.json`

@@ -52,7 +52,7 @@ files from the bundled ZIP, using BOOTSTRAP-LICENSE-INDEX.json.
 The package report records their ownership, sizes and SHA-256 values.
 Corresponding sources, recipes, patches and edition build scripts accompany
 the CI bootstrap artifact. Authenticated catalog source downloads:
-https://mcpasi.github.io/AGENTCODI/apt/package-edition
+https://mcpasi.github.io/AGENTCODI-Package-Edition/apt/package-edition
 See scripts/package-edition/README.md in the repository for reconstruction.
 
 Community dependency license supplement

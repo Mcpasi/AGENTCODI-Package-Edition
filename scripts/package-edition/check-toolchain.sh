@@ -68,7 +68,7 @@ printf 'prefix=%s\n' "$TERMUX_PREFIX" > "$root$TERMUX_PREFIX/etc/prefix-fixture.
 
 # Exercise the actual upstream Debian archive, conffile and script metadata hook.
 export TERMUX_PKG_NAME=prefix-fixture TERMUX_PKG_FULLVERSION=1.0
-export TERMUX_PKG_MAINTAINER=AGENTCODI TERMUX_PKG_HOMEPAGE=https://github.com/Mcpasi/AGENTCODI
+export TERMUX_PKG_MAINTAINER=AGENTCODI TERMUX_PKG_HOMEPAGE=https://github.com/Mcpasi/AGENTCODI-Package-Edition
 export TERMUX_PKG_DESCRIPTION="Prefix contract fixture"
 export TERMUX_PKG_PACKAGEDIR="$work/package" TERMUX_COMMON_CACHEDIR="$work/cache"
 export TERMUX_OUTPUT_DIR="$work/output" DEBUG="" AR=ar
