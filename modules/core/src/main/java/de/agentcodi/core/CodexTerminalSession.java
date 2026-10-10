@@ -98,6 +98,10 @@ final class CodexTerminalSession implements AutoCloseable {
             if (closed) {
                 throw new IllegalStateException("Terminal session is closed");
             }
+            if (rows != requestedRows || columns != requestedColumns) {
+                output.resize(requestedRows, requestedColumns);
+                revision++;
+            }
             rows = requestedRows;
             columns = requestedColumns;
             if (running) {
@@ -193,6 +197,8 @@ final class CodexTerminalSession implements AutoCloseable {
         synchronized (lock) {
             rows = requestedRows;
             columns = requestedColumns;
+            output.resize(requestedRows, requestedColumns);
+            revision++;
             currentProcessId = processId;
             active = (running || starting) && !currentProcessId.isEmpty();
         }
