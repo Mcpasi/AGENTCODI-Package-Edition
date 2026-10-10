@@ -1,0 +1,108 @@
+{
+  "build_inputs": [
+    {
+      "path": "codex/44cee2f3a4a110fd79d4f7d61378d46fd72406f45cffb3163e809d63e86d946a/package.tgz",
+      "sha256": "44cee2f3a4a110fd79d4f7d61378d46fd72406f45cffb3163e809d63e86d946a",
+      "origin": "download",
+      "url": "https://github.com/DioNanos/codex-termux/releases/download/v0.156.1-termux.1/mmmbuto-codex-cli-termux-0.156.1-termux.1.tgz",
+      "mirror_asset_exists": true,
+      "mirror_digest_matches": false
+    },
+    {
+      "path": "platform-35_r02.zip",
+      "sha256": "0988cacad01b38a18a47bac14a0695f246bc76c1b06c0eeb8eb0dc825ab0c8e0",
+      "origin": "download",
+      "url": "https://dl.google.com/android/repository/platform-35_r02.zip",
+      "mirror_asset_exists": true,
+      "mirror_digest_matches": true
+    },
+    {
+      "path": "r8-9.2.23.jar",
+      "sha256": "c6f69c9398c2f1825cac162d0d26faa4002eb68cfc594a4aec18f574276c07cb",
+      "origin": "download",
+      "url": "https://dl.google.com/dl/android/maven2/com/android/tools/r8/9.2.23/r8-9.2.23.jar",
+      "mirror_asset_exists": true,
+      "mirror_digest_matches": true
+    },
+    {
+      "path": "aapt2-16.0.0.4-1-aarch64.deb",
+      "sha256": "d35298f13ec26eee362d4e84f534b29b8e5f288b86c89d803ba4fb8ccb9784aa",
+      "origin": "download",
+      "url": "https://packages.termux.dev/apt/termux-main/pool/main/a/aapt2/aapt2_16.0.0.4-1_aarch64.deb",
+      "mirror_asset_exists": true,
+      "mirror_digest_matches": true
+    },
+    {
+      "path": "abseil-cpp-20260526.0-aarch64.deb",
+      "sha256": "e489fac652cddc39d9436141e627285f1034a545a06fbb19c420514a419ad877",
+      "origin": "download",
+      "url": "https://packages.termux.dev/apt/termux-main/pool/main/a/abseil-cpp/abseil-cpp_20260526.0_aarch64.deb",
+      "mirror_asset_exists": true,
+      "mirror_digest_matches": true
+    },
+    {
+      "path": "libprotobuf-35.1-aarch64.deb",
+      "sha256": "a1ba7c7f0e5903a2134662653d3e7b9ffceaa78bdd00e07ac985e2d313ebc738",
+      "origin": "download",
+      "url": "https://packages.termux.dev/apt/termux-main/pool/main/libp/libprotobuf/libprotobuf_2:35.1_aarch64.deb",
+      "mirror_asset_exists": true,
+      "mirror_digest_matches": true
+    },
+    {
+      "path": "fmt-11.2.0-aarch64.deb",
+      "sha256": "0377ac55cc99e409a5a2ba55a7cacf86fc1f79f330c2998801e293e95cac1996",
+      "origin": "download",
+      "url": "https://packages.termux.dev/apt/termux-main/pool/main/f/fmt/fmt_1:11.2.0_aarch64.deb",
+      "mirror_asset_exists": true,
+      "mirror_digest_matches": true
+    },
+    {
+      "path": "libcxx-29-aarch64.deb",
+      "sha256": "bb9f12113c137aa0e8513bb51cc49fe77a5ce3ca39ab9e92c57d228ecdf00222",
+      "origin": "download",
+      "url": "https://packages.termux.dev/apt/termux-main/pool/main/libc/libc++/libc++_29_aarch64.deb",
+      "mirror_asset_exists": true,
+      "mirror_digest_matches": true
+    },
+    {
+      "path": "libexpat-2.8.2-aarch64.deb",
+      "sha256": "6f5eb2fd14b6fe4d7bb79bf7f0f3d7fc838fea07402477a172b147304366b372",
+      "origin": "download",
+      "url": "https://packages.termux.dev/apt/termux-main/pool/main/libe/libexpat/libexpat_2.8.2_aarch64.deb",
+      "mirror_asset_exists": true,
+      "mirror_digest_matches": true
+    },
+    {
+      "path": "libpng-1.6.58-aarch64.deb",
+      "sha256": "e47937405c72734867513cf0c63d27f36400d462666b65dfada984667d7228c4",
+      "origin": "download",
+      "url": "https://packages.termux.dev/apt/termux-main/pool/main/libp/libpng/libpng_1.6.58_aarch64.deb",
+      "mirror_asset_exists": true,
+      "mirror_digest_matches": true
+    },
+    {
+      "path": "libzopfli-1.0.3-5-aarch64.deb",
+      "sha256": "95cd7cb2209fbafb25825f5fcd4f86f021512175608e038b1c3d8d3fa0a4fe40",
+      "origin": "download",
+      "url": "https://packages.termux.dev/apt/termux-main/pool/main/libz/libzopfli/libzopfli_1.0.3-5_aarch64.deb",
+      "mirror_asset_exists": true,
+      "mirror_digest_matches": true
+    },
+    {
+      "path": "zlib-1.3.2-aarch64.deb",
+      "sha256": "75e7d0af17fcc3b40004309fdc00a1ddb9ae08346dce5e269902c34ac3966ac9",
+      "origin": "download",
+      "url": "https://packages.termux.dev/apt/termux-main/pool/main/z/zlib/zlib_1.3.2_aarch64.deb",
+      "mirror_asset_exists": true,
+      "mirror_digest_matches": true
+    }
+  ],
+  "community_runtime": {
+    "asset": "mmmbuto-codex-cli-termux-0.156.1-termux.1.tgz",
+    "size": 111090349,
+    "digest": "sha256:44cee2f3a4a110fd79d4f7d61378d46fd72406f45cffb3163e809d63e86d946a",
+    "matches_pin": true
+  },
+  "submodules": 0,
+  "git_lfs_pointers": 0
+}

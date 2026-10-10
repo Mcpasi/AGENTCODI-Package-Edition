@@ -1,0 +1,32 @@
+-----BEGIN PGP SIGNED MESSAGE-----
+Hash: SHA256
+
+Origin: AGENTCODI Package
+Label: AGENTCODI Package
+Suite: stable
+Codename: stable
+Architectures: aarch64
+Components: main
+Acquire-By-Hash: yes
+Date: Thu, 08 Oct 2026 11:45:56 GMT
+Valid-Until: Thu, 15 Oct 2026 11:45:56 GMT
+SHA256:
+ 137709872a14f16157cee91057c83c87464b37ad07aead932c6f2e364c95a854 32358 main/binary-aarch64/Packages
+ 277faecec94f033774d435e2eb50858b788c748f7cfd6f834ddd13c259eef180 9118 main/binary-aarch64/Packages.gz
+ e1b256d503abd685d31704fb1c983df3730f624029b39df204c601c350c27542 3233770 repository-manifest.json
+-----BEGIN PGP SIGNATURE-----
+
+iQIzBAEBCAAdFiEE0ue/IRbPcMrZtLfKft6NvNMyMasFAmrHgnQACgkQft6NvNMy
+MascEBAA4ZeyZSf9ez4YwFkgLH1mkkOZHyQWO42bOREGCHWCvKUCKpgrLZLi83Lb
+sybOeQQ95AkFUpCBM5TAO9WspvNrIy0o0DHjhtb9bvZX6zEW/nxrd0BN27ksWiwh
+TwJm1XBmSu5M+PqxEilHOEY6m806zQFgAaBa+ixD4Z/8YSIRp/uJShbO8vPX/0e2
+pUwrpxOgaaV6XZ/b9yvGqo3lr2OL2x9gLoW4EkRBx2htSN14I1RA1KBfLMbJqzjb
+P1h7GXtoNrhSYuTwD64DLhHNTj9oqVEzM5vXY+1mZfg1wZfvwOVMt5F8aLJvjQUU
+hPKB04f6rdNGb+wPqmDc7nLTk2XL87y8nqIStVMtZ37bAdWGs2awBg1/RHcuXWDd
+dNwtpEbeqsj703CWb6l0Q212+O2lwd6UuOpCy7aM4+T/QoH+0HNZFfVNtVLf2aCZ
+jfl7Z3d2ixEkN3teMvJLFWlKm7o6Xkw47eNtkVw3dVagEfdxzqP6IPgQLMlH69hj
+hcFhdrmFJO+cl1wX2lPcXmLFpCjSv1OXwSh1lXZMyj8ccwnfqxxNo+vL3nXAKCfB
+rstiSa3xHnytukzjNtjqpq6dbxYeL1eVjiMqBV+UrSNySlqqiTWlZ2/9343rOMpB
+pT6C0XQ9lwbssFg7YalQHe47QB9FyQZeAzgSxFSF0HGV8jy2E40=
+=XOcv
+-----END PGP SIGNATURE-----

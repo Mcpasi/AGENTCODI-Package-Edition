@@ -1,0 +1,14 @@
+{
+  "source_repository": "Mcpasi/AGENTCODI",
+  "source_branch": "Mcpasi/package-edition",
+  "target_repository": "Mcpasi/AGENTCODI-Package-Edition",
+  "target_branch": "main",
+  "commit": "e656567e62492ebfa2129718034c04d32cf6f1f8",
+  "tree": "67f7551e790ee56a985ddb9205ff29254eb9298f",
+  "reachable_commits": 327,
+  "remote_clone_fsck_passed": true,
+  "full_history_identical": true,
+  "tree_identical": true,
+  "source_main_expected": "ff27ec7c30d373a864e845e9a7ceeae3380dd103",
+  "source_package_branch_expected": "e656567e62492ebfa2129718034c04d32cf6f1f8"
+}

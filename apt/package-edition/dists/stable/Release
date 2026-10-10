@@ -1,0 +1,13 @@
+Origin: AGENTCODI Package
+Label: AGENTCODI Package
+Suite: stable
+Codename: stable
+Architectures: aarch64
+Components: main
+Acquire-By-Hash: yes
+Date: Thu, 08 Oct 2026 11:45:56 GMT
+Valid-Until: Thu, 15 Oct 2026 11:45:56 GMT
+SHA256:
+ 137709872a14f16157cee91057c83c87464b37ad07aead932c6f2e364c95a854 32358 main/binary-aarch64/Packages
+ 277faecec94f033774d435e2eb50858b788c748f7cfd6f834ddd13c259eef180 9118 main/binary-aarch64/Packages.gz
+ e1b256d503abd685d31704fb1c983df3730f624029b39df204c601c350c27542 3233770 repository-manifest.json

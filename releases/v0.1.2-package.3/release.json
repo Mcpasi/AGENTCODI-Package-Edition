@@ -1,0 +1,30 @@
+{
+  "tag_name": "v0.1.2-package.3",
+  "name": "AGENTCODI Package Edition V0.1.2",
+  "body": "## AGENTCODI Package Edition v0.1.2\r\n\r\n#### Responsive Chat & Terminal Improvements\r\n\r\nThis update focuses on improving the user experience on Android smartphones and tablets, with redesigned chat controls, a more flexible prompt editor, and better terminal readability.\r\n\r\n#### Chat Interface\r\n\r\n- Redesigned the conversation layout with compact model and reasoning effort selectors.\r\n- Introduced a full-width, multiline prompt editor with a separate action toolbar.\r\n- Improved accessibility of file imports, connectors, review actions, message sending, steering, and turn interruption.\r\n- Added detailed dialogs for model descriptions and reasoning settings.\r\n- Improved attachment management with inspectable file and connector lists and individual removal controls.\r\n- Added responsive layout behavior for smaller screens, landscape orientation, and on-screen keyboards.\r\n- Preserved draft content, cursor position, and essential controls during layout changes.\r\n\r\n#### Terminal Improvements\r\n\r\n- Fixed long command lines, directory paths, and package diagnostics being cut off on smartphone screens.\r\n- Added support for displaying longer commands across up to three input lines.\r\n- Improved terminal row and column calculations using actual font metrics and available screen space.\r\n- Added automatic terminal resizing when the viewport dimensions change.\r\n\r\n#### Compatibility & Validation\r\n\r\n- Successfully tested on physical Android devices.\r\n- Improved usability across different screen sizes and orientations.\r\n- Retained support for English, German, and Simplified Chinese.\r\n- Preserved existing runtime, package management, workspace, and session functionality.\r\n\r\nRequirements: Android 10+ \u00b7 ARM64-v8a\r\n\r\nVersion: 0.1.2 \u00b7 Android versionCode: 5\r\n\r\nSource code and license information:\r\n\r\n[GPL/LGPL source code access with download instructions](https://github.com/Mcpasi/AGENTCODI/blob/0e97641f60c9100e12167ebc620bfe27b52a3916/scripts%2Fpackage-edition%2FREADME.md)\r\n\r\n[Public source directory with checksums](https://mcpasi.github.io/AGENTCODI/apt/package-edition/dists/stable/repository-manifest.json)\r\n\r\n[Fixed Bootstrap source manifest for the current APK](https://mcpasi.github.io/AGENTCODI/apt/package-edition/sources/manifests/aeb150ee111286e49c794f6838bd7e36b4f90decb194cb9a51fc35bd8a89a80a.json)\r\n\r\n[GPL-2.0 License](https://spdx.org/licenses/GPL-2.0-only.html)\r\n[GPL-3.0 License](https://spdx.org/licenses/GPL-3.0-only.html)\r\n[LGPL-2.1 License](https://spdx.org/licenses/LGPL-2.1-only.html)\r\n[LGPL-3.0 License](https://spdx.org/licenses/LGPL-3.0-only.html)\r\n",
+  "draft": false,
+  "prerelease": true,
+  "target_commitish": "Mcpasi/package-edition",
+  "published_at": "2026-10-08T22:09:50Z",
+  "html_url": "https://github.com/Mcpasi/AGENTCODI/releases/tag/v0.1.2-package.3",
+  "assets": [
+    {
+      "name": "AGENTCODI-Package-0.1.2-arm64-v8a-release.apk",
+      "size": 130605618,
+      "sha256": "d55cbe2e15521b1efbe345a6a86406c9a204132092427b4b9900ab99023c35f4",
+      "source_url": "https://github.com/Mcpasi/AGENTCODI/releases/download/v0.1.2-package.3/AGENTCODI-Package-0.1.2-arm64-v8a-release.apk",
+      "parts": [
+        {
+          "file": "AGENTCODI-Package-0.1.2-arm64-v8a-release.apk.part000",
+          "size": 67108864,
+          "sha256": "998491e404d17da8d0259a68878ff71faebaf097dc2e88da3bbd319099aeee88"
+        },
+        {
+          "file": "AGENTCODI-Package-0.1.2-arm64-v8a-release.apk.part001",
+          "size": 63496754,
+          "sha256": "9388c54f4636ddb2659c56fe9892eaa3a2dfc8a63fdf5ad23dfe91b377620732"
+        }
+      ]
+    }
+  ]
+}

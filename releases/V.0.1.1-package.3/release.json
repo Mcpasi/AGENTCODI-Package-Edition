@@ -1,0 +1,30 @@
+{
+  "tag_name": "V.0.1.1-package.3",
+  "name": "AGENTCODI Package Edition V0.1.1",
+  "body": "## AGENTCODI Package Editon 0.1.1\r\n\r\n- Add a complete Simplified Chinese interface, including dialogs, accessibility\r\n  labels, runtime status and notifications. Offer \u7b80\u4f53\u4e2d\u6587 in Settings and Android\r\n  app-language settings, and detect Simplified Chinese device locales (including\r\n  `zh-Hans`, `zh-CN` and `zh-SG`) using the same language resolution throughout.\r\n  Explicit script tags take precedence over regions; unsupported Traditional\r\n  Chinese device locales retain the English fallback. \r\n\r\n- Fix single-file inspection/export following a replaced package root symlink.\r\n  Reject noncanonical roots and pass the original selected root to the no-follow\r\n  opener, preventing exports from a symlink target outside the selected area.\r\n\r\n- Fix ZIP export accepting an in-place file change when size, inode and original\r\n  modification time are preserved. Retain the opened file's Unix change time\r\n  (`ctime`) in Java/native metadata and compare it across archive snapshots.\r\n\r\nSource code and license information:\r\n\r\n[GPL/LGPL source code access with download instructions](https://github.com/Mcpasi/AGENTCODI/blob/0e97641f60c9100e12167ebc620bfe27b52a3916/scripts%2Fpackage-edition%2FREADME.md)\r\n\r\n[Public source directory with checksums](https://mcpasi.github.io/AGENTCODI/apt/package-edition/dists/stable/repository-manifest.json)\r\n\r\n[Fixed Bootstrap source manifest for the current APK](https://mcpasi.github.io/AGENTCODI/apt/package-edition/sources/manifests/aeb150ee111286e49c794f6838bd7e36b4f90decb194cb9a51fc35bd8a89a80a.json)\r\n\r\n[GPL-2.0 License](https://spdx.org/licenses/GPL-2.0-only.html)\r\n[GPL-3.0 License](https://spdx.org/licenses/GPL-3.0-only.html)\r\n[LGPL-2.1 License](https://spdx.org/licenses/LGPL-2.1-only.html)\r\n[LGPL-3.0 License](https://spdx.org/licenses/LGPL-3.0-only.html)\r\n",
+  "draft": false,
+  "prerelease": true,
+  "target_commitish": "Mcpasi/package-edition",
+  "published_at": "2026-10-07T22:37:17Z",
+  "html_url": "https://github.com/Mcpasi/AGENTCODI/releases/tag/V.0.1.1-package.3",
+  "assets": [
+    {
+      "name": "AGENTCODI-Package-0.1.1-arm64-v8a-release.apk",
+      "size": 130601522,
+      "sha256": "6caed73a317fda548d5aadc23236c3a2d0783bac9e82313b3ee6249184bcc29a",
+      "source_url": "https://github.com/Mcpasi/AGENTCODI/releases/download/V.0.1.1-package.3/AGENTCODI-Package-0.1.1-arm64-v8a-release.apk",
+      "parts": [
+        {
+          "file": "AGENTCODI-Package-0.1.1-arm64-v8a-release.apk.part000",
+          "size": 67108864,
+          "sha256": "f6a787e5ae30c2c724a8d199fe116c841a47931757bc0b1a17036bdf14f89a53"
+        },
+        {
+          "file": "AGENTCODI-Package-0.1.1-arm64-v8a-release.apk.part001",
+          "size": 63492658,
+          "sha256": "c09ed038d1281b11dec76567819d2b9aefe157089ada0da551fdfd07e42c89ad"
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,15 @@
+{
+  "verified_at": "2026-10-10T12:56:35.545461+00:00",
+  "source_endpoint": "https://mcpasi.github.io/AGENTCODI/apt/package-edition",
+  "consumer_run": "37771253765",
+  "consumer_commit": "39bb4090105447c86fb17fea6d0d84e1f6fee818",
+  "signing_fingerprint": "2768291D12B6C3D22CFBAF9EEC79CBDF7E93DC89",
+  "package_count": 68,
+  "payload_count": 10447,
+  "payload_bytes": 671182765,
+  "valid_until": "2026-10-15T11:45:56+00:00",
+  "fresh_at_verification": true,
+  "both_signatures_verified": true,
+  "all_payload_checksums_verified": true,
+  "release_metadata_unchanged": true
+}
