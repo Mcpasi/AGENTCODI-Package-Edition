@@ -1,13 +1,13 @@
 # Final Package Edition test contract
 
-Package Edition lives on this repository's main after migration from the
-preserved Mcpasi/AGENTCODI branch. This contract does not authorize a PR,
+Package Edition is developed on `main` in `Mcpasi/AGENTCODI-Package-Edition`.
+This contract does not authorize a PR,
 merge, APK release or APT publication. Minimum API is 29, target SDK is 28,
 installation ID is de.agentcodi.pkg, and Full access is the sole runtime mode.
 
 The current release is **Package Edition 0.1.2, Android versionCode 5,
 published** as an experimental prerelease, tagged
-[`v0.1.2-package.3`](https://github.com/Mcpasi/AGENTCODI/releases/tag/v0.1.2-package.3).
+[`v0.1.2-package.3`](https://github.com/Mcpasi/AGENTCODI-Package-Edition/releases/tag/v0.1.2-package.3).
 Physical Android device tests for version 0.1.2 passed. CI artifacts are test
 builds; hardware test results are recorded separately.
 

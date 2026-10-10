@@ -1,11 +1,10 @@
 # Package Edition repository setup
 
-Code, build recipes and public trust anchors now live in
-`Mcpasi/AGENTCODI-Package-Edition` on `main`. The source repository's `main`
-and `Mcpasi/package-edition` remain preserved. Existing signing keys were copied
-as repository Actions Secrets; do not generate replacements for this move.
+Code, build recipes and public trust anchors live in
+`Mcpasi/AGENTCODI-Package-Edition` on `main`. Existing signing keys are retained
+as repository Actions secrets; keep the same signing identities for updates.
 
-The next APK build uses:
+GitHub Pages serves the signed APT repository at:
 
 ```text
 https://mcpasi.github.io/AGENTCODI-Package-Edition/apt/package-edition
@@ -18,24 +17,33 @@ the existing public keyring, additional source lines and customized sources
 are retained. The published 0.1.2 APK continues to use the original endpoint
 until it is updated.
 
-## First publication and APK build
+## Workflow scope
 
-The repository owner activates Pages, starts publication/release workflows,
-publishes the APK and performs device installation. The migration commit skips
-automatic push workflows; only the Tests workflow is started separately to
-validate the changes. Future relevant pushes retain their automatic builds.
+APK, APK Release, Package catalog, source archive checks and Community license
+research use this repository's `main`. The Tests workflow runs on all branches
+and pull requests; its Community runtime and package toolchain jobs require `main`.
+Package bootstrap and Signed APT repository are reusable workflows called
+locally. Artifact reuse and publication diagnostics query the current
+`GITHUB_REPOSITORY` and validate the producer's repository and branch.
 
-1. In this repository's **Settings → Pages**, select **GitHub Actions** as the
-   deployment source. If the `github-pages` environment restricts deployment
-   branches, allow `main`.
+## Catalog publication and APK build
+
+GitHub Pages is configured with **GitHub Actions** as its deployment source.
+Tests and the complete signed catalog publication succeeded in this repository
+on 2026-10-10. Relevant pushes to `main` start their configured builds
+automatically; manual runs use the inputs below. APK release publication
+and physical device validation remain separate from CI.
+
+1. Keep **Settings → Pages → GitHub Actions** as the deployment source. If the
+   `github-pages` environment restricts deployment branches, allow `main`.
 2. Confirm that **Tests** is successful for the current `main` commit. The APT
    deployment requires those current checks.
 3. Open **Actions → Package catalog → Run workflow** and select `main`:
-   `source_run_id=0`, `repository_action=publish`,
-   `repository_previous_run_id=0`. This builds the bootstrap and all four
-   catalog groups from pinned sources, validates ARM64 runtime behavior,
-   signs the complete repository and deploys the Pages site. The first run
-   can take several hours.
+   `repository_action=publish`, `repository_previous_run_id=0`. Select a
+   successful local catalog run for `source_run_id` to reuse matching source
+   builds, or `0` to rebuild from pinned sources. The workflow validates ARM64
+   runtime behavior, signs the complete repository and deploys the Pages site.
+   Fresh compiler builds can take several hours.
 4. Require a successful publication and HTTPS verification. The site root is
    replaced by the complete artifact containing `apt/package-edition`.
 5. Open **Actions → APK Release → Run workflow** and select `main`. For
@@ -52,9 +60,8 @@ repository snapshot. APT publication is an entry point of **Package catalog**;
 
 ## Build reuse and later renewals
 
-Run IDs belong to their GitHub repository. The historical bootstrap/catalog
-run IDs from `Mcpasi/AGENTCODI` are deliberately removed from workflow defaults.
-All new builds default to `0` and rebuild from the pinned recipes. Positive
+Run IDs belong to their GitHub repository; runs from another repository cannot
+be reused. All builds default to `0` and rebuild from the pinned recipes. Positive
 `source_run_id` values must identify a successful `main` push or manual run
 in this repository; unchanged inputs, successful source jobs, artifact
 availability and payload hashes are checked before reuse.
@@ -66,13 +73,12 @@ the last actual Pages deployment in this repository automatically. The
 seven-day Release validity still requires regular signed renewal.
 
 **APT publication diagnostics** is manual and requires a positive `run_id`
-from this repository. It no longer defaults to a historical failed source-repo
-publication.
+from this repository.
 
 ## Dependencies and secrets
 
-The seven existing APT/APK signing Secrets and the separate build-mirror read
-token are retained under their original names. The public APT fingerprint remains
+The seven APT/APK signing secrets and the separate build-mirror read token
+use the existing names. The public APT fingerprint remains
 `2768291D12B6C3D22CFBAF9EEC79CBDF7E93DC89`; the application ID remains
 `de.agentcodi.pkg`. Existing build version 0.1.3/versionCode 6 is already newer
 than published 0.1.2/versionCode 5.
@@ -82,16 +88,19 @@ The private backup mirror remains `Mcpasi/agentcodi-build-inputs`, release
 All current `.github/ci/build-inputs.tsv` entries have SHA-256-pinned upstream
 download URLs. The upstream fallback is used whenever mirror bytes are missing
 or differ from the current pin (including the newer Community Codex archive).
-At migration time, upstream had removed five pinned files: aapt2, fmt, libc++,
-libexpat and libpng. Their exact bytes remain in the private mirror, so the
-new repository needs `AGENTCODI_INPUTS_TOKEN` with **Contents: read** access
-to that mirror. A separate one-off transfer workflow copies the existing
-read token and verifies mirror access plus the required asset digests before
-storing it. The initial signing-key transfer copied only signing Secrets.
+Upstream no longer supplies five pinned files: aapt2, fmt, libc++, libexpat
+and libpng. Their exact bytes remain in the private mirror, so the repository
+needs `AGENTCODI_INPUTS_TOKEN` with **Contents: read** access to that mirror.
 APK workflows check this mirror access before starting expensive source builds.
 
 Termux recipes, builder image, Android SDK/NDK and the Community Codex runtime
 remain pinned to the original versions/hashes. The checked-in attr/acl source
-archive URLs now point at this repository's preserved commit history and retain
-their SHA-256 pins. The large `migration-backup` branch is archival; builds do
-not require checking it out.
+archive URLs point at this repository's preserved commit history and retain
+their SHA-256 pins. Archival backups are not build inputs.
+
+## Retained APK releases
+
+The imported 0.1.0–0.1.2 release pages link to their unchanged signed APKs
+in the original AGENTCODI repository. These APKs have not been re-uploaded
+as release assets here. Use the download link in each release page;
+the original signing identity and historical build evidence remain valid.

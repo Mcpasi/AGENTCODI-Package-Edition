@@ -118,9 +118,10 @@ fixture: those real package outputs still need their own rebuild checks.
 
 ## Minimal bootstrap and recovery
 
-The APK workflow calls the branch-scoped reusable bootstrap workflow. It may reuse
-source build 37215181811 while its artifact remains available and every package
-source/build input matches that trusted branch push. README, assembly, source-archive
+The APK workflow calls the reusable bootstrap workflow on `main`. Its
+`source_run_id` defaults to `0` for a fresh source build. A successful `main`
+bootstrap or catalog run in this repository can be reused while its artifact
+remains available and every package source/build input matches. README, assembly, source-archive
 and audit code are excluded from the binary build key; they are rerun on the
 verified source-built DEBs. The source archive retains the original package
 sources and includes the current assembly/audit scripts.
@@ -195,7 +196,7 @@ frontend remains a separate roadmap step. No insecure repository fallback is con
 
 ## Source-built catalog CI
 
-The branch-only Package catalog workflow builds Python, Node.js LTS plus npm,
+The Package catalog workflow on `main` builds Python, Node.js LTS plus npm,
 Git and ripgrep in four fresh amd64 build containers. Every target dependency
 is rebuilt from the locked sources; no official Termux DEBs, dependency caches
 or binary cycle seeds are restored. Node.js LTS 24.18.0 is the initial Node
@@ -259,10 +260,10 @@ The [commissioning host/source tests](https://github.com/Mcpasi/AGENTCODI/action
 and [commissioning APK build](https://github.com/Mcpasi/AGENTCODI/actions/runs/37336548822)
 also pass.
 
-Publication succeeds after the owner allowed
+That original publication succeeded after the owner allowed
 `Mcpasi/package-edition` in `github-pages` and the HTTPS checker was adjusted
 to avoid flooding Pages with individual source requests. The
-[public signed Release](https://mcpasi.github.io/AGENTCODI/apt/package-edition/dists/stable/InRelease)
+[historical signed Release](https://mcpasi.github.io/AGENTCODI/apt/package-edition/dists/stable/InRelease)
 and the pinned HTTPS checks confirm the deployed consumer commit/run,
 Release signatures and expiry, index/by-hash checksums, offered root DEBs
 and all referenced source objects. The repository roadmap item is complete.
@@ -294,7 +295,7 @@ through stdin into a temporary private GnuPG home and remove it on exit.
 They verify the configured primary fingerprint and signing capability before
 dependent builds. Neither secret is included in artifacts.
 
-The branch-only `Package catalog` workflow builds and runs all bootstrap
+The `Package catalog` workflow on `main` builds and runs all bootstrap
 and catalog checks before calling `apt-repository.yml`. Edition pushes
 affecting package scripts, repository CI or its workflow build and publish
 a signed snapshot. A manual `repository_action=none` keeps the
@@ -354,13 +355,13 @@ and expired metadata. This uses actual Android APT/dpkg and native package
 execution; physical-device tests remain skipped.
 
 Pages deployment follows these checks and a successful current Tests workflow.
-The branch-scoped `APT publication diagnostics` workflow reads failed
+The `APT publication diagnostics` workflow on `main` reads failed
 publication check annotations when GitHub rejects the job before allocating
 a runner, so no job log is available. It has read-only permissions and
 accepts the affected catalog run ID.
 
 GitHub Pages must use **GitHub Actions** and the `github-pages` environment
-must allow this branch. The deploy job has `pages: write` and
+must allow `main`. The deploy job has `pages: write` and
 `id-token: write`. Its complete site artifact contains `apt/package-edition`
 and replaces this repository's Pages site; incorporate any other site
 content before enabling publication. The original repository's site is separate. No `gh-pages` branch is used.
@@ -380,12 +381,12 @@ preserving old pool, sources and index hashes. Downgrades and changing published
 bytes without a version bump are rejected. If the artifact expires, restore a
 verified complete previous snapshot before proceeding.
 
-For first publication after migration, follow
-[repository setup](../../.github/ci/PACKAGE_EDITION_MIGRATION.md).
+For catalog publication and APK builds, follow
+[repository setup](../../.github/ci/PACKAGE_EDITION_SETUP.md).
 
 Refresh and publish before the seven-day Release expiry even when package
-versions are unchanged. The manual workflow is the renewal mechanism on this
-branch. Select `repository_action=publish` and set `source_run_id` to the
+versions are unchanged. The manual workflow on `main` renews the repository.
+Select `repository_action=publish` and set `source_run_id` to the
 previous successful catalog run in this repository to reuse its
 verified source-built DEBs when inputs are unchanged. Keep
 `repository_previous_run_id=0` for automatic snapshot selection.

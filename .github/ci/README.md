@@ -25,15 +25,15 @@ Ubuntu runner. They are additional entry points only:
 | Android sources and resources | `compile-android-sources.sh` | Compile against API 35, check SDK pins and Package Edition identity, and resolve every manifest component against its compiled Java class. |
 
 Package Edition builds use installation ID `de.agentcodi.pkg`, their own
-version line (currently `0.1.2` / Android versionCode 5, published; started at
-`0.1.0-package.1` / code 1), and APK names
-starting with `AGENTCODI-Package-`. The APK workflow on this branch
+version line (published `0.1.2` / Android versionCode 5; current builds
+`0.1.3` / code 6), and APK names
+starting with `AGENTCODI-Package-`. The APK workflow in this repository
 uploads `agentcodi-package-debug-apk`. Java classes and resources retain the
 `de.agentcodi.app` namespace via AAPT2's `--custom-package`; manifest components
 use their full Java class names. Host compilation does not replace an APK
 installation and parallel-app test on Android hardware.
 
-[Package Edition 0.1.2](https://github.com/Mcpasi/AGENTCODI/releases/tag/v0.1.2-package.3)
+[Package Edition 0.1.2](https://github.com/Mcpasi/AGENTCODI-Package-Edition/releases/tag/v0.1.2-package.3)
 is a published experimental prerelease. Physical Android APK tests for version
 0.1.2 passed; this result is separate from hosted CI. The published 0.1.0
 (`v0.1.0-package.3`) and 0.1.1 releases remain experimental prereleases.
@@ -251,7 +251,7 @@ home/cache data, package lists or the temporary reconstructed sysroot DEB.
 Private mirror access uses `AGENTCODI_INPUTS_TOKEN` with read access
 to that repository. Several pinned inputs have left the rolling upstream
 pool and need the mirror; see
-[repository migration setup](PACKAGE_EDITION_MIGRATION.md).
+[repository setup](PACKAGE_EDITION_SETUP.md).
 
 The rolling Termux pool no longer supplies `ndk-sysroot` 29-3.
 `restore-ndk-sysroot.sh` reconstructs its headers and link inputs from the
@@ -399,7 +399,7 @@ reading arbitrary host paths is not part of this process.
 The Savannah attr/acl source archives are retained unchanged at
 [third_party/package-source-archives](../../third_party/package-source-archives/README.md).
 The edition overlay uses immutable GitHub URLs with the original recipe
-SHA-256 values. The branch-only Package source archive checks workflow verifies
+SHA-256 values. The Package source archive checks workflow on `main` verifies
 both complete archives and their original COPYING material. This changes source
 retrieval for the separate package builds; the 12 APK inputs remain unchanged.
 

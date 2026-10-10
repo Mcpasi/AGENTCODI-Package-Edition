@@ -25,5 +25,5 @@ The versioned edition overlay uses immutable raw GitHub URLs for these files
 while retaining the original source checksums and versions. It does not depend
 on an expiring CI artifact or change source bytes. The usual source build,
 recipe/source archive retention, ELF checks and license ownership audits
-continue to apply. The branch-only Package source archive checks workflow
+continue to apply. The Package source archive checks workflow on `main`
 verifies both committed hashes and the retained original legal files.
