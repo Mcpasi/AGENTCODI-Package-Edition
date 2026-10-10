@@ -8,7 +8,13 @@
 int main(int argc, char* argv[]) {
   constexpr const char* shell = "/system/bin/sh";
   if (argc == 2 && std::string(argv[1]) == "--interactive") {
-    char* const arguments[] = {const_cast<char*>(shell), const_cast<char*>("-i"), nullptr};
+    // The Android command field owns editing, and its TextView wraps the transcript.
+    // mksh's line editors horizontally redraw long input with CR/backspace, which
+    // cannot be represented by the append-only output buffer. Use PTY line echo.
+    char* const arguments[] = {
+        const_cast<char*>(shell), const_cast<char*>("-i"),
+        const_cast<char*>("+o"), const_cast<char*>("emacs"),
+        const_cast<char*>("+o"), const_cast<char*>("vi"), nullptr};
     execv(shell, arguments);
   } else if (argc == 3 && std::string(argv[1]) == "-c") {
     if (std::strlen(argv[2]) > 256U * 1024U) {

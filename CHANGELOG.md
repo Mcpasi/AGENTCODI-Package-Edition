@@ -4,6 +4,10 @@
 
 **In development.**
 
+- Fix duplicated and truncated terminal command echoes on narrow screens (for
+  example, `git status` followed by an extra `it status` line). Disable mksh's
+  shell line editors for the app's interactive terminal so complete commands
+  are echoed once and the existing Android output view handles wrapping.
 - Make every loaded chat accessible in the recycled thread list. Remove the
   80-row display limit so all entries from the initial four pages remain
   reachable, including chats beyond row 80.
