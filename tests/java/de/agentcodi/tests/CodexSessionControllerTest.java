@@ -86,11 +86,12 @@ public final class CodexSessionControllerTest {
         rejectsUnavailableWorkspacePermissionProfile();
         preservesProtectionAfterSandboxBootstrapFailure();
         startsTerminalThroughSandboxedCommandExec();
+        rendersTerminalOutputWithTheStartedAndResizedPtyGeometry();
         streamsTerminalInputResizeAndTermination();
         terminatesTerminalWhenOutputCapIsReached();
         rejectsTerminalCredentialsAndMalformedOutput();
         usesVettedMcpConfigurationRpcs();
-        return 52;
+        return 53;
     }
 
     private static void continuesThreadPaginationWithoutEvictingLoadedChats() throws Exception {
@@ -1151,6 +1152,68 @@ public final class CodexSessionControllerTest {
         controller.stopTerminal();
         waitForTerminalExit(controller);
         controller.close();
+    }
+
+    private static void rendersTerminalOutputWithTheStartedAndResizedPtyGeometry() throws Exception {
+        final FixtureServer server = new FixtureServer(true);
+        final CodexSessionController controller = terminalController(server);
+        try {
+            controller.start();
+            controller.startTerminal(3, 8);
+            waitFor(new Condition() {
+                @Override
+                public boolean isTrue() {
+                    return controller.terminalSnapshot().isRunning()
+                        && controller.terminalSnapshot().getOutput().contains("-ready ✓");
+                }
+            }, "terminal output uses its starting PTY width");
+            TestSupport.assertEquals("terminal\n-ready ✓\n",
+                controller.terminalSnapshot().getOutput(), "initial renderer geometry");
+            controller.clearTerminalOutput();
+            String processId = JsonCodec.optionalString(server.lastCommandExecParams.get("processId"));
+            server.notifyMessage("command/exec/outputDelta", JsonCodec.object(
+                "processId", processId,
+                "stream", "stdout",
+                "deltaBase64", Base64.getEncoder().encodeToString(
+                    "12345678X\rQ".getBytes(StandardCharsets.UTF_8)),
+                "capReached", Boolean.FALSE
+            ));
+            waitFor(new Condition() {
+                @Override
+                public boolean isTrue() {
+                    return "12345678\nQ".equals(controller.terminalSnapshot().getOutput());
+                }
+            }, "carriage return edits the physical row at the starting PTY width");
+            long previousRevision = controller.terminalSnapshot().getRevision();
+            controller.resizeTerminal(3, 4);
+            TestSupport.assertTrue(controller.terminalSnapshot().getRevision() > previousRevision,
+                "resize invalidates the displayed snapshot");
+            TestSupport.assertEquals("1234\nQ", controller.terminalSnapshot().getOutput(),
+                "renderer clips the resized screen");
+            waitFor(new Condition() {
+                @Override
+                public boolean isTrue() {
+                    return server.lastTerminalResizeParams != null;
+                }
+            }, "matching resize reaches the remote PTY");
+            server.notifyMessage("command/exec/outputDelta", JsonCodec.object(
+                "processId", processId,
+                "stream", "stdout",
+                "deltaBase64", Base64.getEncoder().encodeToString(
+                    "abcdX\rZ".getBytes(StandardCharsets.UTF_8)),
+                "capReached", Boolean.FALSE
+            ));
+            waitFor(new Condition() {
+                @Override
+                public boolean isTrue() {
+                    return "1234\nQabc\nZX".equals(controller.terminalSnapshot().getOutput());
+                }
+            }, "later redraws use the new PTY margin");
+            controller.stopTerminal();
+            waitForTerminalExit(controller);
+        } finally {
+            controller.close();
+        }
     }
 
     private static void streamsTerminalInputResizeAndTermination() throws Exception {

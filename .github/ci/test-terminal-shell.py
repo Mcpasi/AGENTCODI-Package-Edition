@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Run the packaged shell and real output buffer against mksh in a narrow PTY."""
+"""Compare the production PTY renderer to an independent VT screen with mksh."""
 
 import fcntl
 import os
@@ -14,6 +14,8 @@ import tempfile
 import termios
 import time
 import unittest
+
+import pyte
 
 
 PROJECT = Path(__file__).resolve().parents[2]
@@ -47,12 +49,23 @@ extern "C" int __wrap_execv(const char* path, char* const args[]) {
         ], check=True)
         renderer = cls.build / "RenderTerminal.java"
         renderer.write_text('''import de.agentcodi.core.TerminalOutputBuffer;
+import java.io.DataInputStream;
+import java.io.EOFException;
 public final class RenderTerminal {
   public static void main(String[] args) throws Exception {
     TerminalOutputBuffer buffer = new TerminalOutputBuffer();
-    int value;
-    // Deliberately split every UTF-8/control sequence across notifications.
-    while ((value = System.in.read()) >= 0) buffer.append(new byte[] {(byte) value});
+    DataInputStream input = new DataInputStream(System.in);
+    while (true) {
+      int event;
+      try { event = input.readInt(); } catch (EOFException end) { break; }
+      if (event == 2) {
+        buffer.resize(input.readInt(), input.readInt());
+      } else {
+        int length = input.readInt();
+        // Split every UTF-8/control sequence across output notifications.
+        for (int i = 0; i < length; i++) buffer.append(new byte[] {input.readByte()});
+      }
+    }
     System.out.print(buffer.snapshot());
   }
 }
@@ -74,17 +87,18 @@ public final class RenderTerminal {
     def setUp(self):
         self.workspace = tempfile.TemporaryDirectory(dir=self.build)
         subprocess.run(["git", "init", "--quiet", self.workspace.name], check=True)
+        self.raw = bytearray()
+        self.events = bytearray(struct.pack(">iii", 2, 24, 42))
+        self.reference = pyte.HistoryScreen(42, 24, history=4096)
+        self.stream = pyte.ByteStream(self.reference)
         self.pid, self.master = pty.fork()
         if self.pid == 0:
             self.resize(42)
             os.chdir(self.workspace.name)
             os.execve(str(self.binary), [str(self.binary), "--interactive"], self.environment)
-        self.raw = bytearray()
         self.read_until(PROMPT.encode())
         # mksh learns its initial width after the first command.
         self.send(b":\n")
-        self.raw.clear()
-        self.raw.extend(PROMPT.encode())
 
     def tearDown(self):
         os.kill(self.pid, signal.SIGKILL)
@@ -95,6 +109,12 @@ public final class RenderTerminal {
     def resize(self, columns):
         descriptor = 0 if self.pid == 0 else self.master
         fcntl.ioctl(descriptor, termios.TIOCSWINSZ, struct.pack("HHHH", 24, columns, 0, 0))
+        if self.pid != 0:
+            self.events.extend(struct.pack(">iii", 2, 24, columns))
+            # Configure only the viewport: pyte.resize() destructively drops right cells.
+            # Keep its independent VT parser while retaining offscreen output on resize.
+            self.reference.columns = columns
+            self.reference.ensure_hbounds()
 
     def read_until(self, marker):
         received = bytearray()
@@ -104,6 +124,8 @@ public final class RenderTerminal {
                 received.extend(os.read(self.master, 65536))
                 if marker in received:
                     self.raw.extend(received)
+                    self.events.extend(struct.pack(">ii", 1, len(received)) + received)
+                    self.stream.feed(bytes(received))
                     return
         self.fail("Shell did not produce the expected marker: " + repr(received))
 
@@ -114,40 +136,87 @@ public final class RenderTerminal {
     def rendered(self):
         return subprocess.run([
             "java", "-cp", str(self.build), "RenderTerminal",
-        ], input=bytes(self.raw), stdout=subprocess.PIPE, check=True).stdout.decode("utf-8")
+        ], input=bytes(self.events), stdout=subprocess.PIPE, check=True).stdout.decode("utf-8")
 
-    def test_git_status_keeps_the_complete_command_without_redraw_fragments(self):
+    def assert_matches_reference(self):
+        lines = []
+        for row in self.reference.history.top:
+            lines.append("".join(row.get(column, self.reference.default_char).data
+                                 for column in range(max(row, default=-1) + 1)).rstrip())
+        lines.extend(line.rstrip() for line in self.reference.display)
+        self.assertEqual("\n".join(lines).rstrip(), self.rendered().rstrip())
+
+    def test_editor_is_enabled(self):
+        self.assertEqual(0, termios.tcgetattr(self.master)[3] & termios.ICANON,
+                         "mksh must retain its interactive line editor")
+
+    def test_git_status_redraw_matches_a_real_terminal(self):
         self.send(b"git status\n")
-        output = self.rendered()
-        self.assertIn(PROMPT + "git status\n", output)
-        self.assertNotIn("\nit status\n", output)
-        self.assertIn("No commits yet\n", output)
+        self.assertIn(b"git statu\rit statu", self.raw)
+        self.assert_matches_reference()
+        self.assertIn("No commits yet\n", self.rendered())
 
-    def test_git_commit_keeps_the_complete_command_without_redraw_fragments(self):
-        # An empty repository cannot produce a commit; only its echo is checked.
+    def test_git_commit_redraw_matches_a_real_terminal(self):
+        # An empty repository cannot produce a commit.
         self.send(b'git commit -m "one"\n')
-        self.assertIn(PROMPT + 'git commit -m "one"\n', self.rendered())
+        self.assertIn(b"git commi\rit commi", self.raw)
+        self.assert_matches_reference()
         result = subprocess.run(["git", "rev-parse", "--verify", "HEAD"],
                                 cwd=self.workspace.name, capture_output=True)
         self.assertNotEqual(0, result.returncode)
 
-    def test_long_commands_remain_complete_after_viewport_resizes(self):
+    def test_long_commands_match_the_terminal_after_viewport_resizes(self):
         for columns in (20, 42, 80, 120):
             with self.subTest(columns=columns):
                 self.resize(columns)
                 text = "wrapped-command-" + "x" * 200 + "-€"
                 command = "printf '%s\\n' '" + text + "'"
                 self.send((command + "\n").encode("utf-8"))
-                self.assertIn(PROMPT + command + "\n" + text + "\n", self.rendered())
+                self.assert_matches_reference()
+                self.assertIn(text, self.rendered().replace("\n", ""))
+
+    def test_tab_completion_remains_available(self):
+        (Path(self.workspace.name) / "completion-fixture-unique.txt").write_text(
+            "completion-success\n")
+        os.write(self.master, b"cat ./completion-fixture-un")
+        self.read_until(b"-un")
+        self.send(b"\t\n")
+        self.assertIn("\ncompletion-success\n", self.rendered())
+        self.assert_matches_reference()
+
+    def test_previous_output_returns_after_narrowing_and_widening(self):
+        text = "retained-output-1234567890"
+        self.send(("printf '%s\\n' '" + text + "'\n").encode())
+        self.assertIn("\n" + text + "\n", self.rendered())
+        self.resize(10)
+        self.assertNotIn(text, self.rendered())
+        self.assert_matches_reference()
+        self.resize(42)
+        self.assertIn("\n" + text + "\n", self.rendered())
+        self.assert_matches_reference()
+
+    def test_history_navigation_remains_available(self):
+        self.send(b"printf 'history-ok\\n'\n")
+        previous_count = self.rendered().count("\nhistory-ok\n")
+        self.send(b"\x1b[A\n")
+        self.assertEqual(previous_count + 1, self.rendered().count("\nhistory-ok\n"))
+        self.assert_matches_reference()
+
+    def test_backspace_edits_pending_input(self):
+        os.write(self.master, b"printf 'edit-x")
+        self.read_until(b"x")
+        self.send(b"\x7fok\\n'\n")
+        self.assertIn("\nedit-ok\n", self.rendered())
+        self.assert_matches_reference()
 
     def test_control_c_interrupts_pending_input(self):
         os.write(self.master, b"printf should-not-run")
-        self.read_until(b"should-not-run")
+        self.read_until(b"run")
         self.send(b"\x03")
         self.send(b"printf 'after-interrupt\\n'\n")
-        output = self.rendered()
-        self.assertNotIn("\nshould-not-run", output)
-        self.assertIn("\nafter-interrupt\n", output)
+        self.assertNotIn("\nshould-not-run", self.rendered())
+        self.assertIn("\nafter-interrupt\n", self.rendered())
+        self.assert_matches_reference()
 
     def test_noninteractive_commands_retain_quoting_and_exit_status(self):
         result = subprocess.run([str(self.binary), "-c", "printf '%s' 'a b'; exit 7"],

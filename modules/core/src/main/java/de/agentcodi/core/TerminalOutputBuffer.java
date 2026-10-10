@@ -1,25 +1,80 @@
 package de.agentcodi.core;
 
 import java.nio.charset.StandardCharsets;
+import java.text.Normalizer;
+import java.util.ArrayDeque;
+import java.util.ArrayList;
 import java.util.Arrays;
 
+/** Bounded, plain-text terminal cells and scrollback; not an append-only log. */
 public final class TerminalOutputBuffer {
     public static final int MAXIMUM_CHARACTERS = 128 * 1024;
     private static final String OMITTED_PREFIX = "[earlier terminal output omitted]\n";
+    private static final int MAXIMUM_DIMENSION = 1000;
+    private static final int MAXIMUM_CELL_CHARACTERS = 32;
 
     private static final int ANSI_NORMAL = 0;
     private static final int ANSI_ESCAPE = 1;
     private static final int ANSI_CSI = 2;
     private static final int ANSI_OSC = 3;
     private static final int ANSI_OSC_ESCAPE = 4;
+    private static final int ANSI_CHARSET = 5;
     private static final int MAXIMUM_ANSI_SEQUENCE_CHARACTERS = 4096;
 
-    private final StringBuilder output = new StringBuilder();
+    private final ArrayDeque<Line> history = new ArrayDeque<Line>();
+    private final ArrayList<Line> screen = new ArrayList<Line>();
+    private final StringBuilder csi = new StringBuilder();
     private byte[] pendingUtf8 = new byte[0];
+    private int rows = 24;
+    private int columns = 80;
+    private int cursorRow;
+    // columns means pending autowrap: CR/BS cancel it without adding a row.
+    private int cursorColumn;
+    private int savedRow;
+    private int savedColumn;
+    private int storedCharacters;
     private int ansiState;
     private int ansiSequenceCharacters;
-    private boolean carriageReturn;
+    private boolean autoWrap = true;
     private boolean omitted;
+
+    public TerminalOutputBuffer() {
+        for (int index = 0; index < rows; index++) {
+            screen.add(new Line());
+        }
+        storedCharacters = rows;
+    }
+
+    /** Use the same cell geometry as the remote PTY, including on resize. */
+    public void resize(int requestedRows, int requestedColumns) {
+        if (requestedRows < 1 || requestedRows > MAXIMUM_DIMENSION
+            || requestedColumns < 1 || requestedColumns > MAXIMUM_DIMENSION) {
+            throw new IllegalArgumentException("Terminal dimensions are invalid");
+        }
+        if (requestedRows == rows && requestedColumns == columns) {
+            return;
+        }
+        while (screen.size() > requestedRows) {
+            int bottom = screen.size() - 1;
+            if (bottom > cursorRow && screen.get(bottom).visibleLength() == 0) {
+                discardLine(screen.remove(bottom));
+            } else {
+                history.addLast(screen.remove(0));
+                cursorRow = Math.max(0, cursorRow - 1);
+                savedRow = Math.max(0, savedRow - 1);
+            }
+        }
+        while (screen.size() < requestedRows) {
+            screen.add(new Line());
+            storedCharacters++;
+        }
+        // Resize the viewport, retaining offscreen cells for a later widening.
+        rows = requestedRows;
+        columns = requestedColumns;
+        cursorRow = Math.min(cursorRow, rows - 1);
+        cursorColumn = Math.min(cursorColumn, columns - 1);
+        trimToLimit();
+    }
 
     public void append(byte[] bytes) {
         if (bytes == null || bytes.length == 0) {
@@ -37,11 +92,7 @@ public final class TerminalOutputBuffer {
                 appendDecoded(new String(combined, 0, decodedLength, StandardCharsets.UTF_8));
             }
             if (pendingLength > 0) {
-                pendingUtf8 = Arrays.copyOfRange(
-                    combined,
-                    decodedLength,
-                    combined.length
-                );
+                pendingUtf8 = Arrays.copyOfRange(combined, decodedLength, combined.length);
             }
         } finally {
             Arrays.fill(combined, (byte) 0);
@@ -54,144 +105,479 @@ public final class TerminalOutputBuffer {
             pendingUtf8 = new byte[0];
             appendDecoded("\uFFFD");
         }
-        if (carriageReturn) {
-            output.append('\n');
-            carriageReturn = false;
-            trimToLimit();
-        }
-        ansiState = ANSI_NORMAL;
-        ansiSequenceCharacters = 0;
+        resetAnsi();
     }
 
     public void clear() {
-        for (int index = 0; index < output.length(); index++) {
-            output.setCharAt(index, '\0');
+        for (Line line : history) {
+            line.clear();
         }
-        output.setLength(0);
+        history.clear();
+        for (Line line : screen) {
+            line.clear();
+        }
+        storedCharacters = rows;
         Arrays.fill(pendingUtf8, (byte) 0);
         pendingUtf8 = new byte[0];
-        ansiState = ANSI_NORMAL;
-        ansiSequenceCharacters = 0;
-        carriageReturn = false;
+        cursorRow = cursorColumn = savedRow = savedColumn = 0;
+        autoWrap = true;
         omitted = false;
+        resetAnsi();
     }
 
     public String snapshot() {
-        return CrashReportFormatter.redactVisibleText(
-            output.toString(),
-            MAXIMUM_CHARACTERS
-        );
+        StringBuilder result = new StringBuilder();
+        StringBuilder logicalLine = new StringBuilder();
+        ArrayList<SnapshotRow> wraps = new ArrayList<SnapshotRow>();
+        if (omitted) {
+            result.append(OMITTED_PREFIX);
+        }
+        for (Line line : history) {
+            appendSnapshotLine(result, logicalLine, wraps, line, true, Integer.MAX_VALUE);
+        }
+        int lastRow = cursorRow;
+        for (int index = rows - 1; index > lastRow; index--) {
+            if (screen.get(index).visibleLength() > 0) {
+                lastRow = index;
+                break;
+            }
+        }
+        for (int index = 0; index <= lastRow; index++) {
+            appendSnapshotLine(result, logicalLine, wraps, screen.get(index), index < lastRow, columns);
+        }
+        appendRedactedLine(result, logicalLine, wraps);
+        return CrashReportFormatter.redactVisibleText(result.toString(), MAXIMUM_CHARACTERS);
+    }
+
+    private void appendSnapshotLine(StringBuilder result, StringBuilder logicalLine,
+        ArrayList<SnapshotRow> wraps, Line line, boolean newline, int visibleColumns) {
+        line.appendTo(logicalLine, line.softWrapped);
+        wraps.add(new SnapshotRow(logicalLine.length(), visibleColumns));
+        if (!line.softWrapped || !newline) {
+            appendRedactedLine(result, logicalLine, wraps);
+            if (newline) {
+                result.append('\n');
+            }
+        }
+    }
+
+    private void appendRedactedLine(StringBuilder result, StringBuilder logicalLine,
+        ArrayList<SnapshotRow> wraps) {
+        String original = logicalLine.toString();
+        // Match full stored text before clipping the viewport or reinserting soft wraps.
+        String redacted = CrashReportFormatter.redactSecrets(original);
+        if (original.equals(redacted)) {
+            int start = 0;
+            for (int index = 0; index < wraps.size(); index++) {
+                SnapshotRow row = wraps.get(index);
+                appendVisibleSegment(result, original, start, row.end, row.columns);
+                if (index + 1 < wraps.size()) {
+                    result.append('\n');
+                }
+                start = row.end;
+            }
+        } else {
+            int column = 0;
+            for (int index = 0; index < redacted.length();) {
+                int character = redacted.codePointAt(index);
+                int width = characterWidth(character);
+                if (column + width > columns) {
+                    result.append('\n');
+                    column = 0;
+                }
+                result.appendCodePoint(character);
+                column += width;
+                index += Character.charCount(character);
+            }
+        }
+        logicalLine.setLength(0);
+        wraps.clear();
+    }
+
+    private static void appendVisibleSegment(StringBuilder result, String value, int start, int end,
+        int visibleColumns) {
+        int visibleEnd = start;
+        int column = 0;
+        while (visibleEnd < end) {
+            int character = value.codePointAt(visibleEnd);
+            int width = characterWidth(character);
+            if (column + width > visibleColumns) {
+                break;
+            }
+            column += width;
+            visibleEnd += Character.charCount(character);
+        }
+        end = visibleEnd;
+        while (end > start && value.charAt(end - 1) == ' ') {
+            end--;
+        }
+        result.append(value, start, end);
     }
 
     private void appendDecoded(String decoded) {
-        for (int index = 0; index < decoded.length(); index++) {
-            char character = decoded.charAt(index);
-            if (ansiState == ANSI_ESCAPE) {
-                if (character == '[') {
-                    ansiState = ANSI_CSI;
-                } else if (character == ']') {
-                    ansiState = ANSI_OSC;
-                } else {
-                    ansiState = ANSI_NORMAL;
-                }
-                ansiSequenceCharacters = 0;
+        for (int index = 0; index < decoded.length();) {
+            int character = decoded.codePointAt(index);
+            index += Character.charCount(character);
+            if (consumeAnsi(character)) {
                 continue;
             }
-            if (ansiState == ANSI_CSI) {
-                ansiSequenceCharacters++;
-                if (character >= 0x40 && character <= 0x7e) {
-                    ansiState = ANSI_NORMAL;
-                    ansiSequenceCharacters = 0;
-                } else if (ansiSequenceCharacters >= MAXIMUM_ANSI_SEQUENCE_CHARACTERS) {
-                    ansiState = ANSI_NORMAL;
-                    ansiSequenceCharacters = 0;
-                }
-                continue;
-            }
-            if (ansiState == ANSI_OSC) {
-                ansiSequenceCharacters++;
-                if (character == 0x07) {
-                    ansiState = ANSI_NORMAL;
-                    ansiSequenceCharacters = 0;
-                } else if (character == 0x1b) {
-                    ansiState = ANSI_OSC_ESCAPE;
-                } else if (ansiSequenceCharacters >= MAXIMUM_ANSI_SEQUENCE_CHARACTERS) {
-                    ansiState = ANSI_NORMAL;
-                    ansiSequenceCharacters = 0;
-                }
-                continue;
-            }
-            if (ansiState == ANSI_OSC_ESCAPE) {
-                ansiSequenceCharacters++;
-                if (character == '\\'
-                    || ansiSequenceCharacters >= MAXIMUM_ANSI_SEQUENCE_CHARACTERS) {
-                    ansiState = ANSI_NORMAL;
-                    ansiSequenceCharacters = 0;
-                } else {
-                    ansiState = ANSI_OSC;
-                }
-                continue;
-            }
-            if (character == 0x1b) {
-                ansiState = ANSI_ESCAPE;
-                ansiSequenceCharacters = 0;
-                continue;
-            }
-            if (character == '\r') {
-                carriageReturn = true;
-                continue;
-            }
-            if (character == '\n') {
-                output.append('\n');
-                carriageReturn = false;
-                continue;
-            }
-            if (carriageReturn) {
-                output.append('\n');
-                carriageReturn = false;
-            }
-            if (character == '\b') {
-                int length = output.length();
-                if (length > 0 && output.charAt(length - 1) != '\n') {
-                    int removed = length - 1;
-                    if (removed > 0
-                        && Character.isLowSurrogate(output.charAt(removed))
-                        && Character.isHighSurrogate(output.charAt(removed - 1))) {
-                        removed--;
+            switch (character) {
+                case 0x1b: ansiState = ANSI_ESCAPE; break;
+                case '\r': cursorColumn = 0; break;
+                case '\n':
+                case 0x0b:
+                case 0x0c: screen.get(cursorRow).softWrapped = false; lineFeed(); break;
+                case '\b': cursorColumn = Math.max(0, cursorColumn - 1); break;
+                case '\t': cursorColumn = Math.min(columns - 1, (cursorColumn / 8 + 1) * 8); break;
+                default:
+                    if (character >= 0x20 && character != 0x7f
+                        && (character < 0x80 || character > 0x9f)) {
+                        draw(character);
                     }
-                    output.setLength(removed);
-                }
-            } else if (character == '\t'
-                || (character >= 0x20
-                    && character != 0x7f
-                    && (character < 0x80 || character > 0x9f))) {
-                output.append(character);
+                    break;
             }
         }
         trimToLimit();
     }
 
-    private void trimToLimit() {
-        if (output.length() <= MAXIMUM_CHARACTERS) {
+    private boolean consumeAnsi(int character) {
+        if (ansiState == ANSI_NORMAL) {
+            return false;
+        }
+        if (ansiState == ANSI_ESCAPE) {
+            if (character == '[') {
+                ansiState = ANSI_CSI;
+                csi.setLength(0);
+            } else if (character == ']' || character == 'P'
+                || character == '^' || character == '_') {
+                ansiState = ANSI_OSC;
+            } else if (character == '(' || character == ')' || character == '*'
+                || character == '+') {
+                ansiState = ANSI_CHARSET;
+            } else {
+                if (character == '7') {
+                    saveCursor();
+                } else if (character == '8') {
+                    restoreCursor();
+                } else if (character == 'D') {
+                    lineFeed();
+                } else if (character == 'E') {
+                    cursorColumn = 0;
+                    lineFeed();
+                }
+                resetAnsi();
+            }
+            ansiSequenceCharacters = 0;
+        } else if (ansiState == ANSI_CHARSET) {
+            resetAnsi();
+        } else if (ansiState == ANSI_CSI) {
+            if (character >= 0x40 && character <= 0x7e) {
+                applyCsi(character);
+                resetAnsi();
+            } else if (++ansiSequenceCharacters >= MAXIMUM_ANSI_SEQUENCE_CHARACTERS) {
+                resetAnsi();
+            } else {
+                csi.appendCodePoint(character);
+            }
+        } else if (ansiState == ANSI_OSC) {
+            if (character == 0x07
+                || ++ansiSequenceCharacters >= MAXIMUM_ANSI_SEQUENCE_CHARACTERS) {
+                resetAnsi();
+            } else if (character == 0x1b) {
+                ansiState = ANSI_OSC_ESCAPE;
+            }
+        } else if (ansiState == ANSI_OSC_ESCAPE) {
+            if (character == '\\'
+                || ++ansiSequenceCharacters >= MAXIMUM_ANSI_SEQUENCE_CHARACTERS) {
+                resetAnsi();
+            } else {
+                ansiState = ANSI_OSC;
+            }
+        }
+        return true;
+    }
+
+    private void applyCsi(int command) {
+        String parameters = csi.toString();
+        if (parameters.startsWith("?")) {
+            if ("?7".equals(parameters) && (command == 'h' || command == 'l')) {
+                autoWrap = command == 'h';
+            }
             return;
         }
-        int target = output.length() - MAXIMUM_CHARACTERS + OMITTED_PREFIX.length();
-        int newline = output.indexOf("\n", Math.max(0, target));
-        int remove = newline < 0 ? target : newline + 1;
-        if (remove > 0 && remove < output.length()
-            && Character.isLowSurrogate(output.charAt(remove))) {
-            remove++;
+        if (!parameters.matches("[0-9;]*")) {
+            return;
         }
-        output.delete(0, Math.min(remove, output.length()));
-        if (!omitted) {
-            output.insert(0, OMITTED_PREFIX);
+        String[] values = parameters.split(";", -1);
+        int count = Math.max(1, parameter(values, 0, 1));
+        switch (command) {
+            case 'A': cursorRow = Math.max(0, cursorRow - count); break;
+            case 'B': cursorRow = Math.min(rows - 1, cursorRow + count); break;
+            case 'C': cursorColumn = Math.min(columns - 1, cursorColumn + count); break;
+            case 'D': cursorColumn = Math.max(0, cursorColumn - count); break;
+            case 'E': cursorRow = Math.min(rows - 1, cursorRow + count); cursorColumn = 0; break;
+            case 'F': cursorRow = Math.max(0, cursorRow - count); cursorColumn = 0; break;
+            case 'G': cursorColumn = Math.min(columns - 1, count - 1); break;
+            case 'd': cursorRow = Math.min(rows - 1, count - 1); break;
+            case 'H':
+            case 'f':
+                cursorRow = Math.min(rows - 1, count - 1);
+                cursorColumn = Math.min(columns - 1, Math.max(1, parameter(values, 1, 1)) - 1);
+                break;
+            case 'K': eraseLine(parameter(values, 0, 0)); break;
+            case 'J': eraseDisplay(parameter(values, 0, 0)); break;
+            case 's': saveCursor(); break;
+            case 'u': restoreCursor(); break;
+            default: break; // Styling and other non-cursor sequences stay invisible.
+        }
+    }
+
+    private static int parameter(String[] values, int index, int fallback) {
+        if (index >= values.length || values[index].isEmpty()) {
+            return fallback;
+        }
+        int value = 0;
+        for (int digit = 0; digit < values[index].length(); digit++) {
+            value = Math.min(MAXIMUM_DIMENSION, value * 10 + values[index].charAt(digit) - '0');
+        }
+        return value;
+    }
+
+    private void draw(int character) {
+        int width = characterWidth(character);
+        if (width == 0) {
+            int row = cursorRow;
+            int column = cursorColumn - 1;
+            if (column < 0 && row > 0) {
+                row--;
+                column = columns - 1;
+            }
+            if (column >= 0) {
+                Line line = screen.get(row);
+                if (line.get(column).isEmpty() && column > 0) {
+                    column--;
+                }
+                String previous = line.get(column);
+                if (previous.length() + Character.charCount(character) <= MAXIMUM_CELL_CHARACTERS) {
+                    line.set(column, Normalizer.normalize(
+                        previous + new String(Character.toChars(character)), Normalizer.Form.NFC));
+                }
+            }
+            return;
+        }
+        width = Math.min(width, columns);
+        if (cursorColumn >= columns || cursorColumn + width > columns) {
+            if (autoWrap) {
+                screen.get(cursorRow).softWrapped = true;
+                cursorColumn = 0;
+                lineFeed();
+            } else {
+                cursorColumn = columns - width;
+            }
+        }
+        Line line = screen.get(cursorRow);
+        line.clearWideCharacter(cursorColumn);
+        if (width == 2) {
+            line.clearWideCharacter(cursorColumn + 1);
+        }
+        line.set(cursorColumn, new String(Character.toChars(character)));
+        if (width == 2) {
+            line.set(cursorColumn + 1, "");
+        }
+        cursorColumn += width;
+    }
+
+    private void lineFeed() {
+        if (cursorRow < rows - 1) {
+            cursorRow++;
+        } else {
+            history.addLast(screen.remove(0));
+            screen.add(new Line());
+            storedCharacters++;
+        }
+    }
+
+    private void eraseLine(int mode) {
+        Line line = screen.get(cursorRow);
+        if (mode == 0) {
+            line.erase(cursorColumn, Math.max(columns, line.cells.size()));
+        } else if (mode == 1) {
+            line.erase(0, Math.min(columns, cursorColumn + 1));
+        } else if (mode == 2) {
+            line.clear();
+        }
+    }
+
+    private void eraseDisplay(int mode) {
+        if (mode == 3) {
+            while (!history.isEmpty()) {
+                discardLine(history.removeFirst());
+            }
+            omitted = false;
+            return;
+        }
+        if (mode > 2) {
+            return;
+        }
+        for (int index = 0; index < rows; index++) {
+            if (mode == 2 || (mode == 0 && index > cursorRow)
+                || (mode == 1 && index < cursorRow)) {
+                screen.get(index).clear();
+            }
+        }
+        eraseLine(mode);
+    }
+
+    private void saveCursor() {
+        savedRow = cursorRow;
+        savedColumn = cursorColumn;
+    }
+
+    private void restoreCursor() {
+        cursorRow = Math.min(rows - 1, savedRow);
+        cursorColumn = Math.min(columns - 1, savedColumn);
+    }
+
+    private void resetAnsi() {
+        ansiState = ANSI_NORMAL;
+        ansiSequenceCharacters = 0;
+        for (int index = 0; index < csi.length(); index++) {
+            csi.setCharAt(index, '\0');
+        }
+        csi.setLength(0);
+    }
+
+    private void trimToLimit() {
+        int limit = MAXIMUM_CHARACTERS - OMITTED_PREFIX.length();
+        while (storedCharacters > limit && !history.isEmpty()) {
+            discardLine(history.removeFirst());
             omitted = true;
         }
-        if (output.length() > MAXIMUM_CHARACTERS) {
-            output.delete(
-                OMITTED_PREFIX.length(),
-                OMITTED_PREFIX.length() + output.length() - MAXIMUM_CHARACTERS
-            );
+        // Even the maximum supported 1000x1000 viewport must respect the limit.
+        for (int index = 0; storedCharacters > limit && index < rows; index++) {
+            if (index != cursorRow) {
+                screen.get(index).clear();
+                omitted = true;
+            }
+        }
+    }
+
+    private static int cellWidth(String cell) {
+        return cell.isEmpty() ? 0 : characterWidth(cell.codePointAt(0));
+    }
+
+    private void discardLine(Line line) {
+        line.clear();
+        storedCharacters--;
+    }
+
+    private static int characterWidth(int character) {
+        int type = Character.getType(character);
+        if (type == Character.NON_SPACING_MARK || type == Character.ENCLOSING_MARK
+            || type == Character.FORMAT) {
+            return 0;
+        }
+        if (character >= 0x1100 && (character <= 0x115f || character == 0x2329
+            || character == 0x232a || (character >= 0x2e80 && character <= 0xa4cf && character != 0x303f)
+            || (character >= 0xac00 && character <= 0xd7a3)
+            || (character >= 0xf900 && character <= 0xfaff)
+            || (character >= 0xfe10 && character <= 0xfe19)
+            || (character >= 0xfe30 && character <= 0xfe6f)
+            || (character >= 0xff00 && character <= 0xff60)
+            || (character >= 0xffe0 && character <= 0xffe6)
+            || (character >= 0x1f300 && character <= 0x1faff)
+            || (character >= 0x20000 && character <= 0x3fffd))) {
+            return 2;
+        }
+        return 1;
+    }
+
+    private static final class SnapshotRow {
+        private final int end;
+        private final int columns;
+
+        private SnapshotRow(int end, int columns) {
+            this.end = end;
+            this.columns = columns;
+        }
+    }
+
+    private final class Line {
+        // Own mutable character storage so clearing can overwrite every retained cell.
+        private final ArrayList<char[]> cells = new ArrayList<char[]>();
+        private boolean softWrapped;
+
+        private String get(int column) {
+            return column < cells.size() ? new String(cells.get(column)) : " ";
+        }
+
+        private void set(int column, String value) {
+            while (cells.size() <= column) {
+                cells.add(new char[] {' '});
+                storedCharacters++;
+            }
+            char[] previous = cells.get(column);
+            char[] replacement = value.toCharArray();
+            storedCharacters += replacement.length - previous.length;
+            Arrays.fill(previous, '\0');
+            cells.set(column, replacement);
+        }
+
+        private void clearWideCharacter(int column) {
+            if (get(column).isEmpty() && column > 0) {
+                set(column - 1, " ");
+                set(column, " ");
+            } else if (cellWidth(get(column)) == 2) {
+                set(column, " ");
+                if (column + 1 < cells.size()) {
+                    set(column + 1, " ");
+                }
+            }
+        }
+
+        private void truncate(int length) {
+            while (cells.size() > length) {
+                char[] removed = cells.remove(cells.size() - 1);
+                storedCharacters -= removed.length;
+                Arrays.fill(removed, '\0');
+            }
+        }
+
+        private void clear() {
+            truncate(0);
+            softWrapped = false;
+        }
+
+        private void erase(int from, int to) {
+            if (from == 0 && to >= cells.size()) {
+                softWrapped = false;
+            }
+            if (from < cells.size()) {
+                clearWideCharacter(from);
+            }
+            if (to < cells.size() && cells.get(to).length == 0) {
+                clearWideCharacter(to);
+            }
+            for (int index = from; index < Math.min(to, cells.size()); index++) {
+                set(index, " ");
+            }
+            truncate(visibleLength());
+        }
+
+        private int visibleLength() {
+            int length = cells.size();
+            while (length > 0 && cells.get(length - 1).length == 1
+                && cells.get(length - 1)[0] == ' ') {
+                length--;
+            }
+            return length;
+        }
+
+        private void appendTo(StringBuilder result, boolean preserveSpaces) {
+            int length = preserveSpaces ? cells.size() : visibleLength();
+            for (int index = 0; index < length; index++) {
+                result.append(cells.get(index));
+            }
         }
     }
 
@@ -201,8 +587,7 @@ public final class TerminalOutputBuffer {
         }
         int start = value.length - 1;
         int continuations = 0;
-        while (start >= 0 && continuations < 3
-            && (value[start] & 0xc0) == 0x80) {
+        while (start >= 0 && continuations < 3 && (value[start] & 0xc0) == 0x80) {
             continuations++;
             start--;
         }

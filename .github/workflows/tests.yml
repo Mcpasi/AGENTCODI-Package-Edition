@@ -92,8 +92,11 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y mksh
 
-      - name: Check command echo in narrow terminals
-        run: python3 -B .github/ci/test-terminal-shell.py
+      - name: Check terminal cursor rendering and shell editor
+        run: |
+          python3 -m venv "$RUNNER_TEMP/terminal-reference"
+          "$RUNNER_TEMP/terminal-reference/bin/pip" install pyte==0.8.2 wcwidth==0.2.13
+          "$RUNNER_TEMP/terminal-reference/bin/python" -B .github/ci/test-terminal-shell.py
 
   cpp:
     name: C++ host tests
