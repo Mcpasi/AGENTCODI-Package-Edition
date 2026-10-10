@@ -108,6 +108,33 @@ public final class TerminalOutputBuffer {
         resetAnsi();
     }
 
+    /** A new PTY has its own cursor and modes; keep the previous screen in scrollback. */
+    void startSession() {
+        finish();
+        int lastRow = cursorRow - 1;
+        for (int index = rows - 1; index > lastRow; index--) {
+            if (screen.get(index).visibleLength() > 0) {
+                lastRow = index;
+                break;
+            }
+        }
+        for (int index = 0; index < rows; index++) {
+            Line previous = screen.set(index, new Line());
+            storedCharacters++;
+            if (index <= lastRow) {
+                if (index == lastRow) {
+                    previous.softWrapped = false;
+                }
+                history.addLast(previous);
+            } else {
+                discardLine(previous);
+            }
+        }
+        cursorRow = cursorColumn = savedRow = savedColumn = 0;
+        autoWrap = true;
+        trimToLimit();
+    }
+
     public void clear() {
         for (Line line : history) {
             line.clear();
@@ -326,6 +353,12 @@ public final class TerminalOutputBuffer {
                 break;
             case 'K': eraseLine(parameter(values, 0, 0)); break;
             case 'J': eraseDisplay(parameter(values, 0, 0)); break;
+            case '@': shiftCharacters(count, true); break;
+            case 'P': shiftCharacters(count, false); break;
+            case 'X':
+                cursorColumn = Math.min(cursorColumn, columns - 1);
+                screen.get(cursorRow).erase(cursorColumn, Math.min(columns, cursorColumn + count));
+                break;
             case 's': saveCursor(); break;
             case 'u': restoreCursor(); break;
             default: break; // Styling and other non-cursor sequences stay invisible.
@@ -395,6 +428,39 @@ public final class TerminalOutputBuffer {
             screen.add(new Line());
             storedCharacters++;
         }
+    }
+
+    private void shiftCharacters(int requestedCount, boolean insert) {
+        cursorColumn = Math.min(cursorColumn, columns - 1);
+        int count = Math.min(requestedCount, columns - cursorColumn);
+        Line line = screen.get(cursorRow);
+        // Clear any wide glyph cut by the edit or by the viewport boundary.
+        if (line.get(cursorColumn).isEmpty()) {
+            line.clearWideCharacter(cursorColumn);
+        }
+        int boundary = insert ? columns - count : cursorColumn + count;
+        if (line.get(boundary).isEmpty()) {
+            line.clearWideCharacter(boundary);
+        }
+        if (line.get(columns).isEmpty()) {
+            line.clearWideCharacter(columns);
+        }
+        if (insert) {
+            for (int column = columns - 1; column >= cursorColumn + count; column--) {
+                line.set(column, line.get(column - count));
+            }
+            for (int column = cursorColumn; column < cursorColumn + count; column++) {
+                line.set(column, " ");
+            }
+        } else {
+            for (int column = cursorColumn; column < columns - count; column++) {
+                line.set(column, line.get(column + count));
+            }
+            for (int column = columns - count; column < columns; column++) {
+                line.set(column, " ");
+            }
+        }
+        line.truncate(line.visibleLength());
     }
 
     private void eraseLine(int mode) {

@@ -46,9 +46,12 @@ final class CodexTerminalSession implements AutoCloseable {
     private boolean closed;
     private int rows = 24;
     private int columns = 80;
+    private int ptyRows = 24;
+    private int ptyColumns = 80;
     private int exitCode = STILL_RUNNING;
     private String processId = "";
     private String failure = "";
+    private String resizeFailure = "";
 
     CodexTerminalSession(
         CodexAppServerClient client,
@@ -98,19 +101,17 @@ final class CodexTerminalSession implements AutoCloseable {
             if (closed) {
                 throw new IllegalStateException("Terminal session is closed");
             }
+            if (running || starting) {
+                resize(requestedRows, requestedColumns);
+                return;
+            }
+            output.startSession();
             if (rows != requestedRows || columns != requestedColumns) {
                 output.resize(requestedRows, requestedColumns);
                 revision++;
             }
             rows = requestedRows;
             columns = requestedColumns;
-            if (running) {
-                scheduleResize(processId, requestedRows, requestedColumns, false);
-                return;
-            }
-            if (starting) {
-                return;
-            }
             generation++;
             requestedGeneration = generation;
             requestedProcessId = "agentcodi-terminal-" + requestedGeneration;
@@ -121,6 +122,7 @@ final class CodexTerminalSession implements AutoCloseable {
             stopRequested = false;
             exitCode = STILL_RUNNING;
             failure = "";
+            resizeFailure = "";
             revision++;
         }
         try {
@@ -195,15 +197,21 @@ final class CodexTerminalSession implements AutoCloseable {
         final String currentProcessId;
         final boolean active;
         synchronized (lock) {
+            if (closed || (rows == requestedRows && columns == requestedColumns)) {
+                return;
+            }
             rows = requestedRows;
             columns = requestedColumns;
-            output.resize(requestedRows, requestedColumns);
-            revision++;
             currentProcessId = processId;
-            active = (running || starting) && !currentProcessId.isEmpty();
+            // Until command/exec is written, markCommandWritten sends the latest size.
+            active = running && !currentProcessId.isEmpty();
+            if (!active && !starting) {
+                output.resize(requestedRows, requestedColumns);
+                revision++;
+            }
         }
         if (active) {
-            scheduleResize(currentProcessId, requestedRows, requestedColumns, true);
+            scheduleResize(currentProcessId, requestedRows, requestedColumns);
         }
     }
 
@@ -353,9 +361,21 @@ final class CodexTerminalSession implements AutoCloseable {
             final int initialColumns;
             final String requestedPermissionProfile;
             synchronized (lock) {
+                if (closed || generation != requestedGeneration
+                    || !requestedProcessId.equals(processId) || stopRequested) {
+                    if (!closed && generation == requestedGeneration
+                        && requestedProcessId.equals(processId)) {
+                        processId = "";
+                        revision++;
+                    }
+                    return;
+                }
                 initialRows = rows;
                 initialColumns = columns;
                 requestedPermissionProfile = permissionProfileId;
+                // Output notifications may arrive before the afterWrite callback.
+                output.resize(initialRows, initialColumns);
+                revision++;
             }
             Map<String, Object> result = client.requestStreaming(
                 "command/exec",
@@ -398,12 +418,19 @@ final class CodexTerminalSession implements AutoCloseable {
         int currentRows;
         int currentColumns;
         synchronized (lock) {
-            if (closed || generation != requestedGeneration
-                || !requestedProcessId.equals(processId)) {
+            if (closed) {
+                return;
+            }
+            if (generation != requestedGeneration || !requestedProcessId.equals(processId)) {
+                // Cancellation can race with writing command/exec. Reap this old PTY too.
+                scheduleTerminate(requestedProcessId, false);
                 return;
             }
             starting = false;
             running = !stopRequested;
+            ptyRows = initialRows;
+            ptyColumns = initialColumns;
+            output.resize(initialRows, initialColumns);
             terminate = stopRequested;
             currentRows = rows;
             currentColumns = columns;
@@ -412,7 +439,7 @@ final class CodexTerminalSession implements AutoCloseable {
         if (terminate) {
             scheduleTerminate(requestedProcessId, false);
         } else if (currentRows != initialRows || currentColumns != initialColumns) {
-            scheduleResize(requestedProcessId, currentRows, currentColumns, false);
+            scheduleResize(requestedProcessId, currentRows, currentColumns);
         }
     }
 
@@ -510,8 +537,7 @@ final class CodexTerminalSession implements AutoCloseable {
     private void scheduleResize(
         final String targetProcessId,
         final int requestedRows,
-        final int requestedColumns,
-        final boolean tolerateStartingRace
+        final int requestedColumns
     ) {
         if (targetProcessId == null || targetProcessId.isEmpty()) {
             return;
@@ -522,7 +548,7 @@ final class CodexTerminalSession implements AutoCloseable {
                 public void run() {
                     try {
                         synchronized (lock) {
-                            if (closed || !targetProcessId.equals(processId)) {
+                            if (closed || !running || !targetProcessId.equals(processId)) {
                                 return;
                             }
                         }
@@ -534,9 +560,32 @@ final class CodexTerminalSession implements AutoCloseable {
                             ),
                             CONTROL_TIMEOUT_MS
                         );
+                        synchronized (lock) {
+                            if (closed || !targetProcessId.equals(processId)) {
+                                return;
+                            }
+                            ptyRows = requestedRows;
+                            ptyColumns = requestedColumns;
+                            output.resize(requestedRows, requestedColumns);
+                            revision++;
+                            if (!resizeFailure.isEmpty() && failure.equals(resizeFailure)) {
+                                failure = "";
+                                revision++;
+                            }
+                            resizeFailure = "";
+                        }
                     } catch (Throwable error) {
-                        if (!tolerateStartingRace) {
-                            recordControlFailure(targetProcessId, error);
+                        synchronized (lock) {
+                            if (closed || !targetProcessId.equals(processId)) {
+                                return;
+                            }
+                            if (rows == requestedRows && columns == requestedColumns) {
+                                rows = ptyRows;
+                                columns = ptyColumns;
+                            }
+                            resizeFailure = safeFailure(error);
+                            failure = resizeFailure;
+                            revision++;
                         }
                     }
                 }

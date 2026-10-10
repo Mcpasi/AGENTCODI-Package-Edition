@@ -90,8 +90,12 @@ public final class CodexSessionControllerTest {
         streamsTerminalInputResizeAndTermination();
         terminatesTerminalWhenOutputCapIsReached();
         rejectsTerminalCredentialsAndMalformedOutput();
+        restartsTerminalOnAFreshScreenWithoutLosingPreviousOutput();
+        reportsTerminalResizeFailures();
+        rejectedHeightResizePreservesAddressableScreenRows();
+        skipsAbandonedTerminalStartsDuringRapidRestart();
         usesVettedMcpConfigurationRpcs();
-        return 53;
+        return 57;
     }
 
     private static void continuesThreadPaginationWithoutEvictingLoadedChats() throws Exception {
@@ -1186,16 +1190,15 @@ public final class CodexSessionControllerTest {
             }, "carriage return edits the physical row at the starting PTY width");
             long previousRevision = controller.terminalSnapshot().getRevision();
             controller.resizeTerminal(3, 4);
-            TestSupport.assertTrue(controller.terminalSnapshot().getRevision() > previousRevision,
-                "resize invalidates the displayed snapshot");
-            TestSupport.assertEquals("1234\nQ", controller.terminalSnapshot().getOutput(),
-                "renderer clips the resized screen");
             waitFor(new Condition() {
                 @Override
                 public boolean isTrue() {
-                    return server.lastTerminalResizeParams != null;
+                    return server.lastTerminalResizeParams != null
+                        && "1234\nQ".equals(controller.terminalSnapshot().getOutput());
                 }
-            }, "matching resize reaches the remote PTY");
+            }, "matching resize reaches the remote PTY before updating the renderer");
+            TestSupport.assertTrue(controller.terminalSnapshot().getRevision() > previousRevision,
+                "acknowledged resize invalidates the displayed snapshot");
             server.notifyMessage("command/exec/outputDelta", JsonCodec.object(
                 "processId", processId,
                 "stream", "stdout",
@@ -1367,6 +1370,189 @@ public final class CodexSessionControllerTest {
             null,
             "/private/lib/libagentcodi-shell.so"
         );
+    }
+
+    private static void restartsTerminalOnAFreshScreenWithoutLosingPreviousOutput() throws Exception {
+        final FixtureServer server = new FixtureServer(true);
+        final CodexSessionController controller = terminalController(server);
+        try {
+            controller.start();
+            controller.startTerminal(3, 80);
+            waitFor(new Condition() {
+                @Override public boolean isTrue() {
+                    return controller.terminalSnapshot().getOutput().contains("terminal-ready ✓");
+                }
+            }, "first terminal starts");
+            controller.clearTerminalOutput();
+            server.notifyMessage("command/exec/outputDelta", JsonCodec.object(
+                "processId", server.lastCommandExecParams.get("processId"),
+                "stream", "stdout",
+                "deltaBase64", Base64.getEncoder().encodeToString(
+                    "old command with leftover characters\r".getBytes(StandardCharsets.UTF_8)),
+                "capReached", Boolean.FALSE));
+            waitFor(new Condition() {
+                @Override public boolean isTrue() {
+                    return controller.terminalSnapshot().getOutput().equals("old command with leftover characters");
+                }
+            }, "previous screen is populated");
+            controller.stopTerminal();
+            waitForTerminalExit(controller);
+            controller.startTerminal(3, 80);
+            waitFor(new Condition() {
+                @Override public boolean isTrue() {
+                    return controller.terminalSnapshot().getOutput().contains("terminal-ready ✓");
+                }
+            }, "restarted terminal produces its prompt");
+            TestSupport.assertEquals("old command with leftover characters\nterminal-ready ✓\n",
+                controller.terminalSnapshot().getOutput(), "new PTY starts at home and retains the old screen as history");
+            controller.stopTerminal();
+            waitForTerminalExit(controller);
+        } finally {
+            controller.close();
+        }
+    }
+
+    private static void reportsTerminalResizeFailures() throws Exception {
+        final FixtureServer server = new FixtureServer(true);
+        final CodexSessionController controller = terminalController(server);
+        try {
+            controller.start();
+            controller.startTerminal(3, 80);
+            waitFor(new Condition() {
+                @Override public boolean isTrue() {
+                    return controller.terminalSnapshot().getOutput().contains("terminal-ready ✓");
+                }
+            }, "terminal starts before failed resize");
+            server.terminalResizeError = "PTY resize rejected";
+            controller.resizeTerminal(3, 8);
+            waitFor(new Condition() {
+                @Override public boolean isTrue() {
+                    return server.lastTerminalResizeParams != null;
+                }
+            }, "failed resize reaches the server");
+            // An acknowledged write is queued after the resize and provides a barrier.
+            controller.sendTerminalInput(new char[] {'\n'});
+            waitFor(new Condition() {
+                @Override public boolean isTrue() {
+                    return server.lastTerminalInput != null && server.terminalInputWireBufferWiped;
+                }
+            }, "control queue has processed the rejected resize");
+            TestSupport.assertContains(controller.terminalSnapshot().getFailure(), "PTY resize rejected",
+                "a failed active resize is visible instead of silently losing PTY synchronization");
+            TestSupport.assertEquals("terminal-ready ✓\n", controller.terminalSnapshot().getOutput(),
+                "renderer keeps the actual PTY geometry after resize rejection");
+            server.terminalResizeError = "";
+            server.lastTerminalResizeParams = null;
+            controller.resizeTerminal(3, 8);
+            waitFor(new Condition() {
+                @Override public boolean isTrue() {
+                    return server.lastTerminalResizeParams != null
+                        && controller.terminalSnapshot().getFailure().isEmpty();
+                }
+            }, "same requested size can be retried and clears the resize failure");
+            TestSupport.assertEquals("terminal\n", controller.terminalSnapshot().getOutput(),
+                "successful retry applies the new viewport width");
+            controller.stopTerminal();
+            waitForTerminalExit(controller);
+        } finally {
+            controller.close();
+        }
+    }
+
+    private static void rejectedHeightResizePreservesAddressableScreenRows() throws Exception {
+        final FixtureServer server = new FixtureServer(true);
+        final CodexSessionController controller = terminalController(server);
+        try {
+            controller.start();
+            controller.startTerminal(3, 80);
+            waitFor(new Condition() {
+                @Override public boolean isTrue() {
+                    return controller.terminalSnapshot().getOutput().contains("terminal-ready ✓");
+                }
+            }, "terminal starts before rejected height change");
+            controller.clearTerminalOutput();
+            server.notifyMessage("command/exec/outputDelta", JsonCodec.object(
+                "processId", server.lastCommandExecParams.get("processId"),
+                "stream", "stdout", "capReached", Boolean.FALSE,
+                "deltaBase64", Base64.getEncoder().encodeToString(
+                    "first\r\nsecond\r\nlast".getBytes(StandardCharsets.UTF_8))));
+            waitFor(new Condition() {
+                @Override public boolean isTrue() {
+                    return "first\nsecond\nlast".equals(controller.terminalSnapshot().getOutput());
+                }
+            }, "three screen rows are populated");
+            server.terminalResizeError = "PTY resize rejected";
+            controller.resizeTerminal(1, 80);
+            controller.sendTerminalInput(new char[] {'\n'});
+            waitFor(new Condition() {
+                @Override public boolean isTrue() {
+                    return server.terminalInputWireBufferWiped;
+                }
+            }, "height rejection is processed");
+            server.notifyMessage("command/exec/outputDelta", JsonCodec.object(
+                "processId", server.lastCommandExecParams.get("processId"),
+                "stream", "stdout", "capReached", Boolean.FALSE,
+                "deltaBase64", Base64.getEncoder().encodeToString(
+                    "\u001b[HX".getBytes(StandardCharsets.UTF_8))));
+            waitFor(new Condition() {
+                @Override public boolean isTrue() {
+                    return controller.terminalSnapshot().getOutput().contains("X");
+                }
+            }, "home edits the first screen row after rejection");
+            TestSupport.assertEquals("Xirst\nsecond\nlast", controller.terminalSnapshot().getOutput(),
+                "rejected resize must not move addressable screen rows into history");
+            controller.stopTerminal();
+            waitForTerminalExit(controller);
+        } finally {
+            controller.close();
+        }
+    }
+
+    private static void skipsAbandonedTerminalStartsDuringRapidRestart() throws Exception {
+        final FixtureServer server = new FixtureServer(true);
+        final CodexSessionController controller = terminalController(server);
+        try {
+            controller.start();
+            controller.startTerminal(3, 80);
+            waitFor(new Condition() {
+                @Override public boolean isTrue() {
+                    return controller.terminalSnapshot().getOutput().contains("terminal-ready ✓");
+                }
+            }, "initial terminal starts");
+            server.holdTerminalCompletion = true;
+            controller.stopTerminal();
+            waitFor(new Condition() {
+                @Override public boolean isTrue() {
+                    return server.terminalCompletionHeld;
+                }
+            }, "first PTY termination is acknowledged while completion is pending");
+            controller.startTerminal(3, 80);
+            controller.stopTerminal();
+            controller.startTerminal(3, 80);
+            controller.resizeTerminal(3, 8);
+            server.holdTerminalCompletion = false;
+            server.releaseTerminalCompletion();
+            waitFor(new Condition() {
+                @Override public boolean isTrue() {
+                    return !"agentcodi-terminal-1".equals(server.lastCommandExecParams.get("processId"));
+                }
+            }, "next queued command is sent");
+            TestSupport.assertEquals("agentcodi-terminal-3", server.lastCommandExecParams.get("processId"),
+                "a canceled queued launch must not create an orphan PTY that blocks restart");
+            TestSupport.assertEquals(Long.valueOf(8L), JsonCodec.requireObject(
+                server.lastCommandExecParams.get("size"), "queued terminal size").get("cols"),
+                "queued launch uses the latest requested viewport");
+            waitFor(new Condition() {
+                @Override public boolean isTrue() {
+                    return controller.terminalSnapshot().isRunning()
+                        && controller.terminalSnapshot().getOutput().endsWith("terminal\n-ready ✓\n");
+                }
+            }, "latest requested terminal becomes usable");
+            controller.stopTerminal();
+            waitForTerminalExit(controller);
+        } finally {
+            controller.close();
+        }
     }
 
     private static void waitForTerminalExit(final CodexSessionController controller)
@@ -4837,11 +5023,14 @@ public final class CodexSessionControllerTest {
         private volatile Map<String, Object> lastTurnInterruptParams;
         private volatile Map<String, Object> lastCommandExecParams;
         private volatile Map<String, Object> lastTerminalResizeParams;
+        private volatile String terminalResizeError = "";
         private volatile Map<String, Object> lastTerminalTerminateParams;
         private volatile Map<String, Object> lastMcpConfigurationReadParams;
         private volatile Map<String, Object> lastMcpConfigurationWriteParams;
         private volatile boolean lastMcpConfigurationReloadHadParams;
         private volatile Map<String, Object> pendingTerminalRequest;
+        private volatile boolean holdTerminalCompletion;
+        private volatile boolean terminalCompletionHeld;
         private volatile byte[] lastTerminalInput;
         private volatile byte[] terminalInputWireBuffer;
         private volatile boolean terminalInputWireBufferWiped;
@@ -5326,21 +5515,31 @@ public final class CodexSessionControllerTest {
                 respond(request, JsonCodec.object());
             } else if ("command/exec/resize".equals(method)) {
                 lastTerminalResizeParams = JsonCodec.requireObject(request.get("params"), "params");
-                respond(request, JsonCodec.object());
+                if (terminalResizeError.isEmpty()) {
+                    respond(request, JsonCodec.object());
+                } else {
+                    incoming.offer(JsonCodec.stringify(JsonCodec.object(
+                        "id", request.get("id"),
+                        "error", JsonCodec.object("code", Long.valueOf(-32000L), "message", terminalResizeError))));
+                }
             } else if ("command/exec/terminate".equals(method)) {
                 lastTerminalTerminateParams = JsonCodec.requireObject(
                     request.get("params"),
                     "params"
                 );
-                respond(request, JsonCodec.object());
                 Map<String, Object> pending = pendingTerminalRequest;
-                pendingTerminalRequest = null;
-                if (pending != null) {
-                    respond(pending, JsonCodec.object(
-                        "exitCode", Long.valueOf(130L),
-                        "stdout", "",
-                        "stderr", ""
-                    ));
+                if (pending == null || !lastTerminalTerminateParams.get("processId").equals(
+                        lastCommandExecParams.get("processId"))) {
+                    incoming.offer(JsonCodec.stringify(JsonCodec.object(
+                        "id", request.get("id"), "error", JsonCodec.object(
+                            "code", Long.valueOf(-32000L), "message", "Unknown terminal process"))));
+                } else {
+                    respond(request, JsonCodec.object());
+                    if (!holdTerminalCompletion) {
+                        releaseTerminalCompletion();
+                    } else {
+                        terminalCompletionHeld = true;
+                    }
                 }
             } else if ("config/read".equals(method)) {
                 lastMcpConfigurationReadParams = JsonCodec.requireObject(
@@ -5416,6 +5615,16 @@ public final class CodexSessionControllerTest {
                 "id", request.get("id"),
                 "result", result
             )));
+        }
+
+        private void releaseTerminalCompletion() {
+            Map<String, Object> pending = pendingTerminalRequest;
+            pendingTerminalRequest = null;
+            terminalCompletionHeld = false;
+            if (pending == null) {
+                throw new AssertionError("no pending terminal completion");
+            }
+            respond(pending, JsonCodec.object("exitCode", Long.valueOf(130L), "stdout", "", "stderr", ""));
         }
 
         private void emitReviewStarted() {
