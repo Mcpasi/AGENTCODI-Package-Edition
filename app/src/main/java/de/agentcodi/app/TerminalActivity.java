@@ -13,9 +13,11 @@ import android.view.Gravity;
 import android.view.KeyEvent;
 import android.view.View;
 import android.view.ViewGroup;
+import android.view.WindowInsets;
 import android.view.inputmethod.EditorInfo;
 import android.widget.Button;
 import android.widget.EditText;
+import android.widget.HorizontalScrollView;
 import android.widget.LinearLayout;
 import android.widget.ScrollView;
 import android.widget.TextView;
@@ -129,7 +131,22 @@ public final class TerminalActivity extends Activity {
         LinearLayout root = new LinearLayout(this);
         root.setOrientation(LinearLayout.VERTICAL);
         root.setFitsSystemWindows(true);
-        root.setPadding(theme.dp(14), theme.dp(18), theme.dp(14), theme.dp(12));
+        final int sidePadding = theme.dp(14);
+        final int topPadding = theme.dp(18);
+        final int bottomPadding = theme.dp(12);
+        root.setPadding(sidePadding, topPadding, sidePadding, bottomPadding);
+        root.setOnApplyWindowInsetsListener(new View.OnApplyWindowInsetsListener() {
+            @Override
+            public WindowInsets onApplyWindowInsets(View view, WindowInsets insets) {
+                view.setPadding(
+                    sidePadding + insets.getSystemWindowInsetLeft(),
+                    topPadding + insets.getSystemWindowInsetTop(),
+                    sidePadding + insets.getSystemWindowInsetRight(),
+                    bottomPadding + insets.getSystemWindowInsetBottom()
+                );
+                return insets.consumeSystemWindowInsets();
+            }
+        });
         root.setBackgroundColor(theme.page);
 
         LinearLayout topBar = new LinearLayout(this);
@@ -209,10 +226,16 @@ public final class TerminalActivity extends Activity {
         outputView = theme.text(getString(R.string.terminal_output_empty), 13, 0xFFE5EEF8);
         outputView.setTypeface(Typeface.MONOSPACE);
         outputView.setTextIsSelectable(false);
-        outputView.setHorizontallyScrolling(false);
+        outputView.setHorizontallyScrolling(true);
         outputView.setLineSpacing(0.0f, 1.05f);
         outputView.setPadding(theme.dp(12), theme.dp(12), theme.dp(12), theme.dp(12));
-        outputScroll.addView(outputView, new ScrollView.LayoutParams(
+        HorizontalScrollView horizontalOutput = new HorizontalScrollView(this);
+        horizontalOutput.setFillViewport(true);
+        horizontalOutput.addView(outputView, new HorizontalScrollView.LayoutParams(
+            ViewGroup.LayoutParams.WRAP_CONTENT,
+            ViewGroup.LayoutParams.WRAP_CONTENT
+        ));
+        outputScroll.addView(horizontalOutput, new ScrollView.LayoutParams(
             ViewGroup.LayoutParams.MATCH_PARENT,
             ViewGroup.LayoutParams.WRAP_CONTENT
         ));
@@ -243,7 +266,13 @@ public final class TerminalActivity extends Activity {
             new char[] {0x03}
         );
         controls.addView(controlCButton, weightedButtonParams(1.0f, 0));
-        tabButton = controlButton(getString(R.string.terminal_tab), new char[] {'\t'});
+        tabButton = theme.compactButton(getString(R.string.terminal_tab));
+        tabButton.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                sendDraft('\t');
+            }
+        });
         controls.addView(tabButton, weightedButtonParams(1.0f, 6));
         escapeButton = controlButton(getString(R.string.terminal_escape), new char[] {0x1b});
         controls.addView(escapeButton, weightedButtonParams(1.0f, 6));
@@ -283,8 +312,13 @@ public final class TerminalActivity extends Activity {
         inputView.setOnEditorActionListener(new TextView.OnEditorActionListener() {
             @Override
             public boolean onEditorAction(TextView view, int actionId, KeyEvent event) {
-                if (actionId == EditorInfo.IME_ACTION_SEND
-                    || (event != null && event.getKeyCode() == KeyEvent.KEYCODE_ENTER)) {
+                if (event != null && event.getKeyCode() == KeyEvent.KEYCODE_ENTER) {
+                    if (event.getAction() == KeyEvent.ACTION_DOWN && event.getRepeatCount() == 0) {
+                        sendCommand();
+                    }
+                    return true;
+                }
+                if (actionId == EditorInfo.IME_ACTION_SEND) {
                     sendCommand();
                     return true;
                 }
@@ -336,8 +370,12 @@ public final class TerminalActivity extends Activity {
     }
 
     private void sendCommand() {
+        sendDraft('\n');
+    }
+
+    private void sendDraft(char suffix) {
         Editable editable = inputView.getText();
-        if (editable == null || editable.length() == 0) {
+        if (editable == null) {
             return;
         }
         if (editable.length() > MAXIMUM_COMMAND_CHARACTERS) {
@@ -354,7 +392,7 @@ public final class TerminalActivity extends Activity {
         for (int index = 0; index < editable.length(); index++) {
             command[index] = editable.charAt(index);
         }
-        command[command.length - 1] = '\n';
+        command[command.length - 1] = suffix;
         wipeInput();
         sendCharacters(command);
     }
@@ -418,19 +456,32 @@ public final class TerminalActivity extends Activity {
         inputView.setEnabled(running);
 
         if (renderedRevision != terminal.getRevision()) {
+            boolean followOutput = renderedRevision == Long.MIN_VALUE || outputIsAtBottom();
             renderedRevision = terminal.getRevision();
-            outputView.setText(terminal.getOutput().isEmpty()
+            String visibleOutput = terminal.getOutput().isEmpty()
                 ? getString(R.string.terminal_output_empty)
-                : terminal.getOutput());
-            outputScroll.post(new Runnable() {
-                @Override
-                public void run() {
-                    if (refreshActive && !destroyed && uiReady) {
-                        outputScroll.fullScroll(View.FOCUS_DOWN);
-                    }
+                : terminal.getOutput();
+            if (!visibleOutput.contentEquals(outputView.getText())) {
+                outputView.setText(visibleOutput);
+                if (followOutput) {
+                    outputScroll.post(new Runnable() {
+                        @Override
+                        public void run() {
+                            if (refreshActive && !destroyed && uiReady) {
+                                outputScroll.scrollTo(0, outputScroll.getChildAt(0).getHeight());
+                            }
+                        }
+                    });
                 }
-            });
+            }
         }
+    }
+
+    private boolean outputIsAtBottom() {
+        int viewportHeight = outputScroll.getHeight()
+            - outputScroll.getPaddingTop() - outputScroll.getPaddingBottom();
+        int bottom = Math.max(0, outputScroll.getChildAt(0).getHeight() - viewportHeight);
+        return outputScroll.getScrollY() >= bottom - theme.dp(2);
     }
 
     private void resizeTerminal() {
@@ -451,10 +502,11 @@ public final class TerminalActivity extends Activity {
     }
 
     private int terminalColumns() {
-        if (outputView == null || outputView.getWidth() <= 0) {
+        if (outputScroll == null || outputView == null || outputScroll.getWidth() <= 0) {
             return 80;
         }
-        int availableWidth = outputView.getWidth()
+        int availableWidth = outputScroll.getWidth()
+            - outputScroll.getPaddingLeft() - outputScroll.getPaddingRight()
             - outputView.getCompoundPaddingLeft() - outputView.getCompoundPaddingRight();
         float characterWidth = Math.max(1.0f, outputView.getPaint().measureText("M"));
         return Math.max(1, Math.min(1000, (int) (availableWidth / characterWidth)));

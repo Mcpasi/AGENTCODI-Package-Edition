@@ -57,8 +57,9 @@ for aar in (build / "lib").glob("*.aar"):
     "android_custom_package=de.agentcodi.app\n", encoding="utf-8")
 PY
 classpath="$BUILD_DIR/classes:$BUILD_DIR/test-classes:$BUILD_DIR/lib/*:$ANDROID_JAR"
-javac -encoding UTF-8 -cp "$classpath" -d "$BUILD_DIR/test-classes" \
-  "$PROJECT_ROOT/tests/android/de/agentcodi/app/ChatConversationUiTest.java"
+find "$PROJECT_ROOT/tests/android" -type f -name '*.java' -print | sort > "$BUILD_DIR/test-sources.txt"
+javac -encoding UTF-8 -cp "$classpath" -d "$BUILD_DIR/test-classes" @"$BUILD_DIR/test-sources.txt"
 java -Drobolectric.dependency.repo.url=https://repo.maven.apache.org/maven2 \
   -Dagentcodi.chatUiReport="$REPORT_DIR" -cp "$classpath" \
-  org.junit.runner.JUnitCore de.agentcodi.app.ChatConversationUiTest | tee "$REPORT_DIR/results.txt"
+  org.junit.runner.JUnitCore de.agentcodi.app.ChatConversationUiTest de.agentcodi.app.TerminalUiTest \
+  | tee "$REPORT_DIR/results.txt"

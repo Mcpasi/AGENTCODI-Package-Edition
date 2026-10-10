@@ -42,7 +42,9 @@ public final class TerminalOutputBufferTest {
         removesCharsetAndOscSequences();
         boundsCursorParameters();
         savesAndRestoresTheCursor();
-        return 29;
+        editsCharactersWithoutLeavingStaleCells();
+        characterEditsPreserveCompleteWideGlyphs();
+        return 31;
     }
 
     private static void backspaceMovesWithoutDeletingAndPreservesUnicode() {
@@ -353,6 +355,49 @@ public final class TerminalOutputBufferTest {
         TerminalOutputBuffer buffer = terminal(3, 8);
         append(buffer, "abc\u001b[sXY\u001b[uZ");
         TestSupport.assertEquals("abcZY", buffer.snapshot(), "restored cursor overwrites its saved cell");
+    }
+
+    private static void editsCharactersWithoutLeavingStaleCells() {
+        TerminalOutputBuffer buffer = terminal(3, 8);
+        append(buffer, "abcdef\r\u001b[2C\u001b[2P");
+        TestSupport.assertEquals("abef", buffer.snapshot(), "delete shifts the remaining cells left");
+        append(buffer, "Z");
+        TestSupport.assertEquals("abZf", buffer.snapshot(), "delete leaves the cursor in place");
+        buffer.clear();
+        append(buffer, "abcd\r\u001b[2C\u001b[2@XY");
+        TestSupport.assertEquals("abXYcd", buffer.snapshot(), "insert makes room for the new characters");
+        buffer.clear();
+        append(buffer, "abcdef\r\u001b[2C\u001b[2X");
+        TestSupport.assertEquals("ab  ef", buffer.snapshot(), "erase clears cells without shifting the suffix");
+        buffer.clear();
+        append(buffer, "abcdefgh\r\u001b[3C\u001b[999999999999PZ");
+        TestSupport.assertEquals("abcZ", buffer.snapshot(), "large delete counts stop at the right margin");
+        buffer.clear();
+        append(buffer, "abcdefgh\r\u001b[6C\u001b[2@XY");
+        TestSupport.assertEquals("abcdefXY", buffer.snapshot(), "insert discards text pushed past the margin");
+        buffer.resize(3, 12);
+        TestSupport.assertEquals("abcdefXY", buffer.snapshot(), "widening does not resurrect discarded text");
+    }
+
+    private static void characterEditsPreserveCompleteWideGlyphs() {
+        TerminalOutputBuffer buffer = terminal(3, 8);
+        append(buffer, "a中bc\r\u001b[2C\u001b[P");
+        TestSupport.assertEquals("a bc", buffer.snapshot(), "delete through a wide continuation clears its glyph");
+        buffer.clear();
+        append(buffer, "a中bc\r\u001b[2C\u001b[@");
+        TestSupport.assertEquals("a   bc", buffer.snapshot(), "insert through a wide continuation clears its glyph");
+        buffer.clear();
+        append(buffer, "a中bc\r\u001b[2C\u001b[X");
+        TestSupport.assertEquals("a  bc", buffer.snapshot(), "erase clears both cells of a wide glyph");
+        buffer.clear();
+        append(buffer, "abcdef中\r\u001b[@");
+        TestSupport.assertEquals(" abcdef", buffer.snapshot(), "insert cannot leave half a wide glyph at the margin");
+        buffer.clear();
+        append(buffer, "ab中cd");
+        buffer.resize(3, 3);
+        append(buffer, "\r\u001b[@");
+        buffer.resize(3, 8);
+        TestSupport.assertFalse(buffer.snapshot().contains("中"), "edit clears a glyph split by the narrow margin");
     }
 
     private static boolean hasUnpairedSurrogate(String value) {
