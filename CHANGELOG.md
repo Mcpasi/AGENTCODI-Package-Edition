@@ -12,6 +12,26 @@
   geometry with terminal start and resize. Retain offscreen text across width
   changes and overwrite owned screen and scrollback character arrays when
   clearing output. Verify real mksh redraws against an independent VT parser.
+- Fix terminal submission: accept empty Enter presses, send hardware Enter only
+  once per keypress, and forward the current input draft before Tab completion.
+- Handle ANSI character insertion, deletion and erasure, including wide Unicode
+  characters, so interactive shell edits render correctly.
+- Preserve physical terminal lines and allow horizontal scrolling through wide
+  output and scrollback. Follow new output only while reading at the bottom;
+  preserve the reading position and input focus when reviewing earlier output.
+- Apply system-bar insets in addition to the terminal's intended content padding.
+- Start each new PTY with a fresh screen, cursor and terminal modes while keeping
+  previous output in scrollback. Skip canceled starts and terminate stale PTYs
+  during rapid start/stop/start sequences.
+- Synchronize terminal geometry after the server confirms a resize. Preserve the
+  last accepted dimensions after a rejected resize, allow retrying, and clear
+  the resize error after a successful retry.
+- Terminal fix validation: 371 Java host tests and 60 Android chat/terminal UI
+  checks pass on API 29 and 35. Regression coverage includes empty and repeated
+  Enter events, Tab drafts, ANSI edits, wide output, reading position and focus,
+  system insets, session restarts, canceled starts and rejected resize retries.
+  Android source/resource compilation and architecture checks pass; terminal UI
+  regressions are included in the CI runner.
 - Make every loaded chat accessible in the recycled thread list. Remove the
   80-row display limit so all entries from the initial four pages remain
   reachable, including chats beyond row 80.
