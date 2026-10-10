@@ -254,7 +254,7 @@ public final class TerminalOutputBuffer {
                 case '\n':
                 case 0x0b:
                 case 0x0c: screen.get(cursorRow).softWrapped = false; lineFeed(); break;
-                case '\b': cursorColumn = Math.max(0, cursorColumn - 1); break;
+                case '\b': moveCursorLeft(1); break;
                 case '\t': cursorColumn = Math.min(columns - 1, (cursorColumn / 8 + 1) * 8); break;
                 default:
                     if (character >= 0x20 && character != 0x7f
@@ -265,6 +265,12 @@ public final class TerminalOutputBuffer {
             }
         }
         trimToLimit();
+    }
+
+    private void moveCursorLeft(int count) {
+        // Pending wrap is a flag encoded as columns, not a physical cursor cell.
+        // Cancel it before moving left from the actual rightmost column.
+        cursorColumn = Math.max(0, Math.min(cursorColumn, columns - 1) - count);
     }
 
     private boolean consumeAnsi(int character) {
@@ -341,7 +347,7 @@ public final class TerminalOutputBuffer {
             case 'A': cursorRow = Math.max(0, cursorRow - count); break;
             case 'B': cursorRow = Math.min(rows - 1, cursorRow + count); break;
             case 'C': cursorColumn = Math.min(columns - 1, cursorColumn + count); break;
-            case 'D': cursorColumn = Math.max(0, cursorColumn - count); break;
+            case 'D': moveCursorLeft(count); break;
             case 'E': cursorRow = Math.min(rows - 1, cursorRow + count); cursorColumn = 0; break;
             case 'F': cursorRow = Math.max(0, cursorRow - count); cursorColumn = 0; break;
             case 'G': cursorColumn = Math.min(columns - 1, count - 1); break;

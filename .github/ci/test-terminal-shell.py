@@ -6,6 +6,7 @@ import os
 from pathlib import Path
 import pty
 import select
+import shlex
 import shutil
 import signal
 import struct
@@ -49,10 +50,15 @@ extern "C" int __wrap_execv(const char* path, char* const args[]) {
         ], check=True)
         renderer = cls.build / "RenderTerminal.java"
         renderer.write_text('''import de.agentcodi.core.TerminalOutputBuffer;
+import de.agentcodi.core.PackageDiagnosticsCommand;
 import java.io.DataInputStream;
 import java.io.EOFException;
 public final class RenderTerminal {
   public static void main(String[] args) throws Exception {
+    if (args.length == 1 && args[0].equals("package-diagnostics")) {
+      System.out.print(PackageDiagnosticsCommand.create());
+      return;
+    }
     TerminalOutputBuffer buffer = new TerminalOutputBuffer();
     DataInputStream input = new DataInputStream(System.in);
     while (true) {
@@ -74,8 +80,11 @@ public final class RenderTerminal {
         subprocess.run([
             "javac", "-encoding", "UTF-8", "-d", str(cls.build), str(renderer),
             str(core / "TerminalOutputBuffer.java"), str(core / "CrashReportFormatter.java"),
-            str(core / "BuildIdentity.java"),
+            str(core / "BuildIdentity.java"), str(core / "PackageDiagnosticsCommand.java"),
         ], check=True)
+        cls.diagnostics_command = subprocess.run([
+            "java", "-cp", str(cls.build), "RenderTerminal", "package-diagnostics",
+        ], stdout=subprocess.PIPE, check=True).stdout
         cls.environment = dict(os.environ, AGENTCODI_TEST_MKSH=cls.mksh,
                                PS1=PROMPT, TERM="xterm", ENV="/dev/null",
                                HISTFILE="/dev/null", LC_ALL="C.UTF-8")
@@ -175,6 +184,17 @@ public final class RenderTerminal {
                 self.assert_matches_reference()
                 self.assertIn(text, self.rendered().replace("\n", ""))
 
+    def test_left_movements_after_the_right_margin_match_the_reference(self):
+        for movement in (b"\b", b"\x1b[D", b"\x1b[2D", b"\b\b", b"\x1b[20D"):
+            with self.subTest(movement=movement):
+                self.reference = pyte.HistoryScreen(8, 3, history=4096)
+                self.stream = pyte.ByteStream(self.reference)
+                data = b"12345678" + movement + b"Z"
+                self.events = bytearray(struct.pack(">iii", 2, 3, 8)
+                                        + struct.pack(">ii", 1, len(data)) + data)
+                self.stream.feed(data)
+                self.assert_matches_reference()
+
     def test_tab_completion_remains_available(self):
         (Path(self.workspace.name) / "completion-fixture-unique.txt").write_text(
             "completion-success\n")
@@ -217,6 +237,56 @@ public final class RenderTerminal {
         self.assertNotIn("\nshould-not-run", self.rendered())
         self.assertIn("\nafter-interrupt\n", self.rendered())
         self.assert_matches_reference()
+
+    def prepare_diagnostics(self):
+        prefix = Path(self.workspace.name) / "prefix with 'quote"
+        (prefix / "bin").mkdir(parents=True)
+        (prefix / "var/lib/dpkg").mkdir(parents=True)
+        query = shutil.which("dpkg-query")
+        self.assertIsNotNone(query, "Package diagnostics require host dpkg-query")
+        (prefix / "bin/dpkg-query").symlink_to(query)
+        (prefix / "var/lib/dpkg/status").write_text(
+            "Package: diagnostic-fixture\nStatus: hold reinstreq installed\n"
+            "Architecture: arm64\nVersion: 1.2-3\n"
+            "Maintainer: Test <fixture@example.invalid>\nDescription: fixture\n\n")
+        # Read PREFIX from the live shell without exporting it.
+        self.send(("unset PREFIX; PREFIX=" + shlex.quote(str(prefix))
+                   + "; PATH=$PREFIX/bin:$PATH\n").encode())
+        return prefix
+
+    def assert_diagnostics_report(self, prefix):
+        text = self.rendered().replace("\n", "")
+        self.assertIn("PREFIX=" + str(prefix), text)
+        self.assertIn("dpkg-query=" + str(prefix / "bin/dpkg-query"), text)
+        self.assertIn("diagnostic-fixture", text)
+        self.assertIn("hold reinstreq installed", text)
+
+    def test_package_diagnostics_handles_integer_shell_variables(self):
+        prefix = self.prepare_diagnostics()
+        self.send(b"typeset -i agentcodi_program=13 agentcodi_path=17\n")
+        self.send(self.diagnostics_command)
+        self.assert_diagnostics_report(prefix)
+        self.send(b"echo caller-values=$agentcodi_program,$agentcodi_path\n")
+        self.assertIn("caller-values=13,17", self.rendered().replace("\n", ""))
+
+    def test_package_diagnostics_bypasses_aliases_and_preserves_them(self):
+        prefix = self.prepare_diagnostics()
+        self.send(b"alias printf='echo printf-alias'\n")
+        self.send(b"alias command='echo command-alias'\n")
+        self.send(self.diagnostics_command)
+        self.assert_diagnostics_report(prefix)
+        self.send(b"printf; command\n")
+        self.assertIn("printf-alias\ncommand-alias\n", self.rendered())
+
+    def test_package_diagnostics_bypasses_helper_functions_and_preserves_tools(self):
+        prefix = self.prepare_diagnostics()
+        self.send(b"printf() { echo printf-function; }; command() { echo command-function; }\n")
+        self.send(b"node() { echo node-function; }\n")
+        self.send(self.diagnostics_command)
+        self.assert_diagnostics_report(prefix)
+        self.assertIn("node=node", self.rendered().replace("\n", ""))
+        self.send(b"printf; command; node\n")
+        self.assertIn("printf-function\ncommand-function\nnode-function\n", self.rendered())
 
     def test_noninteractive_commands_retain_quoting_and_exit_status(self):
         result = subprocess.run([str(self.binary), "-c", "printf '%s' 'a b'; exit 7"],

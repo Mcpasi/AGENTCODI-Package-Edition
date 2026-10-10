@@ -4,6 +4,25 @@
 
 **In development.**
 
+- Fix live package diagnostics being redirected through user `printf` or
+  `command` aliases and functions. Use shell builtins for internal helpers while
+  preserving user tool resolution and the interactive shell's customizations.
+- Remove diagnostic scratch-variable assignments so inherited readonly or
+  integer shell variables cannot abort the report. Keep non-exported live paths,
+  caller variables, positional arguments and shell options intact.
+- Append the complete dpkg status to the existing package name, version and
+  state columns. Expose held packages and `reinstreq` errors that were previously
+  hidden behind an `installed` state.
+- Fix Backspace and ANSI cursor-left after reaching the terminal's right margin.
+  Cancel the pending wrap before moving from the physical last cell, preventing
+  stale characters during long command and diagnostic redraws.
+- Package diagnostics validation: all 379 Java host tests, 14 mksh/VT tests and
+  architecture checks pass. Eight added Java checks and four added mksh/VT checks
+  cover helper collisions, readonly/integer variables, missing tools,
+  non-exported paths, caller-state preservation, complete package status and
+  cursor movement after pending wrap. Replay the captured failing PTY output
+  against the independent VT reference, including every byte boundary.
+  The bug reproductions fail on the previous implementation.
 - Fix duplicated terminal command fragments on narrow screens at the renderer:
   track PTY-sized text cells and cursor positions, apply carriage returns,
   backspaces and ANSI cursor/erase sequences, and wrap output at the PTY margin.

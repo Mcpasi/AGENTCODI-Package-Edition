@@ -23,7 +23,16 @@ public final class PackageDiagnosticsCommandTest {
             fixture.reportsFailedQuery();
             fixture.rejectsUnsetPrefixWithoutQueryingHost();
         }
-        return 5;
+        try (Fixture fixture = new Fixture()) {
+            fixture.ignoresDiagnosticHelperAliases();
+            fixture.ignoresDiagnosticHelperFunctions();
+            fixture.reportsUnavailableCommandsWithCustomizedHelpers();
+            fixture.supportsReadOnlyScratchVariables();
+            fixture.reportsUnexportedLiveEnvironment();
+            fixture.preservesCallerState();
+            fixture.reportsCompletePackageStatus();
+        }
+        return 12;
     }
 
     private static final class Fixture implements AutoCloseable {
@@ -94,10 +103,126 @@ public final class PackageDiagnosticsCommandTest {
                 "unset prefix never queries the host database");
         }
 
+        private void ignoresDiagnosticHelperAliases() throws Exception {
+            String output = report(true, 0,
+                "alias printf='echo diagnostic-alias-invoked'\n"
+                    + "alias command='echo diagnostic-alias-invoked'\n", "");
+            assertManagedReport(output);
+            TestSupport.assertFalse(output.contains("diagnostic-alias-invoked"),
+                "diagnostics bypass helper aliases");
+        }
+
+        private void ignoresDiagnosticHelperFunctions() throws Exception {
+            String output = report(true, 0,
+                "printf() { echo diagnostic-function-invoked; }\n"
+                    + "command() { echo diagnostic-function-invoked; }\n", "");
+            assertManagedReport(output);
+            TestSupport.assertFalse(output.contains("diagnostic-function-invoked"),
+                "read-only diagnostics do not execute user helper functions");
+        }
+
+        private void supportsReadOnlyScratchVariables() throws Exception {
+            assertManagedReport(report(true, 0,
+                "readonly agentcodi_program=caller-program agentcodi_path=caller-path\n",
+                ""));
+            assertManagedReport(report(true, 0,
+                "readonly agentcodi_path=caller-path\n", ""));
+        }
+
+        private void reportsUnavailableCommandsWithCustomizedHelpers() throws Exception {
+            String output = report(true, 0,
+                "PATH=$PREFIX/bin\n"
+                    + "printf() { echo diagnostic-helper-invoked; }\n"
+                    + "command() { echo diagnostic-helper-invoked; }\n", "");
+            assertManagedReport(output);
+            TestSupport.assertContains(output, "apt=<unavailable>\n",
+                "missing commands remain explicit when helpers are customized");
+            TestSupport.assertFalse(output.contains("diagnostic-helper-invoked"),
+                "missing-command fallback uses the shell builtin");
+        }
+
+        private void reportsUnexportedLiveEnvironment() throws Exception {
+            String output = report(false, 0,
+                "PREFIX=$HOME/../\"prefix with 'quote\"\n"
+                    + "unset TMPDIR\nTMPDIR=$HOME/live-tmp\n"
+                    + "node() { echo tool-function-must-not-run; }\n", "");
+            TestSupport.assertContains(output, "TMPDIR=" + home + "/live-tmp",
+                "non-exported shell variables are read in the current shell");
+            TestSupport.assertContains(output, "node=node",
+                "user tool functions remain visible to command resolution");
+            TestSupport.assertFalse(output.contains("tool-function-must-not-run"),
+                "resolving a user tool never executes it");
+            TestSupport.assertContains(output, "nodejs-lts\t24.18.0-1\tinstalled",
+                "non-exported prefix still queries the managed database");
+        }
+
+        private void preservesCallerState() throws Exception {
+            String output = report(true, 0,
+                "set -eu\n"
+                    + "set -- caller-first 'caller second'\n"
+                    + "agentcodi_program=caller-program\n"
+                    + "agentcodi_path=caller-path\n"
+                    + "printf() { echo caller-printf; }\n"
+                    + "command() { echo caller-command; }\n"
+                    + "alias printf='echo caller-printf-alias'\n"
+                    + "alias command='echo caller-command-alias'\n",
+                "if [ \"$#\" -eq 2 ] && [ \"$1\" = caller-first ]"
+                    + " && [ \"$2\" = 'caller second' ]"
+                    + " && [ \"$agentcodi_program\" = caller-program ]"
+                    + " && [ \"$agentcodi_path\" = caller-path ];"
+                    + " then echo caller-state-preserved; else exit 8; fi\n"
+                    + "printf\ncommand\n"
+                    + "\\printf\n\\command\n"
+                    + "case $- in *e*u*|*u*e*) echo caller-options-preserved;;"
+                    + " *) exit 9;; esac\n");
+            TestSupport.assertContains(output, "\ncaller-state-preserved\n",
+                "caller positional arguments and variables survive the subshell");
+            TestSupport.assertContains(output, "\ncaller-command\n",
+                "caller command function survives the subshell");
+            TestSupport.assertContains(output, "caller-printf-alias",
+                "caller printf alias survives the subshell");
+            TestSupport.assertContains(output, "caller-command-alias",
+                "caller command alias survives the subshell");
+            TestSupport.assertContains(output, "\ncaller-printf\n",
+                "caller printf function survives the subshell");
+            TestSupport.assertContains(output, "caller-options-preserved",
+                "caller errexit and nounset are unchanged");
+        }
+
+        private void reportsCompletePackageStatus() throws Exception {
+            String status = "Package: damaged-fixture\nStatus: install reinstreq installed\n"
+                + "Architecture: arm64\nVersion: 2.0-1\nDescription: damaged package\n\n"
+                + "Package: held-fixture\nStatus: hold ok installed\n"
+                + "Architecture: arm64\nVersion: 3.0-1\nDescription: held package\n\n";
+            Files.write(database, status.getBytes(StandardCharsets.UTF_8));
+            String output = report(true, 0);
+            TestSupport.assertContains(output,
+                "damaged-fixture\t2.0-1\tinstalled\tinstall reinstreq installed",
+                "reinstallation-required flag is visible alongside the package state");
+            TestSupport.assertContains(output,
+                "held-fixture\t3.0-1\tinstalled\thold ok installed",
+                "hold selection is visible alongside the package state");
+        }
+
+        private void assertManagedReport(String output) {
+            TestSupport.assertContains(output, "PREFIX=" + prefix,
+                "helper customization does not alter live paths");
+            TestSupport.assertContains(output, "dpkg-query=" + query,
+                "helper customization does not alter command resolution");
+            TestSupport.assertContains(output, "nodejs-lts\t24.18.0-1\tinstalled",
+                "helper customization does not prevent querying managed packages");
+        }
+
         private String report(boolean hasPrefix, int expectedExit) throws Exception {
+            return report(hasPrefix, expectedExit, "", "");
+        }
+
+        private String report(boolean hasPrefix, int expectedExit, String setup, String after)
+            throws Exception {
             Path output = root.resolve("report.txt");
             ProcessBuilder builder = new ProcessBuilder(
-                findExecutable("sh").toString(), "-c", PackageDiagnosticsCommand.create()
+                findExecutable("sh").toString(), "-c",
+                setup + PackageDiagnosticsCommand.create() + after
             ).redirectErrorStream(true).redirectOutput(output.toFile());
             Map<String, String> environment = builder.environment();
             environment.put("PATH", prefix.resolve("bin") + File.pathSeparator
