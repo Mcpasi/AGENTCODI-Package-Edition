@@ -9,8 +9,9 @@
   backspaces and ANSI cursor/erase sequences, and wrap output at the PTY margin.
   Restore mksh's interactive line editor, including Tab completion and history
   navigation. Keep bounded, redacted in-memory output and synchronize renderer
-  geometry with terminal start and resize. Verify real mksh redraws against an
-  independent VT terminal implementation.
+  geometry with terminal start and resize. Retain offscreen text across width
+  changes and overwrite owned screen and scrollback character arrays when
+  clearing output. Verify real mksh redraws against an independent VT parser.
 - Make every loaded chat accessible in the recycled thread list. Remove the
   80-row display limit so all entries from the initial four pages remain
   reachable, including chats beyond row 80.

@@ -111,8 +111,9 @@ public final class RenderTerminal {
         fcntl.ioctl(descriptor, termios.TIOCSWINSZ, struct.pack("HHHH", 24, columns, 0, 0))
         if self.pid != 0:
             self.events.extend(struct.pack(">iii", 2, 24, columns))
-            self.reference.resize(columns=columns)
-            # pyte 0.8.2 resizes cells but leaves an out-of-bounds cursor on shrink.
+            # Configure only the viewport: pyte.resize() destructively drops right cells.
+            # Keep its independent VT parser while retaining offscreen output on resize.
+            self.reference.columns = columns
             self.reference.ensure_hbounds()
 
     def read_until(self, marker):
@@ -181,6 +182,17 @@ public final class RenderTerminal {
         self.read_until(b"-un")
         self.send(b"\t\n")
         self.assertIn("\ncompletion-success\n", self.rendered())
+        self.assert_matches_reference()
+
+    def test_previous_output_returns_after_narrowing_and_widening(self):
+        text = "retained-output-1234567890"
+        self.send(("printf '%s\\n' '" + text + "'\n").encode())
+        self.assertIn("\n" + text + "\n", self.rendered())
+        self.resize(10)
+        self.assertNotIn(text, self.rendered())
+        self.assert_matches_reference()
+        self.resize(42)
+        self.assertIn("\n" + text + "\n", self.rendered())
         self.assert_matches_reference()
 
     def test_history_navigation_remains_available(self):

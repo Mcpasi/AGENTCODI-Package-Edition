@@ -3,7 +3,10 @@ package de.agentcodi.tests;
 import de.agentcodi.core.TerminalOutputBuffer;
 
 import java.nio.charset.StandardCharsets;
+import java.lang.reflect.Field;
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.List;
 
 public final class TerminalOutputBufferTest {
     private TerminalOutputBufferTest() {
@@ -24,6 +27,12 @@ public final class TerminalOutputBufferTest {
         erasesLinesAndDisplayWithoutMovingTheCursor();
         tabsAdvanceToCellStops();
         resizingHeightPreservesPromptAndScrollback();
+        restoresScreenCellsAfterNarrowingAndWidening();
+        restoresWideGlyphsAfterNarrowingAndWidening();
+        clearOverwritesScreenHistoryAndHiddenCells();
+        erasingAfterResizeDoesNotRestoreHiddenText();
+        redactsTokensBeforeClippingTheViewport();
+        boundsAndWipesStoredCellsAfterNarrowing();
         resizingWidthClipsTheScreenAndUpdatesTheCursor();
         drawsWideAndCombiningUnicodeCells();
         redactsCredentialsAcrossSoftWraps();
@@ -33,7 +42,7 @@ public final class TerminalOutputBufferTest {
         removesCharsetAndOscSequences();
         boundsCursorParameters();
         savesAndRestoresTheCursor();
-        return 23;
+        return 29;
     }
 
     private static void backspaceMovesWithoutDeletingAndPreservesUnicode() {
@@ -145,7 +154,133 @@ public final class TerminalOutputBufferTest {
         TestSupport.assertEquals("abcde\nijklZ", buffer.snapshot(), "narrower PTY uses the new right margin");
         buffer.resize(3, 10);
         append(buffer, "Q");
-        TestSupport.assertEquals("abcde\nijklZQ", buffer.snapshot(), "wider PTY permits the next cell");
+        TestSupport.assertEquals("abcdefgh\nijklZQop", buffer.snapshot(),
+            "wider PTY restores untouched cells and retains edits at the new margin");
+    }
+
+    private static void restoresScreenCellsAfterNarrowingAndWidening() {
+        TerminalOutputBuffer buffer = terminal(3, 8);
+        append(buffer, "abcdefgh\r\nijklmnop");
+        buffer.resize(3, 5);
+        TestSupport.assertEquals("abcde\nijklm", buffer.snapshot(), "narrow viewport hides offscreen cells");
+        buffer.resize(3, 8);
+        TestSupport.assertEquals("abcdefgh\nijklmnop", buffer.snapshot(), "resize retains both rows' output");
+        buffer.resize(3, 3);
+        buffer.resize(3, 8);
+        TestSupport.assertEquals("abcdefgh\nijklmnop", buffer.snapshot(), "repeated resize retains output");
+    }
+
+    private static void restoresWideGlyphsAfterNarrowingAndWidening() {
+        TerminalOutputBuffer buffer = terminal(3, 8);
+        append(buffer, "ab中😀cd");
+        buffer.resize(3, 3);
+        TestSupport.assertEquals("ab", buffer.snapshot(), "partial CJK glyph is hidden at the right margin");
+        buffer.resize(3, 8);
+        TestSupport.assertEquals("ab中😀cd", buffer.snapshot(), "full CJK and emoji cells remain stored");
+        buffer.resize(3, 5);
+        TestSupport.assertEquals("ab中", buffer.snapshot(), "partial emoji is hidden at the right margin");
+        buffer.resize(3, 8);
+        TestSupport.assertEquals("ab中😀cd", buffer.snapshot(), "emoji survives repeated resize");
+        buffer.resize(3, 5);
+        append(buffer, "\u001b[5GX");
+        buffer.resize(3, 8);
+        TestSupport.assertEquals("ab中X cd", buffer.snapshot(), "overwrite clears both halves of the hidden emoji");
+    }
+
+    private static void clearOverwritesScreenHistoryAndHiddenCells() {
+        TerminalOutputBuffer buffer = terminal(2, 8);
+        append(buffer, "history\r\nhidden12\r\nlive😀");
+        List<Object> storedCells = new ArrayList<Object>();
+        for (String area : new String[] {"history", "screen"}) {
+            for (Object line : (Iterable<?>) privateField(buffer, area)) {
+                storedCells.addAll((List<?>) privateField(line, "cells"));
+            }
+        }
+        TestSupport.assertTrue(storedCells.size() >= 20, "history, visible and hidden cells captured");
+        buffer.resize(2, 4);
+        buffer.append(new byte[] {(byte) 0xe2, (byte) 0x82});
+        byte[] pending = (byte[]) privateField(buffer, "pendingUtf8");
+        buffer.clear();
+        TestSupport.assertEquals("", buffer.snapshot(), "clear removes the displayed output");
+        // Retain references to the actual old storage: dropping references alone is insufficient.
+        for (Object cell : storedCells) {
+            char[] characters = cell instanceof char[] ? (char[]) cell : cell.toString().toCharArray();
+            for (char character : characters) {
+                TestSupport.assertEquals(Character.valueOf('\0'), Character.valueOf(character),
+                    "clear overwrites retained screen/history/hidden character storage");
+            }
+        }
+        for (byte value : pending) {
+            TestSupport.assertEquals(Byte.valueOf((byte) 0), Byte.valueOf(value), "pending UTF-8 wiped");
+        }
+        buffer.resize(2, 8);
+        TestSupport.assertEquals("", buffer.snapshot(), "widening cannot resurrect cleared cells");
+    }
+
+    private static Object privateField(Object owner, String name) {
+        try {
+            Field field = owner.getClass().getDeclaredField(name);
+            field.setAccessible(true);
+            return field.get(owner);
+        } catch (ReflectiveOperationException error) {
+            throw new AssertionError("Cannot inspect terminal character storage", error);
+        }
+    }
+
+    private static void erasingAfterResizeDoesNotRestoreHiddenText() {
+        TerminalOutputBuffer buffer = terminal(3, 8);
+        append(buffer, "abcdefgh");
+        buffer.resize(3, 4);
+        append(buffer, "\rxy\u001b[K");
+        buffer.resize(3, 8);
+        TestSupport.assertEquals("xy", buffer.snapshot(), "erase to end includes retained offscreen cells");
+        buffer.clear();
+        append(buffer, "abcdefgh");
+        buffer.resize(3, 4);
+        append(buffer, "\u001b[2K");
+        buffer.resize(3, 8);
+        TestSupport.assertEquals("", buffer.snapshot(), "whole-line erase includes hidden cells");
+        append(buffer, "\rabcdefgh\r\nijklmnop");
+        buffer.resize(3, 4);
+        append(buffer, "\u001b[2J");
+        buffer.resize(3, 8);
+        TestSupport.assertEquals("\n", buffer.snapshot(), "whole-screen erase includes hidden cells");
+    }
+
+    private static void redactsTokensBeforeClippingTheViewport() {
+        TerminalOutputBuffer buffer = terminal(3, 80);
+        append(buffer, "sk-exampletoken0123456789");
+        buffer.resize(3, 5);
+        TestSupport.assertFalse(buffer.snapshot().contains("sk-"), "narrow viewport cannot expose a token prefix");
+        TestSupport.assertContains(buffer.snapshot().replace("\n", ""), "<redacted-token>",
+            "redaction matches the complete stored token before clipping");
+        buffer.resize(3, 80);
+        TestSupport.assertEquals("<redacted-token>", buffer.snapshot(), "redaction remains intact after widening");
+    }
+
+    private static void boundsAndWipesStoredCellsAfterNarrowing() {
+        TerminalOutputBuffer buffer = terminal(2, 1000);
+        byte[] original = new byte[2000];
+        Arrays.fill(original, (byte) 'a');
+        buffer.append(original);
+        List<Object> oldStorage = new ArrayList<Object>();
+        for (Object line : (Iterable<?>) privateField(buffer, "screen")) {
+            oldStorage.addAll((List<?>) privateField(line, "cells"));
+        }
+        buffer.resize(2, 1);
+        byte[] oversized = new byte[TerminalOutputBuffer.MAXIMUM_CHARACTERS * 2];
+        Arrays.fill(oversized, (byte) 'x');
+        buffer.append(oversized);
+        TestSupport.assertTrue(((Integer) privateField(buffer, "storedCharacters")).intValue()
+            <= TerminalOutputBuffer.MAXIMUM_CHARACTERS, "retained hidden cells count toward the storage budget");
+        TestSupport.assertTrue(buffer.snapshot().length() <= TerminalOutputBuffer.MAXIMUM_CHARACTERS,
+            "snapshot remains bounded after narrowing and scrollback trimming");
+        for (Object cell : oldStorage) {
+            for (char character : (char[]) cell) {
+                TestSupport.assertEquals(Character.valueOf('\0'), Character.valueOf(character),
+                    "discarded old visible/hidden cells are overwritten before releasing scrollback");
+            }
+        }
     }
 
     private static void drawsWideAndCombiningUnicodeCells() {

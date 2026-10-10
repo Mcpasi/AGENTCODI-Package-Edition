@@ -57,7 +57,7 @@ public final class TerminalOutputBuffer {
         while (screen.size() > requestedRows) {
             int bottom = screen.size() - 1;
             if (bottom > cursorRow && screen.get(bottom).visibleLength() == 0) {
-                storedCharacters -= screen.remove(bottom).size();
+                discardLine(screen.remove(bottom));
             } else {
                 history.addLast(screen.remove(0));
                 cursorRow = Math.max(0, cursorRow - 1);
@@ -68,15 +68,7 @@ public final class TerminalOutputBuffer {
             screen.add(new Line());
             storedCharacters++;
         }
-        if (requestedColumns < columns) {
-            for (Line line : screen) {
-                line.truncate(requestedColumns);
-                if (line.cells.size() == requestedColumns
-                    && cellWidth(line.cells.get(requestedColumns - 1)) == 2) {
-                    line.set(requestedColumns - 1, " ");
-                }
-            }
-        }
+        // Resize the viewport, retaining offscreen cells for a later widening.
         rows = requestedRows;
         columns = requestedColumns;
         cursorRow = Math.min(cursorRow, rows - 1);
@@ -117,10 +109,12 @@ public final class TerminalOutputBuffer {
     }
 
     public void clear() {
+        for (Line line : history) {
+            line.clear();
+        }
         history.clear();
         for (Line line : screen) {
-            line.cells.clear();
-            line.softWrapped = false;
+            line.clear();
         }
         storedCharacters = rows;
         Arrays.fill(pendingUtf8, (byte) 0);
@@ -134,12 +128,12 @@ public final class TerminalOutputBuffer {
     public String snapshot() {
         StringBuilder result = new StringBuilder();
         StringBuilder logicalLine = new StringBuilder();
-        ArrayList<Integer> wraps = new ArrayList<Integer>();
+        ArrayList<SnapshotRow> wraps = new ArrayList<SnapshotRow>();
         if (omitted) {
             result.append(OMITTED_PREFIX);
         }
         for (Line line : history) {
-            appendSnapshotLine(result, logicalLine, wraps, line, true);
+            appendSnapshotLine(result, logicalLine, wraps, line, true, Integer.MAX_VALUE);
         }
         int lastRow = cursorRow;
         for (int index = rows - 1; index > lastRow; index--) {
@@ -149,18 +143,17 @@ public final class TerminalOutputBuffer {
             }
         }
         for (int index = 0; index <= lastRow; index++) {
-            appendSnapshotLine(result, logicalLine, wraps, screen.get(index), index < lastRow);
+            appendSnapshotLine(result, logicalLine, wraps, screen.get(index), index < lastRow, columns);
         }
         appendRedactedLine(result, logicalLine, wraps);
         return CrashReportFormatter.redactVisibleText(result.toString(), MAXIMUM_CHARACTERS);
     }
 
     private void appendSnapshotLine(StringBuilder result, StringBuilder logicalLine,
-        ArrayList<Integer> wraps, Line line, boolean newline) {
+        ArrayList<SnapshotRow> wraps, Line line, boolean newline, int visibleColumns) {
         line.appendTo(logicalLine, line.softWrapped);
-        if (line.softWrapped && newline) {
-            wraps.add(Integer.valueOf(logicalLine.length()));
-        } else {
+        wraps.add(new SnapshotRow(logicalLine.length(), visibleColumns));
+        if (!line.softWrapped || !newline) {
             appendRedactedLine(result, logicalLine, wraps);
             if (newline) {
                 result.append('\n');
@@ -169,18 +162,20 @@ public final class TerminalOutputBuffer {
     }
 
     private void appendRedactedLine(StringBuilder result, StringBuilder logicalLine,
-        ArrayList<Integer> wraps) {
+        ArrayList<SnapshotRow> wraps) {
         String original = logicalLine.toString();
-        // Match secrets before reinserting soft wraps, which can split tokens.
+        // Match full stored text before clipping the viewport or reinserting soft wraps.
         String redacted = CrashReportFormatter.redactSecrets(original);
         if (original.equals(redacted)) {
             int start = 0;
-            for (Integer wrap : wraps) {
-                appendVisibleSegment(result, original, start, wrap.intValue());
-                result.append('\n');
-                start = wrap.intValue();
+            for (int index = 0; index < wraps.size(); index++) {
+                SnapshotRow row = wraps.get(index);
+                appendVisibleSegment(result, original, start, row.end, row.columns);
+                if (index + 1 < wraps.size()) {
+                    result.append('\n');
+                }
+                start = row.end;
             }
-            appendVisibleSegment(result, original, start, original.length());
         } else {
             int column = 0;
             for (int index = 0; index < redacted.length();) {
@@ -199,7 +194,20 @@ public final class TerminalOutputBuffer {
         wraps.clear();
     }
 
-    private static void appendVisibleSegment(StringBuilder result, String value, int start, int end) {
+    private static void appendVisibleSegment(StringBuilder result, String value, int start, int end,
+        int visibleColumns) {
+        int visibleEnd = start;
+        int column = 0;
+        while (visibleEnd < end) {
+            int character = value.codePointAt(visibleEnd);
+            int width = characterWidth(character);
+            if (column + width > visibleColumns) {
+                break;
+            }
+            column += width;
+            visibleEnd += Character.charCount(character);
+        }
+        end = visibleEnd;
         while (end > start && value.charAt(end - 1) == ' ') {
             end--;
         }
@@ -392,18 +400,18 @@ public final class TerminalOutputBuffer {
     private void eraseLine(int mode) {
         Line line = screen.get(cursorRow);
         if (mode == 0) {
-            line.erase(cursorColumn, columns);
+            line.erase(cursorColumn, Math.max(columns, line.cells.size()));
         } else if (mode == 1) {
             line.erase(0, Math.min(columns, cursorColumn + 1));
         } else if (mode == 2) {
-            line.erase(0, columns);
+            line.clear();
         }
     }
 
     private void eraseDisplay(int mode) {
         if (mode == 3) {
             while (!history.isEmpty()) {
-                storedCharacters -= history.removeFirst().size();
+                discardLine(history.removeFirst());
             }
             omitted = false;
             return;
@@ -414,7 +422,7 @@ public final class TerminalOutputBuffer {
         for (int index = 0; index < rows; index++) {
             if (mode == 2 || (mode == 0 && index > cursorRow)
                 || (mode == 1 && index < cursorRow)) {
-                screen.get(index).erase(0, columns);
+                screen.get(index).clear();
             }
         }
         eraseLine(mode);
@@ -433,19 +441,22 @@ public final class TerminalOutputBuffer {
     private void resetAnsi() {
         ansiState = ANSI_NORMAL;
         ansiSequenceCharacters = 0;
+        for (int index = 0; index < csi.length(); index++) {
+            csi.setCharAt(index, '\0');
+        }
         csi.setLength(0);
     }
 
     private void trimToLimit() {
         int limit = MAXIMUM_CHARACTERS - OMITTED_PREFIX.length();
         while (storedCharacters > limit && !history.isEmpty()) {
-            storedCharacters -= history.removeFirst().size();
+            discardLine(history.removeFirst());
             omitted = true;
         }
         // Even the maximum supported 1000x1000 viewport must respect the limit.
         for (int index = 0; storedCharacters > limit && index < rows; index++) {
             if (index != cursorRow) {
-                screen.get(index).erase(0, columns);
+                screen.get(index).clear();
                 omitted = true;
             }
         }
@@ -453,6 +464,11 @@ public final class TerminalOutputBuffer {
 
     private static int cellWidth(String cell) {
         return cell.isEmpty() ? 0 : characterWidth(cell.codePointAt(0));
+    }
+
+    private void discardLine(Line line) {
+        line.clear();
+        storedCharacters--;
     }
 
     private static int characterWidth(int character) {
@@ -476,21 +492,35 @@ public final class TerminalOutputBuffer {
         return 1;
     }
 
+    private static final class SnapshotRow {
+        private final int end;
+        private final int columns;
+
+        private SnapshotRow(int end, int columns) {
+            this.end = end;
+            this.columns = columns;
+        }
+    }
+
     private final class Line {
-        private final ArrayList<String> cells = new ArrayList<String>();
+        // Own mutable character storage so clearing can overwrite every retained cell.
+        private final ArrayList<char[]> cells = new ArrayList<char[]>();
         private boolean softWrapped;
 
         private String get(int column) {
-            return column < cells.size() ? cells.get(column) : " ";
+            return column < cells.size() ? new String(cells.get(column)) : " ";
         }
 
         private void set(int column, String value) {
             while (cells.size() <= column) {
-                cells.add(" ");
+                cells.add(new char[] {' '});
                 storedCharacters++;
             }
-            storedCharacters += value.length() - cells.get(column).length();
-            cells.set(column, value);
+            char[] previous = cells.get(column);
+            char[] replacement = value.toCharArray();
+            storedCharacters += replacement.length - previous.length;
+            Arrays.fill(previous, '\0');
+            cells.set(column, replacement);
         }
 
         private void clearWideCharacter(int column) {
@@ -499,7 +529,7 @@ public final class TerminalOutputBuffer {
                 set(column, " ");
             } else if (cellWidth(get(column)) == 2) {
                 set(column, " ");
-                if (column + 1 < columns) {
+                if (column + 1 < cells.size()) {
                     set(column + 1, " ");
                 }
             }
@@ -507,8 +537,15 @@ public final class TerminalOutputBuffer {
 
         private void truncate(int length) {
             while (cells.size() > length) {
-                storedCharacters -= cells.remove(cells.size() - 1).length();
+                char[] removed = cells.remove(cells.size() - 1);
+                storedCharacters -= removed.length;
+                Arrays.fill(removed, '\0');
             }
+        }
+
+        private void clear() {
+            truncate(0);
+            softWrapped = false;
         }
 
         private void erase(int from, int to) {
@@ -518,7 +555,7 @@ public final class TerminalOutputBuffer {
             if (from < cells.size()) {
                 clearWideCharacter(from);
             }
-            if (to < cells.size()) {
+            if (to < cells.size() && cells.get(to).length == 0) {
                 clearWideCharacter(to);
             }
             for (int index = from; index < Math.min(to, cells.size()); index++) {
@@ -529,16 +566,9 @@ public final class TerminalOutputBuffer {
 
         private int visibleLength() {
             int length = cells.size();
-            while (length > 0 && " ".equals(cells.get(length - 1))) {
+            while (length > 0 && cells.get(length - 1).length == 1
+                && cells.get(length - 1)[0] == ' ') {
                 length--;
-            }
-            return length;
-        }
-
-        private int size() {
-            int length = 1;
-            for (String cell : cells) {
-                length += cell.length();
             }
             return length;
         }
