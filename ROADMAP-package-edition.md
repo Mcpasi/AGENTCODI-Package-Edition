@@ -1,15 +1,32 @@
 # Roadmap: AGENTCODI Package Edition
 
-Status: 2026-10-10. Development and releases use `main` in
+Status: 2026-10-11. Development and releases use `main` in
 `Mcpasi/AGENTCODI-Package-Edition`. Repository operation and workflow inputs
 are documented in the [setup guide](.github/ci/PACKAGE_EDITION_SETUP.md).
 
 The dated records below retain historical CI links and branch names from the
 original AGENTCODI repository.
 
+### Package Edition 0.1.3: chat, terminal and package diagnostics (published)
+
+Current release identity: `0.1.3`, Android `versionCode 6`, application ID
+`de.agentcodi.pkg`. **Experimental prerelease (published). Device tests: passed
+on physical Android hardware.**
+
+[AGENTCODI Package Edition V0.1.3](https://github.com/Mcpasi/AGENTCODI-Package-Edition/releases/tag/v0.1.3-package.3)
+was published on 2026-10-11, tagged `v0.1.3-package.3`.
+
+Version 0.1.3 improves chat pagination, conversation updates and reading-position
+preservation, restores interactive terminal editing and fixes terminal rendering,
+input, session and resize handling, and makes package diagnostics more robust
+with complete dpkg status reporting.
+
+Physical Android device tests for version 0.1.3 passed.
+The [0.1.3 changelog](CHANGELOG.md) records the release changes and verification.
+
 ### Package Edition 0.1.2: responsive chat and terminal (published)
 
-Current release identity: `0.1.2`, Android `versionCode 5`, application ID
+Release identity at this milestone: `0.1.2`, Android `versionCode 5`, application ID
 `de.agentcodi.pkg`. **Experimental prerelease (published). Device tests: passed
 on physical Android hardware.**
 
@@ -181,7 +198,8 @@ were verified in the successful release job.
 
 Release APK device tests, including APT through MCP, passed. Physical Android
 hardware tests for version 0.1.1 passed on 2026-10-07. Physical Android device
-validation for the current 0.1.2 APK also passed. The experimental
+validation for version 0.1.2 also passed. Physical Android device tests for
+version 0.1.3 passed. The experimental
 code-mode callback failure described in the MCP approval section was reproduced
 and resolved as a CI Bionic-version mismatch on 2026-10-07; see the [investigation above](#code-mode-sigsegv-ci-fix--2026-10-07).
 
@@ -911,7 +929,7 @@ is recorded above. `main` remains unchanged by edition work.
 
 ## 4. Reduce the build and produce a releasable edition
 
-Bootstrap, starter catalog, signed package channel and shared package environment work in CI. npm/Python path prerequisites are complete. Previously bundled user-installable packages have been removed from the APK. The active startup path uses only the native Codex runtime and installed package base. Unused legacy sources, identity constants and activation/transport APIs have been removed. Old private tool directories are no longer created or required for startup; existing user data is preserved. Build dependencies, their restoration and cache selection are reduced. The final verification contract and reconciliation of delivered legal materials are implemented. Community dependency texts and bootstrap license assignments are supplemented and verified. The first signed Package Edition APK was published on 2026-10-06; release APK tests from APT through MCP passed. Physical Android hardware tests for 0.1.1 passed on 2026-10-07; device validation for the current 0.1.2 APK also passed. Versions 0.1.0, 0.1.1 and 0.1.2 are published experimental prereleases. The detailed installation/update/version matrix is tracked separately below. The CI code-mode callback failure was resolved on 2026-10-07; see the [investigation above](#code-mode-sigsegv-ci-fix--2026-10-07).
+Bootstrap, starter catalog, signed package channel and shared package environment work in CI. npm/Python path prerequisites are complete. Previously bundled user-installable packages have been removed from the APK. The active startup path uses only the native Codex runtime and installed package base. Unused legacy sources, identity constants and activation/transport APIs have been removed. Old private tool directories are no longer created or required for startup; existing user data is preserved. Build dependencies, their restoration and cache selection are reduced. The final verification contract and reconciliation of delivered legal materials are implemented. Community dependency texts and bootstrap license assignments are supplemented and verified. The first signed Package Edition APK was published on 2026-10-06; release APK tests from APT through MCP passed. Physical Android hardware tests for 0.1.1 passed on 2026-10-07; device validation for 0.1.2 also passed. Physical Android device tests for version 0.1.3 passed. Versions 0.1.0, 0.1.1, 0.1.2 and 0.1.3 are published experimental prereleases. The detailed installation/update/version matrix is tracked separately below. The CI code-mode callback failure was resolved on 2026-10-07; see the [investigation above](#code-mode-sigsegv-ci-fix--2026-10-07).
 
 - [x] Remove bundled Node.js, npm, Python, ripgrep and libraries/archives/licenses needed only by them from the APK.
 - [x] First check app-server/code-mode host dependencies on these tools; retain essential base tools in the bootstrap.
@@ -921,9 +939,9 @@ Bootstrap, starter catalog, signed package channel and shared package environmen
 - [x] Align architecture checks and Java/C++/Android smokes with the final package contract.
 - [x] Reconcile notices, README, SECURITY and build documentation with the actual delivered package base. Reconciliation and subsequent license supplementation are implemented; Community Rust/V8 materials and package-local bootstrap assignments are source/artifact-bound. The release license gate rejects any new gap.
 - [x] Supplement Community Rust/V8 dependency texts and missing bootstrap license assignments for pinned artifacts; check source/version/hash evidence, app license view and final APK license gate.
-- [x] Test the current Package Edition 0.1.2 APK on physical Android hardware. Device tests passed; the version is published as an experimental prerelease.
+- [x] Test the current Package Edition 0.1.3 APK on physical Android hardware. Device tests passed; the version is published as an experimental prerelease.
 - [ ] Perform installation/update tests including low target SDK, foreground service, notifications, login, file selection and backups. Completion of the full matrix is not separately documented.
-- [x] Test the release APK on a device and publish it as Package Edition. Release APK device tests passed; `v0.1.0-package.3`, Package Edition 0.1.1 and the current 0.1.2 are published experimental prereleases. The detailed hardware/version/update matrix is tracked separately.
+- [x] Test the release APK on a device and publish it as Package Edition. Release APK device tests passed; `v0.1.0-package.3`, Package Edition 0.1.1, 0.1.2 and the current 0.1.3 are published experimental prereleases. The detailed hardware/version/update matrix is tracked separately.
 
 <a id="historische-verifikation-des-grundlagenabschnitts"></a>
 

@@ -438,4 +438,5 @@ before splitting; revision increases make those notices available through APT
 updates and reinstalls as well as the bootstrap.
 The format-2 report's license_release_ready concerns only legal prerequisites;
 release builds fail if any component/package has a legal gap. Physical Android
-tests remain separate and were skipped.
+tests remain separate and are skipped by hosted CI.
+Physical Android device tests for version 0.1.3 passed.

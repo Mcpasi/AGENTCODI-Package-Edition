@@ -8,7 +8,7 @@
 
 ![Android](https://img.shields.io/badge/Android-10%2B-3DDC84?logo=android&logoColor=white)
 ![Architecture](https://img.shields.io/badge/Architecture-ARM64-555555)
-![Version](https://img.shields.io/badge/Package%20Edition-0.1.2-blue)
+![Version](https://img.shields.io/badge/Package%20Edition-0.1.3-blue)
 ![Status](https://img.shields.io/badge/Status-published%20experimental%20prerelease-orange)
 ![License](https://img.shields.io/badge/License-Apache%202.0-blue)
 
@@ -18,8 +18,8 @@ AGENTCODI Package Edition brings Codex workflows to Android with an interactive 
 
 The Package Edition has its own application ID, `de.agentcodi.pkg`, so it can be installed alongside the regular AGENTCODI app.
 
-**[Package Edition 0.1.2](https://github.com/Mcpasi/AGENTCODI-Package-Edition/releases/tag/v0.1.2-package.3) is published as an experimental prerelease.**
-**Device tests for version 0.1.2: passed on physical Android hardware.**
+**[Package Edition 0.1.3](https://github.com/Mcpasi/AGENTCODI-Package-Edition/releases/tag/v0.1.3-package.3) is published as an experimental prerelease.**
+**Device tests for version 0.1.3: passed on physical Android hardware.**
 
 No Termux installation, WebView shell, or separate gateway setup is required.
 
@@ -56,7 +56,7 @@ Recent Android versions may display a warning during installation because of the
 
 ## Install
 
-Download the Package Edition 0.1.2 APK from [GitHub Releases](https://github.com/Mcpasi/AGENTCODI-Package-Edition/releases/tag/v0.1.2-package.3) and install it on your Android device. The release page links to the preserved original signed APK.
+Download the Package Edition 0.1.3 APK from [GitHub Releases](https://github.com/Mcpasi/AGENTCODI-Package-Edition/releases/tag/v0.1.3-package.3) and install it on your Android device. The signed release asset is `AGENTCODI-Package-0.1.3-arm64-v8a-release.apk`.
 
 Release APKs use the package name:
 
@@ -204,7 +204,7 @@ Package Edition preserves the managed package prefix across normal app restarts 
 
 Packages, caches and existing user-installed files are retained. APT remains responsible for package updates and removals.
 
-The published 0.1.2 APK uses the original APT endpoint. Newer builds use the dedicated repository listed above and migrate the original managed source on APK update while retaining installed packages and custom sources.
+Version 0.1.2 uses the original APT endpoint. The published 0.1.3 APK uses the dedicated repository listed above and migrates the original managed source on APK update while retaining installed packages and custom sources.
 
 Older development APKs may have used a different signing identity. Android cannot update an installation when the signing certificate changes. In that case, export any data you need before uninstalling the older APK, because uninstalling removes the app's private data.
 

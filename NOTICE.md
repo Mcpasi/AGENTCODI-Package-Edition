@@ -73,9 +73,10 @@ a claim of an independently reproduced Community binary.
 The bzip2, gpgv and xz-utils DEBs now own copies of their parent package's
 original license material, with increased package revisions. Their installed
 files are indexed and verified with the same dpkg ownership/ZIP contracts.
-The format-2 report separates license_release_ready from the unperformed
-physical-device validation. A release build fails if legal gaps reappear;
-these checks do not publish a final APK or complete hardware tests.
+The format-2 report separates license_release_ready from physical-device
+validation, which is not performed by the report. A release build fails if
+legal gaps reappear; these checks do not publish a final APK or complete
+hardware tests. Physical Android device tests for version 0.1.3 passed.
 
 The original distributor material is never rewritten. The historical
 regular-edition provenance below is retained in this repository; it is excluded

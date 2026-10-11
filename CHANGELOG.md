@@ -1,8 +1,11 @@
 # Package Edition
 
-## 0.1.3 — Package Edition (Android versionCode 6) — Unreleased
+## 0.1.3 — Package Edition (Android versionCode 6) — 2026-10-11
 
-**In development.**
+**Experimental prerelease (published). Device tests: passed on physical Android hardware.**
+
+- Published [AGENTCODI Package Edition V0.1.3](https://github.com/Mcpasi/AGENTCODI-Package-Edition/releases/tag/v0.1.3-package.3) on 2026-10-11 as an experimental prerelease, tagged `v0.1.3-package.3`.
+- Physical Android device tests for version 0.1.3 passed.
 
 - Fix live package diagnostics being redirected through user `printf` or
   `command` aliases and functions. Use shell builtins for internal helpers while

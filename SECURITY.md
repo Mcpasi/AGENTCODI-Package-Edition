@@ -49,10 +49,10 @@ backported.
 Install released APKs only from the official
 [Package Edition GitHub Releases](https://github.com/Mcpasi/AGENTCODI-Package-Edition/releases) page and
 update to the latest release before reporting an issue that may already be fixed.
-The current Package Edition release is **0.1.2** (Android `versionCode 5`),
-published as an experimental prerelease:
-[AGENTCODI Package Edition V0.1.2](https://github.com/Mcpasi/AGENTCODI-Package-Edition/releases/tag/v0.1.2-package.3).
-Physical Android device tests for version 0.1.2 passed.
+The current Package Edition release is **0.1.3** (Android `versionCode 6`),
+published on 2026-10-11 as an experimental prerelease:
+[AGENTCODI Package Edition V0.1.3](https://github.com/Mcpasi/AGENTCODI-Package-Edition/releases/tag/v0.1.3-package.3).
+Physical Android device tests for version 0.1.3 passed.
 The first Package Edition release was published on 2026-10-06 as
 [AGENTCODI Package Edition V0.1.0](https://github.com/Mcpasi/AGENTCODI-Package-Edition/releases/tag/v0.1.0-package.3),
 an early-version prerelease tagged `v0.1.0-package.3`. The retained release
@@ -175,7 +175,8 @@ APK updates, foreground services, notifications, login browser flows, document
 pickers or hardware linker/SELinux behavior. These require separate device
 evidence. Package installation/use passed on a physical device on 2026-10-06;
 subsequent release APK tests from APT through MCP also passed. Physical Android
-device tests for the current Package Edition 0.1.2 passed. The complete
+device tests for version 0.1.2 passed. Physical Android device tests for
+version 0.1.3 passed. The complete
 Android-version/device matrix and the new MPL source-saving feature remain
 undocumented as hardware-validated.
 Community Rust/V8 terms and attribution are supplemented by the pinned

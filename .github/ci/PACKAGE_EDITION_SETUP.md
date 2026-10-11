@@ -14,8 +14,8 @@ Both the pinned bootstrap recipes and repository identity validator use this
 address. On APK update, the app atomically replaces the exact original managed
 source line in an existing `etc/apt/sources.list`. Installed package data,
 the existing public keyring, additional source lines and customized sources
-are retained. The published 0.1.2 APK continues to use the original endpoint
-until it is updated.
+are retained. Version 0.1.2 uses the original endpoint; the published 0.1.3 APK
+uses this repository's endpoint and applies the migration on update.
 
 ## Workflow scope
 
@@ -33,6 +33,11 @@ Tests and the complete signed catalog publication succeeded in this repository
 on 2026-10-10. Relevant pushes to `main` start their configured builds
 automatically; manual runs use the inputs below. APK release publication
 and physical device validation remain separate from CI.
+
+[AGENTCODI Package Edition V0.1.3](https://github.com/Mcpasi/AGENTCODI-Package-Edition/releases/tag/v0.1.3-package.3)
+was published on 2026-10-11 as an experimental prerelease, tagged
+`v0.1.3-package.3` (Android `versionCode 6`).
+Physical Android device tests for version 0.1.3 passed.
 
 1. Keep **Settings → Pages → GitHub Actions** as the deployment source. If the
    `github-pages` environment restricts deployment branches, allow `main`.
@@ -80,8 +85,8 @@ from this repository.
 The seven APT/APK signing secrets and the separate build-mirror read token
 use the existing names. The public APT fingerprint remains
 `2768291D12B6C3D22CFBAF9EEC79CBDF7E93DC89`; the application ID remains
-`de.agentcodi.pkg`. Existing build version 0.1.3/versionCode 6 is already newer
-than published 0.1.2/versionCode 5.
+`de.agentcodi.pkg`. Published version 0.1.3/versionCode 6 is newer than
+version 0.1.2/versionCode 5.
 
 The private backup mirror remains `Mcpasi/agentcodi-build-inputs`, release
 `0.7.6-preview.1`; it is not redistributed through this public repository.
