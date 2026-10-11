@@ -5,7 +5,7 @@ import java.util.ArrayDeque;
 /** Immutable redacted segments; appending never copies the settled stream prefix. */
 final class StreamText {
     private static final String TRUNCATION = "\n… Ausgabe gekürzt …";
-    private static final int SEGMENT_CHARACTERS = 512;
+    private static final int SEGMENT_CHARACTERS = 128;
     private static final StreamText EMPTY = literal("");
 
     private final Node prefix;
@@ -232,7 +232,8 @@ final class StreamText {
             return prefix;
         }
         Node last = prefix == null || prefix.value != null ? prefix : prefix.right;
-        if (last != null && last.value != null
+        // Coalesce tiny deltas to bound node overhead, sharing ordinary chunks directly.
+        if (addition.length() <= SEGMENT_CHARACTERS / 4 && last != null && last.value != null
             && last.length + addition.length() <= SEGMENT_CHARACTERS) {
             Node combined = leaf(last.value + addition);
             return prefix.value != null ? combined : concat(prefix.left, combined);
