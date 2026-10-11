@@ -3,6 +3,7 @@ package de.agentcodi.core;
 import java.util.Collections;
 import java.util.IdentityHashMap;
 import java.util.Set;
+import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 public final class CrashReportFormatter {
@@ -28,6 +29,12 @@ public final class CrashReportFormatter {
     private static final Pattern JWT_SHAPE = Pattern.compile(
         "\\beyJ[A-Za-z0-9_-]{8,}\\.[A-Za-z0-9_-]{8,}(?:\\.[A-Za-z0-9_-]{8,})?"
     );
+    private static final ThreadLocal<RedactionMatchers> MATCHERS =
+        new ThreadLocal<RedactionMatchers>() {
+            @Override protected RedactionMatchers initialValue() {
+                return new RedactionMatchers();
+            }
+        };
 
     private CrashReportFormatter() {
     }
@@ -86,11 +93,17 @@ public final class CrashReportFormatter {
         if (value == null) {
             return "";
         }
-        String redacted = NAMED_SECRET.matcher(value).replaceAll("$1<redacted>");
-        redacted = BEARER_SECRET.matcher(redacted).replaceAll("Bearer <redacted>");
-        redacted = OAUTH_QUERY_SECRET.matcher(redacted).replaceAll("$1<redacted>");
-        redacted = JWT_SHAPE.matcher(redacted).replaceAll("<redacted-token>");
-        return TOKEN_SHAPE.matcher(redacted).replaceAll("<redacted-token>");
+        RedactionMatchers matchers = MATCHERS.get();
+        try {
+            String redacted = matchers.named.reset(value).replaceAll("$1<redacted>");
+            redacted = matchers.bearer.reset(redacted).replaceAll("Bearer <redacted>");
+            redacted = matchers.query.reset(redacted).replaceAll("$1<redacted>");
+            redacted = matchers.jwt.reset(redacted).replaceAll("<redacted-token>");
+            return matchers.token.reset(redacted).replaceAll("<redacted-token>");
+        } finally {
+            // Reuse only matcher storage, never retain input on a long-lived thread.
+            matchers.clear();
+        }
     }
 
     public static String redactVisibleText(String value, int maximumCharacters) {
@@ -108,6 +121,62 @@ public final class CrashReportFormatter {
             return redacted.substring(0, maximumCharacters);
         }
         return redacted.substring(0, maximumCharacters - 3) + "...";
+    }
+
+    /**
+     * A redacted stream may share everything before this suffix with older snapshots.
+     * Keep every match/prefix that could change on append, plus its preceding code point
+     * for word-boundary checks. Opaque matcher regions deliberately retain token prefixes
+     * even inside words; the actual redaction still sees their preceding character.
+     */
+    static int stableRedactedPrefixLength(String value) {
+        int end = value.length();
+        RedactionMatchers matchers = MATCHERS.get();
+        try {
+            matchers.reset(value);
+            for (int index = 0; index < end; index++) {
+                char character = value.charAt(index);
+                char lower = character >= 'A' && character <= 'Z'
+                    ? (char) (character + ('a' - 'A')) : character;
+                if (((lower == 'a' || lower == 'r' || lower == 'i' || lower == 'o'
+                    || lower == 'c' || lower == 'p' || character == '\"' || character == '\'')
+                        && mayExtend(matchers.named, index, end))
+                    || (lower == 'b' && mayExtend(matchers.bearer, index, end))
+                    || ((character == '?' || character == '&') && mayExtend(matchers.query, index, end))
+                    || (character == 'e' && mayExtend(matchers.jwt, index, end))
+                    || ((character == 'c' || character == 's') && mayExtend(matchers.token, index, end))) {
+                    return index == 0 ? 0 : value.offsetByCodePoints(index, -1);
+                }
+            }
+            return end == 0 ? 0 : value.offsetByCodePoints(end, -1);
+        } finally {
+            matchers.clear();
+        }
+    }
+
+    private static boolean mayExtend(Matcher matcher, int start, int end) {
+        matcher.region(start, end).lookingAt();
+        return matcher.hitEnd();
+    }
+
+    private static final class RedactionMatchers {
+        private final Matcher named = NAMED_SECRET.matcher("");
+        private final Matcher bearer = BEARER_SECRET.matcher("");
+        private final Matcher query = OAUTH_QUERY_SECRET.matcher("");
+        private final Matcher jwt = JWT_SHAPE.matcher("");
+        private final Matcher token = TOKEN_SHAPE.matcher("");
+
+        private void reset(String value) {
+            named.reset(value);
+            bearer.reset(value);
+            query.reset(value);
+            jwt.reset(value);
+            token.reset(value);
+        }
+
+        private void clear() {
+            reset("");
+        }
     }
 
     private static void append(StringBuilder report, String line) {

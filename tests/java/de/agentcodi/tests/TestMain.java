@@ -27,6 +27,7 @@ public final class TestMain {
         passed += TerminalOutputBufferTest.run();
         passed += PackageDiagnosticsCommandTest.run();
         passed += CrashReportFormatterTest.run();
+        passed += de.agentcodi.core.StreamTextTest.run();
         passed += CrashReportStoreTest.run();
         passed += RuntimeStateMachineTest.run();
         passed += RuntimeStopTest.run();

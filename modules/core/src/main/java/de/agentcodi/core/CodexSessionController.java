@@ -111,7 +111,7 @@ public final class CodexSessionController
         new HashMap<String, List<CodexFileChangeSummary>>();
     private final Map<String, ReasoningAccumulator> reasoningStreams =
         new HashMap<String, ReasoningAccumulator>();
-    private final Map<String, String> toolOutputStreams = new HashMap<String, String>();
+    private final Map<String, StreamText> toolOutputStreams = new HashMap<String, StreamText>();
 
     private long revision;
     private boolean ready;
@@ -2237,8 +2237,8 @@ public final class CodexSessionController
             ChatMessage current = index < 0
                 ? null
                 : transcriptItems.get(index).getMessage();
-            String existing = current == null ? "" : current.getText();
-            String combined = boundedStream(existing, delta, MAX_MESSAGE_CHARACTERS);
+            StreamText existing = current == null ? StreamText.empty() : current.streamText();
+            StreamText combined = existing.append(delta, MAX_MESSAGE_CHARACTERS, false);
             ChatMessage next = new ChatMessage(
                 itemId,
                 ChatMessage.Role.ASSISTANT,
@@ -2312,7 +2312,7 @@ public final class CodexSessionController
             if (!acceptsCardStreamLocked(threadId, turnId, itemId)) {
                 return;
             }
-            String plan = appendCardStreamLocked(itemId, delta, "");
+            StreamText plan = appendCardStreamLocked(itemId, delta, "");
             if (plan == null) {
                 return;
             }
@@ -2321,8 +2321,8 @@ public final class CodexSessionController
                 CodexTranscriptItem.Kind.PLAN,
                 "plan",
                 "Plan",
-                "",
-                visibleText(plan, MAX_CARD_SECTION_CHARACTERS),
+                StreamText.empty(),
+                plan,
                 "inProgress",
                 true
             ));
@@ -2342,7 +2342,7 @@ public final class CodexSessionController
             if (!acceptsCardStreamLocked(threadId, turnId, itemId)) {
                 return;
             }
-            String output = appendCardStreamLocked(itemId, delta, "");
+            StreamText output = appendCardStreamLocked(itemId, delta, "");
             if (output == null) {
                 return;
             }
@@ -2350,18 +2350,18 @@ public final class CodexSessionController
             String title = "commandExecution".equals(protocolType)
                 ? "Befehl" : "Dateiänderung";
             String summary = "";
-            String detail = "";
+            StreamText detail = StreamText.empty();
             if (existing != null && protocolType.equals(existing.getProtocolType())) {
                 title = existing.getTitle();
                 summary = existing.getSummary();
-                detail = existing.getDetail();
+                detail = existing.detailText();
             }
             upsertTranscriptItemLocked(CodexTranscriptItem.card(
                 itemId,
                 CodexTranscriptItem.Kind.TOOL,
                 protocolType,
                 title,
-                summary,
+                StreamText.literal(summary),
                 detailWithStream(detail, "Ausgabe", output),
                 "inProgress",
                 true
@@ -2382,19 +2382,19 @@ public final class CodexSessionController
             if (!acceptsCardStreamLocked(threadId, turnId, itemId)) {
                 return;
             }
-            String progress = appendCardStreamLocked(itemId, message, "\n");
+            StreamText progress = appendCardStreamLocked(itemId, message, "\n");
             if (progress == null) {
                 return;
             }
             CodexTranscriptItem existing = cardByIdLocked(itemId);
             String summary = existing == null ? "" : existing.getSummary();
-            String detail = existing == null ? "" : existing.getDetail();
+            StreamText detail = existing == null ? StreamText.empty() : existing.detailText();
             upsertTranscriptItemLocked(CodexTranscriptItem.card(
                 itemId,
                 CodexTranscriptItem.Kind.TOOL,
                 "mcpToolCall",
                 "MCP-Tool",
-                summary,
+                StreamText.literal(summary),
                 detailWithStream(detail, "Fortschritt", progress),
                 "inProgress",
                 true
@@ -2419,7 +2419,7 @@ public final class CodexSessionController
             if (!acceptsCardStreamLocked(threadId, turnId, itemId)) {
                 return;
             }
-            String output = appendCardStreamLocked(itemId, interaction, "\n");
+            StreamText output = appendCardStreamLocked(itemId, interaction, "\n");
             if (output == null) {
                 return;
             }
@@ -2429,9 +2429,9 @@ public final class CodexSessionController
                 CodexTranscriptItem.Kind.TOOL,
                 "commandExecution",
                 "Befehl",
-                existing == null ? "" : existing.getSummary(),
+                StreamText.literal(existing == null ? "" : existing.getSummary()),
                 detailWithStream(
-                    existing == null ? "" : existing.getDetail(),
+                    existing == null ? StreamText.empty() : existing.detailText(),
                     "Ausgabe",
                     output
                 ),
@@ -2541,7 +2541,7 @@ public final class CodexSessionController
                 CodexTranscriptItem card = parseCardItem(
                     item,
                     startedEvent,
-                    toolOutputStreams.get(itemId)
+                    pendingCardOutputLocked(itemId)
                 );
                 if (card == null) {
                     if (interactiveChanged) {
@@ -2965,23 +2965,24 @@ public final class CodexSessionController
         return created;
     }
 
-    private String appendCardStreamLocked(String itemId, String value, String separator) {
-        String existing = toolOutputStreams.get(itemId);
+    private String pendingCardOutputLocked(String itemId) {
+        StreamText value = toolOutputStreams.get(itemId);
+        return value == null ? null : value.text();
+    }
+
+    private StreamText appendCardStreamLocked(String itemId, String value, String separator) {
+        StreamText existing = toolOutputStreams.get(itemId);
         if (existing == null
             && reasoningStreams.size() + toolOutputStreams.size()
                 >= MAX_ACTIVE_CARD_STREAMS) {
             return null;
         }
         if (existing == null) {
-            existing = "";
+            existing = StreamText.empty();
         }
         String addition = existing.isEmpty() ? value : separator + value;
-        String combined = boundedStream(
-            existing,
-            addition,
-            MAX_CARD_SECTION_CHARACTERS
-        );
-        combined = visibleText(combined, MAX_CARD_SECTION_CHARACTERS);
+        StreamText combined = existing.append(addition, MAX_CARD_SECTION_CHARACTERS, true)
+            .visibleLimit(MAX_CARD_SECTION_CHARACTERS);
         toolOutputStreams.put(itemId, combined);
         return combined;
     }
@@ -2996,27 +2997,15 @@ public final class CodexSessionController
             CodexTranscriptItem.Kind.REASONING,
             "reasoning",
             "Reasoning",
-            visibleText(accumulator.summaryText(), MAX_CARD_SECTION_CHARACTERS),
-            visibleText(accumulator.contentText(), MAX_CARD_SECTION_CHARACTERS),
+            accumulator.summaryText(),
+            accumulator.contentText(),
             streaming ? "inProgress" : "completed",
             streaming
         );
     }
 
-    private static String detailWithStream(String existing, String label, String stream) {
-        String marker = label + ":\n";
-        String base = existing == null ? "" : existing;
-        int markerIndex = base.indexOf(marker);
-        if (markerIndex >= 0) {
-            int prefixEnd = markerIndex;
-            while (prefixEnd > 0 && base.charAt(prefixEnd - 1) == '\n') {
-                prefixEnd--;
-            }
-            base = base.substring(0, prefixEnd);
-        }
-        StringBuilder detail = new StringBuilder(base);
-        appendField(detail, label, visibleText(stream, MAX_CARD_SECTION_CHARACTERS));
-        return visibleText(detail.toString(), MAX_CARD_SECTION_CHARACTERS);
+    private static StreamText detailWithStream(StreamText existing, String label, StreamText stream) {
+        return StreamText.section(existing, label, stream, MAX_CARD_SECTION_CHARACTERS);
     }
 
     private static String itemStatus(Map<String, Object> item, boolean startedEvent) {
@@ -3210,7 +3199,7 @@ public final class CodexSessionController
                     itemId,
                     changes,
                     "inProgress",
-                    toolOutputStreams.get(itemId),
+                    pendingCardOutputLocked(itemId),
                     true
                 ));
                 changed = true;
@@ -5310,44 +5299,62 @@ public final class CodexSessionController
     }
 
     private static final class ReasoningAccumulator {
-        private final Map<Integer, String> summaryParts = new TreeMap<Integer, String>();
-        private final Map<Integer, String> contentParts = new TreeMap<Integer, String>();
+        private final Map<Integer, StreamText> summaryParts = new TreeMap<Integer, StreamText>();
+        private final Map<Integer, StreamText> contentParts = new TreeMap<Integer, StreamText>();
 
         private void ensureSummaryPart(int index) {
             if (!summaryParts.containsKey(Integer.valueOf(index))) {
-                summaryParts.put(Integer.valueOf(index), "");
+                summaryParts.put(Integer.valueOf(index), StreamText.empty());
             }
         }
 
         private void append(int index, String delta, boolean summary) {
-            Map<Integer, String> parts = summary ? summaryParts : contentParts;
+            Map<Integer, StreamText> parts = summary ? summaryParts : contentParts;
             Integer key = Integer.valueOf(index);
-            String existing = parts.get(key);
+            StreamText existing = parts.get(key);
             int otherCharacters = totalCharacters(parts)
                 - (existing == null ? 0 : existing.length());
             int maximumForPart = Math.max(
                 0,
                 MAX_CARD_SECTION_CHARACTERS - otherCharacters
             );
-            String combined = boundedStream(
-                existing == null ? "" : existing,
-                delta,
-                maximumForPart
-            );
-            parts.put(key, visibleText(combined, maximumForPart));
+            StreamText combined = (existing == null ? StreamText.empty() : existing)
+                .append(delta, maximumForPart, true).visibleLimit(maximumForPart);
+            parts.put(key, combined);
         }
 
-        private String summaryText() {
+        private StreamText summaryText() {
             return joinParts(summaryParts);
         }
 
-        private String contentText() {
+        private StreamText contentText() {
             return joinParts(contentParts);
         }
 
-        private static String joinParts(Map<Integer, String> parts) {
+        private static StreamText joinParts(Map<Integer, StreamText> parts) {
+            StreamText shared = StreamText.empty();
+            StreamText previous = null;
+            boolean settled = true;
+            for (StreamText part : parts.values()) {
+                if (part.isEmpty()) {
+                    continue;
+                }
+                if (previous != null && (!previous.settlesBeforeNewline()
+                    || shared.length() + 1 + part.length() > MAX_CARD_SECTION_CHARACTERS)) {
+                    settled = false;
+                    break;
+                }
+                shared = StreamText.joinSettled(shared, part);
+                previous = part;
+            }
+            if (settled) {
+                return shared;
+            }
+            // A named secret or Bearer prefix can cross LF-separated parts. Redact
+            // the entire joined value once, preserving pattern order and clipping.
             StringBuilder result = new StringBuilder();
-            for (String part : parts.values()) {
+            for (StreamText value : parts.values()) {
+                String part = value.text();
                 if (part.isEmpty()) {
                     continue;
                 }
@@ -5363,12 +5370,12 @@ public final class CodexSessionController
                     break;
                 }
             }
-            return result.toString();
+            return StreamText.literal(visibleText(result.toString(), MAX_CARD_SECTION_CHARACTERS));
         }
 
-        private static int totalCharacters(Map<Integer, String> parts) {
+        private static int totalCharacters(Map<Integer, StreamText> parts) {
             int total = 0;
-            for (String part : parts.values()) {
+            for (StreamText part : parts.values()) {
                 total += part.length();
             }
             return total;

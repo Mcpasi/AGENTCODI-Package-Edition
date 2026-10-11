@@ -49,6 +49,7 @@ public final class CodexSessionControllerTest {
         rejectsThreadMutationDuringActiveTurn();
         loadsAndRefreshesRateLimits();
         mergesStreamingDeltasAndFinalItem();
+        preservesStreamSnapshotsAndRedactionAcrossUpdates();
         keepsCompletedItemAuthoritativeAcrossReordering();
         projectsReasoningAndPlanCardsAuthoritatively();
         releasesCardStreamCapacityAfterTurnCompletion();
@@ -88,6 +89,7 @@ public final class CodexSessionControllerTest {
         startsTerminalThroughSandboxedCommandExec();
         rendersTerminalOutputWithTheStartedAndResizedPtyGeometry();
         streamsTerminalInputResizeAndTermination();
+        reusesTerminalSnapshotsUntilTheStateChanges();
         terminatesTerminalWhenOutputCapIsReached();
         rejectsTerminalCredentialsAndMalformedOutput();
         restartsTerminalOnAFreshScreenWithoutLosingPreviousOutput();
@@ -95,7 +97,113 @@ public final class CodexSessionControllerTest {
         rejectedHeightResizePreservesAddressableScreenRows();
         skipsAbandonedTerminalStartsDuringRapidRestart();
         usesVettedMcpConfigurationRpcs();
-        return 57;
+        return 59;
+    }
+
+    private static void preservesStreamSnapshotsAndRedactionAcrossUpdates() throws Exception {
+        FixtureServer server = new FixtureServer(true);
+        server.holdTurnOpen = true;
+        CodexSessionController controller = new CodexSessionController(server, "/private/workspace");
+        try {
+            startHeldTurn(server, controller);
+            controller.onNotification("item/agentMessage/delta",
+                streamParams("shared_assistant", null, null, "first\napi"));
+            CodexSessionSnapshot old = controller.snapshot();
+            controller.onNotification("item/agentMessage/delta",
+                streamParams("shared_assistant", null, null, "Key=fixture-secret\nlast 🌍"));
+            ChatMessage current = messageById(controller.snapshot(), "shared_assistant");
+            TestSupport.assertEquals("first\napiKey=<redacted>\nlast 🌍", current.getText(),
+                "assistant redaction across chunks");
+            TestSupport.assertEquals("first\napi", messageById(old, "shared_assistant").getText(),
+                "unrendered earlier snapshot retains its exact text");
+            TestSupport.assertTrue(old.getRevision() < controller.snapshot().getRevision(),
+                "each accepted delta publishes current state");
+
+            controller.onNotification("item/reasoning/summaryTextDelta", streamParams(
+                "shared_reasoning", "summaryIndex", Long.valueOf(0), "apiKey="));
+            controller.onNotification("item/reasoning/summaryTextDelta", streamParams(
+                "shared_reasoning", "summaryIndex", Long.valueOf(1), "fixture-reasoning-secret"));
+            CodexTranscriptItem reasoning = cardById(controller.snapshot(), "shared_reasoning");
+            TestSupport.assertEquals("apiKey=\n<redacted>", reasoning.getSummary(),
+                "redact across separate reasoning parts");
+            String[] crossPart = {"Bearer", "apiKey=", "fixture-cross-part-secret"};
+            for (int part = 0; part < crossPart.length; part++) {
+                controller.onNotification("item/reasoning/summaryTextDelta", streamParams(
+                    "cross_part_reasoning", "summaryIndex", Long.valueOf(part), crossPart[part]));
+            }
+            TestSupport.assertEquals("Bearer <redacted>\n<redacted>",
+                cardById(controller.snapshot(), "cross_part_reasoning").getSummary(),
+                "whole-join redaction preserves pattern order across three parts");
+
+            controller.onNotification("item/started", itemNotification(JsonCodec.object(
+                "id", "shared_tool", "type", "commandExecution", "command", "ls",
+                "cwd", "/private/workspace")));
+            controller.onNotification("item/commandExecution/outputDelta",
+                streamParams("shared_tool", null, null, "first\npass"));
+            CodexSessionSnapshot toolOld = controller.snapshot();
+            controller.onNotification("item/commandExecution/outputDelta",
+                streamParams("shared_tool", null, null, "word=fixture-tool-secret\nlast"));
+            CodexTranscriptItem tool = cardById(controller.snapshot(), "shared_tool");
+            TestSupport.assertContains(tool.getDetail(), "Arbeitsverzeichnis:\n/private/workspace",
+                "tool metadata survives stream updates");
+            TestSupport.assertContains(tool.getDetail(), "first\npassword=<redacted>\nlast",
+                "tool redaction across chunks");
+            TestSupport.assertContains(cardById(toolOld, "shared_tool").getDetail(), "first\npass",
+                "earlier tool snapshot stays unchanged");
+            controller.onNotification("item/completed", itemNotification(JsonCodec.object(
+                "id", "shared_tool", "type", "commandExecution", "command", "ls",
+                "aggregatedOutput", "final output", "exitCode", Long.valueOf(0))));
+            controller.onNotification("item/commandExecution/outputDelta",
+                streamParams("shared_tool", null, null, "stale delta"));
+            TestSupport.assertContains(cardById(controller.snapshot(), "shared_tool").getDetail(),
+                "final output", "final item remains authoritative");
+            TestSupport.assertFalse(cardById(controller.snapshot(), "shared_tool").isStreaming(),
+                "late delta cannot restart a completed tool");
+            controller.onNotification("turn/completed", JsonCodec.object(
+                "threadId", "thr_existing", "turn", JsonCodec.object(
+                    "id", "turn_fixture", "status", "completed", "items", JsonCodec.array())));
+            TestSupport.assertFalse(messageById(controller.snapshot(), "shared_assistant").isStreaming(),
+                "turn completion finishes shared text");
+            TestSupport.assertTrue(messageById(old, "shared_assistant").isStreaming(),
+                "turn completion leaves old snapshot unchanged");
+        } finally {
+            controller.close();
+        }
+    }
+
+    private static void reusesTerminalSnapshotsUntilTheStateChanges() throws Exception {
+        FixtureServer server = new FixtureServer(true);
+        final CodexSessionController controller = terminalController(server);
+        try {
+            controller.start();
+            controller.startTerminal(24, 80);
+            waitFor(new Condition() {
+                @Override public boolean isTrue() {
+                    return controller.terminalSnapshot().getOutput().contains("terminal-ready ✓");
+                }
+            }, "terminal prompt before snapshot reuse");
+            TerminalSessionSnapshot first = controller.terminalSnapshot();
+            TestSupport.assertTrue(first == controller.terminalSnapshot(), "unchanged snapshot is reused");
+            controller.onNotification("command/exec/outputDelta", JsonCodec.object(
+                "processId", server.lastCommandExecParams.get("processId"), "stream", "stdout",
+                "capReached", Boolean.FALSE, "deltaBase64", Base64.getEncoder().encodeToString(
+                    "next apiKey=fixture-secret\r\n".getBytes(StandardCharsets.UTF_8))));
+            TerminalSessionSnapshot updated = controller.terminalSnapshot();
+            TestSupport.assertTrue(first != updated && first.getRevision() < updated.getRevision(),
+                "output invalidates the cached snapshot");
+            TestSupport.assertContains(updated.getOutput(), "next apiKey=<redacted>", "output is redacted");
+            TestSupport.assertEquals("terminal-ready ✓\n", first.getOutput(), "previous snapshot is immutable");
+            controller.clearTerminalOutput();
+            TerminalSessionSnapshot cleared = controller.terminalSnapshot();
+            TestSupport.assertTrue(cleared != updated, "clear invalidates the cached output");
+            TestSupport.assertEquals("", cleared.getOutput(), "cleared output is current");
+            controller.stopTerminal();
+            TestSupport.assertFalse(controller.terminalSnapshot().isRunning(), "stop invalidates running state");
+            controller.close();
+            TestSupport.assertFalse(controller.terminalSnapshot().isRunning(), "close leaves current stopped state");
+        } finally {
+            controller.close();
+        }
     }
 
     private static void continuesThreadPaginationWithoutEvictingLoadedChats() throws Exception {

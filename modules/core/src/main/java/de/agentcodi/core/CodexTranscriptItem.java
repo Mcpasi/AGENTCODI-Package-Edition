@@ -15,8 +15,8 @@ public final class CodexTranscriptItem {
     private final ChatMessage message;
     private final String protocolType;
     private final String title;
-    private final String summary;
-    private final String detail;
+    private final StreamText summary;
+    private final StreamText detail;
     private final String status;
     private final boolean streaming;
     private final String reportedImagePath;
@@ -27,8 +27,8 @@ public final class CodexTranscriptItem {
         ChatMessage message,
         String protocolType,
         String title,
-        String summary,
-        String detail,
+        StreamText summary,
+        StreamText detail,
         String status,
         boolean streaming,
         String reportedImagePath
@@ -41,8 +41,8 @@ public final class CodexTranscriptItem {
         this.message = message;
         this.protocolType = nonNull(protocolType);
         this.title = nonNull(title);
-        this.summary = nonNull(summary);
-        this.detail = nonNull(detail);
+        this.summary = Objects.requireNonNull(summary, "summary");
+        this.detail = Objects.requireNonNull(detail, "detail");
         this.status = nonNull(status);
         this.streaming = streaming;
         this.reportedImagePath = nonNull(reportedImagePath);
@@ -74,8 +74,8 @@ public final class CodexTranscriptItem {
             value,
             "",
             "",
-            "",
-            "",
+            StreamText.empty(),
+            StreamText.empty(),
             "",
             value.isStreaming(),
             ""
@@ -92,6 +92,12 @@ public final class CodexTranscriptItem {
         String status,
         boolean streaming
     ) {
+        return card(id, kind, protocolType, title, StreamText.literal(summary),
+            StreamText.literal(detail), status, streaming);
+    }
+
+    static CodexTranscriptItem card(String id, Kind kind, String protocolType,
+        String title, StreamText summary, StreamText detail, String status, boolean streaming) {
         if (kind == Kind.MESSAGE) {
             throw new IllegalArgumentException("Use message() for message transcript items");
         }
@@ -152,10 +158,14 @@ public final class CodexTranscriptItem {
     }
 
     public String getSummary() {
-        return summary;
+        return summary.text();
     }
 
     public String getDetail() {
+        return detail.text();
+    }
+
+    StreamText detailText() {
         return detail;
     }
 
@@ -173,7 +183,7 @@ public final class CodexTranscriptItem {
 
     public int getVisibleCharacterCount() {
         if (message != null) {
-            return message.getText().length();
+            return message.streamText().length();
         }
         return title.length() + summary.length() + detail.length() + status.length()
             + reportedImagePath.length();
@@ -187,7 +197,7 @@ public final class CodexTranscriptItem {
             return message(new ChatMessage(
                 message.getId(),
                 message.getRole(),
-                message.getText(),
+                message.streamText(),
                 false
             ));
         }

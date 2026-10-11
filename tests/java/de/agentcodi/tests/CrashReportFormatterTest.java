@@ -1,6 +1,7 @@
 package de.agentcodi.tests;
 
 import de.agentcodi.core.CrashReportFormatter;
+import java.util.concurrent.atomic.AtomicReference;
 
 public final class CrashReportFormatterTest {
     private CrashReportFormatterTest() {
@@ -12,7 +13,46 @@ public final class CrashReportFormatterTest {
         redactsJsonOauthAndJwtSecrets();
         redactsVisibleTextBeforeTruncation();
         handlesCauseCycles();
-        return 5;
+        keepsConcurrentRedactionIndependent();
+        return 6;
+    }
+
+    private static void keepsConcurrentRedactionIndependent() {
+        final AtomicReference<Throwable> failure = new AtomicReference<Throwable>();
+        Thread[] workers = new Thread[6];
+        for (int index = 0; index < workers.length; index++) {
+            final int worker = index;
+            workers[index] = new Thread(new Runnable() {
+                @Override public void run() {
+                    try {
+                        for (int iteration = 0; iteration < 300; iteration++) {
+                            String prefix = "worker-" + worker + "-" + iteration + " ";
+                            String output = CrashReportFormatter.redactSecrets(prefix
+                                + "password=fixture-secret Bearer fixture-token &code=fixture-code");
+                            TestSupport.assertEquals(prefix
+                                + "password=<redacted> Bearer <redacted> &code=<redacted>",
+                                output, "thread-local redaction remains independent");
+                        }
+                    } catch (Throwable error) {
+                        failure.compareAndSet(null, error);
+                    }
+                }
+            });
+            workers[index].setDaemon(true);
+            workers[index].start();
+        }
+        for (Thread worker : workers) {
+            try {
+                worker.join(5000);
+            } catch (InterruptedException error) {
+                Thread.currentThread().interrupt();
+                throw new AssertionError(error);
+            }
+            TestSupport.assertFalse(worker.isAlive(), "redaction worker finishes");
+        }
+        if (failure.get() != null) {
+            throw new AssertionError(failure.get());
+        }
     }
 
     private static void formatsBoundedStackTrace() {

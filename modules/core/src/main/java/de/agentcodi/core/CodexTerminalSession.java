@@ -39,6 +39,7 @@ final class CodexTerminalSession implements AutoCloseable {
 
     private long generation;
     private long revision;
+    private TerminalSessionSnapshot cachedSnapshot;
     private long receivedOutputBytes;
     private boolean starting;
     private boolean running;
@@ -82,7 +83,10 @@ final class CodexTerminalSession implements AutoCloseable {
 
     TerminalSessionSnapshot snapshot() {
         synchronized (lock) {
-            return new TerminalSessionSnapshot(
+            if (cachedSnapshot != null && cachedSnapshot.getRevision() == revision) {
+                return cachedSnapshot;
+            }
+            cachedSnapshot = new TerminalSessionSnapshot(
                 revision,
                 running,
                 starting,
@@ -90,6 +94,7 @@ final class CodexTerminalSession implements AutoCloseable {
                 output.snapshot(),
                 safeFailure(failure)
             );
+            return cachedSnapshot;
         }
     }
 

@@ -6,12 +6,16 @@ on:
       - 'modules/core/src/main/java/**'
       - 'tests/performance/**'
       - '.github/ci/*performance*'
+      - '.github/ci/StreamConsumerBenchmark.java'
+      - '.github/ci/run-stream-consumer-benchmark.py'
       - '.github/workflows/performance-chat.yml'
   pull_request:
     paths:
       - 'modules/core/src/main/java/**'
       - 'tests/performance/**'
       - '.github/ci/*performance*'
+      - '.github/ci/StreamConsumerBenchmark.java'
+      - '.github/ci/run-stream-consumer-benchmark.py'
       - '.github/workflows/performance-chat.yml'
   workflow_dispatch:
     inputs:
@@ -61,6 +65,10 @@ jobs:
           if [ "$FAIL_ON_FINDINGS" = true ]; then options+=(--fail-on-findings); fi
           python3 -B .github/ci/run-performance-benchmarks.py \
             --suite chat --output "$RUNNER_TEMP/performance-chat" "${options[@]}"
+      - name: Replay full text consumers and multipart reasoning
+        run: |
+          python3 -B .github/ci/run-stream-consumer-benchmark.py \
+            --output "$RUNNER_TEMP/performance-chat/consumer"
       - name: Upload measurements and optional JFR
         if: always()
         uses: actions/upload-artifact@v7

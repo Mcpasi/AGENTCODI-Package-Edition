@@ -11,16 +11,20 @@ public final class ChatMessage {
 
     private final String id;
     private final Role role;
-    private final String text;
+    private final StreamText text;
     private final boolean streaming;
 
     public ChatMessage(String id, Role role, String text, boolean streaming) {
+        this(id, role, StreamText.redacted(text), streaming);
+    }
+
+    ChatMessage(String id, Role role, StreamText text, boolean streaming) {
         if (id == null || id.trim().isEmpty()) {
             throw new IllegalArgumentException("Chat message id must not be blank");
         }
         this.id = id;
         this.role = Objects.requireNonNull(role, "role");
-        this.text = CrashReportFormatter.redactSecrets(text);
+        this.text = Objects.requireNonNull(text, "text");
         this.streaming = streaming;
     }
 
@@ -33,6 +37,10 @@ public final class ChatMessage {
     }
 
     public String getText() {
+        return text.text();
+    }
+
+    StreamText streamText() {
         return text;
     }
 
