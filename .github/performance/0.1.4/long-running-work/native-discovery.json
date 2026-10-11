@@ -1,0 +1,51 @@
+{
+  "release": "rust-v0.156.1",
+  "binary_sha256": "2458e31a21b3d515a4bad6c4f9fc18f5856a2b5af2d84495241c6dd467d453b8",
+  "cases": [
+    {
+      "case": "finite-timeout",
+      "bytes": 5,
+      "max_chunk": 5,
+      "capReached": false,
+      "marker": false,
+      "completion": {
+        "id": 2,
+        "result": {
+          "exitCode": 124,
+          "stdout": "",
+          "stderr": ""
+        }
+      }
+    },
+    {
+      "case": "legacy-output-cap",
+      "bytes": 8388608,
+      "max_chunk": 71686,
+      "capReached": true,
+      "marker": false,
+      "completion": {
+        "id": 3,
+        "result": {
+          "exitCode": 0,
+          "stdout": "",
+          "stderr": ""
+        }
+      }
+    },
+    {
+      "case": "unlimited-stream",
+      "bytes": 18874387,
+      "max_chunk": 73025,
+      "capReached": false,
+      "marker": true,
+      "completion": {
+        "id": 4,
+        "result": {
+          "exitCode": 0,
+          "stdout": "",
+          "stderr": ""
+        }
+      }
+    }
+  ]
+}

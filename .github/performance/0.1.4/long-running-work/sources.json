@@ -1,0 +1,42 @@
+{
+  "format_version": 1,
+  "date": "2026-10-11",
+  "baseline_commit": "1f714a12260f673ee234803a1082430169f3ba0d",
+  "host": {
+    "java": "Eclipse Temurin 17.0.20.1",
+    "architecture": "x86_64",
+    "os": "Linux / Debian 13"
+  },
+  "before": {
+    "modules/core/src/main/java/de/agentcodi/core/CodexTerminalSession.java": "40e6ad6627ced938a849d91aa2899f2ea2495d4ab12a29c10e1f086e006d53a7",
+    "modules/core/src/main/java/de/agentcodi/core/CodexAppServerClient.java": "34dc9681a72290e0708ef5f7355ab25f5d0aabfba722c0f172f7c7b87e5ee783",
+    "modules/core/src/main/java/de/agentcodi/core/CodexSessionController.java": "1d341ea268e6b8799f55dfa9999a1040091ae2d51cb28cc0048f6bd9fe3d36f9"
+  },
+  "after": {
+    "modules/core/src/main/java/de/agentcodi/core/CodexTerminalSession.java": "d01943dd3f6ad3a574d7fc7f0645249ed3260423b36bd182bd472e48465bbb17",
+    "modules/core/src/main/java/de/agentcodi/core/CodexAppServerClient.java": "b6a5cd275cc92859ff66db23598d4fca28f86e2fcbbf5fbcead4a7e61e15e482",
+    "modules/core/src/main/java/de/agentcodi/core/CodexSessionController.java": "fc97d55f91f1682998cae1c5b7acf4479da86c7ba83aadbb188f20afc43579da",
+    "tests/java/de/agentcodi/core/LongRunningTerminalTest.java": "d185241d6f67b2725984e4af67e55904145ac1c0a0527d02d04c5a5353deb7cd",
+    "tests/java/de/agentcodi/tests/CodexSessionControllerTest.java": "964b88d4842d3057db2b54d169de233321ea256e300c668e03312471e0b34b6f",
+    "tests/java/de/agentcodi/tests/TestMain.java": "48ffe27799d2b36d8d8dd953abaa564999acffea9610239750d9b552f2048766",
+    "scripts/check-architecture.sh": "5cab130ffe6ab7e8daf0099f89098d6f57d3f56f9f3bc4e74fb5863b0871a382",
+    ".github/ci/replay-long-running-work.py": "4a77d6e3226998bb915a0a6e8e2f68989daca14b49642128b4af2fb5ccc0a401",
+    ".github/ci/test-long-running-terminal-runtime.py": "f5834f65fa5732af64e5cbf88ebd68dbaf5350b8e94f40cc921213a291682f01"
+  },
+  "evidence": {
+    "before.txt": "d92b685b82f5fe37e1665026c256a7baa0b8c6f67e431df7150859685620c3a3",
+    "after.txt": "61b213b8198bac17e37984435ac144ef74136e55901c6ca5b4bbab004e73851d",
+    "native.json": "e9898fbd2a18780dd9094d12f0a7b3cb2444d56029405ab43fb14f867bd0b064",
+    "native-discovery.json": "90135c518aeaea86ff4931565dbdd8680270476eaf6999055f5e1494a09e2c30",
+    "validation.txt": "b3aaf6aae799e26be1718e19232462f3765a20e3763c396537ace03196071d5a"
+  },
+  "validation": {
+    "baseline_java_tests": 389,
+    "after_java_tests": 402,
+    "baseline_replay_failures": 8,
+    "after_replay_failures": 0,
+    "native_cases": 4,
+    "android_signing_checks": 6,
+    "physical_android_long_work": "pending"
+  }
+}

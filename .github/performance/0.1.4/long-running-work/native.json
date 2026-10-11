@@ -1,0 +1,52 @@
+{
+  "release": "rust-v0.156.1",
+  "binary_sha256": "2458e31a21b3d515a4bad6c4f9fc18f5856a2b5af2d84495241c6dd467d453b8",
+  "cases": [
+    {
+      "case": "finite-timeout",
+      "bytes": 5,
+      "max_chunk": 5,
+      "cap_reached": false,
+      "marker": false,
+      "completion": {
+        "exitCode": 124,
+        "stdout": "",
+        "stderr": ""
+      }
+    },
+    {
+      "case": "legacy-output-cap",
+      "bytes": 8388608,
+      "max_chunk": 73727,
+      "cap_reached": true,
+      "marker": false,
+      "completion": {
+        "exitCode": 0,
+        "stdout": "",
+        "stderr": ""
+      }
+    },
+    {
+      "case": "unlimited-stream",
+      "bytes": 18874387,
+      "max_chunk": 71682,
+      "cap_reached": false,
+      "marker": true,
+      "completion": {
+        "exitCode": 0,
+        "stdout": "",
+        "stderr": ""
+      }
+    },
+    {
+      "case": "explicit-stop",
+      "completion": {
+        "exitCode": 1,
+        "stdout": "",
+        "stderr": ""
+      },
+      "terminate": {}
+    }
+  ],
+  "user_agent": "agentcodi_long_work_probe/0.156.1 (Debian 13.0.0; x86_64) dumb (agentcodi_long_work_probe; 0.1.4)"
+}

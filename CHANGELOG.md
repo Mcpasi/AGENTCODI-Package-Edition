@@ -2,7 +2,44 @@
 
 ## 0.1.4 — Package Edition (Android versionCode 7) — 2026-10-11
 
-**In development. Host performance fixes verified. Physical Android device tests pending.**
+**In development. Host performance and long-running session fixes verified. Physical Android device tests pending.**
+
+- Remove the interactive terminal's 30-minute server deadline and its additional
+  client deadline. Use the pinned protocol's `disableTimeout` flag and wait for
+  process exit, explicit Stop, interruption or transport closure. Keep ordinary
+  administrative, finite streaming and terminal-control RPC timeouts intact.
+- Stream terminal output without the 8-MiB per-stream capture quota or the
+  16-MiB cumulative session limit. Retain the rolling 128-K-character display,
+  redaction, PTY rendering and strict chunk/Base64 validation. Long builds no
+  longer terminate because their lifetime output exhausts a capture budget.
+- Accept valid output chunks up to 72 KiB. The unchanged Codex server coalesces
+  towards 64 KiB and can append another 8-KiB native read; real captured chunks
+  above the former 64-KiB limit previously caused a terminal protocol failure.
+  Oversized and malformed chunks and unexpected server capture failures still
+  terminate the affected PTY and report their cause.
+- Extend the local wait for command/file/MCP approvals and user questions from
+  ten minutes to seven days. Honor explicit shorter user-input deadlines,
+  including a one-hour deadline that was previously shortened to ten minutes.
+  Preserve all decisions, server resolution, overload/stale rejection and
+  fail-closed expiry; waiting never automatically approves an action.
+- Cancel and remove interactive-request timers immediately on answers,
+  dismissals, decisions, server resolution, turn completion and shutdown. Guard
+  already-running callbacks by their timer identity so an expired old request
+  cannot cancel a new request that reuses its server RPC id.
+- Add deterministic long-work replays and a pinned, source-matched native host
+  PTY probe. All eight regression cases fail on the original three production
+  classes at `1f714a1` and pass after the fixes. The real server probe reproduces
+  timeout exit code 124 and the old output cap, streams 18 MiB to completion
+  with the new flags, and verifies explicit Stop on a quiet unlimited PTY.
+  Preserve commands, source hashes and before/after results in
+  [the long-running work evidence](.github/performance/0.1.4/long-running-work/).
+- Long-work validation: all 402 Java host tests, architecture contracts,
+  Android source/resource compilation and six signing/update checks pass.
+  Added checks preserve natural completion, interruption, transport failure,
+  finite RPC deadlines, malformed/oversized output handling, bounded display
+  storage, approval expiry, timer cleanup and cancellation races. Native host
+  probes verify the shared execution implementation; physical Android screen
+  lock, Doze and OEM process-management behavior remain device tests.
 
 - Reuse immutable terminal snapshots while their revision is unchanged. Rebuild
   the bounded, redacted output after output, state, clear, resize and session

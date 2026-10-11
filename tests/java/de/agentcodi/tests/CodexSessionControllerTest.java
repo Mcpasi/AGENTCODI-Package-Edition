@@ -79,6 +79,10 @@ public final class CodexSessionControllerTest {
         rejectsMalformedAndUnsupportedMcpElicitations();
         removesServerResolvedMcpApprovals();
         timesOutMcpApprovalsWithCancelAction();
+        givesHumanRequestsTimeDuringLongWork();
+        honorsLongServerUserInputDeadline();
+        releasesResolvedInteractiveTimers();
+        keepsReusedRequestIdsSafeFromAlreadyRunningTimers();
         handlesCommandAndFileApprovals();
         acceptsFileCreationApproval();
         enrichesFileApprovalAfterReorderedPatchUpdate();
@@ -97,7 +101,7 @@ public final class CodexSessionControllerTest {
         rejectedHeightResizePreservesAddressableScreenRows();
         skipsAbandonedTerminalStartsDuringRapidRestart();
         usesVettedMcpConfigurationRpcs();
-        return 59;
+        return 63;
     }
 
     private static void preservesStreamSnapshotsAndRedactionAcrossUpdates() throws Exception {
@@ -1242,18 +1246,10 @@ public final class CodexSessionControllerTest {
         TestSupport.assertEquals(Boolean.TRUE, params.get("tty"), "PTY enabled");
         TestSupport.assertFalse(params.containsKey("sandboxPolicy"), "no policy override");
         TestSupport.assertFalse(params.containsKey("env"), "no terminal environment override");
-        TestSupport.assertFalse(params.containsKey("disableTimeout"), "finite timeout retained");
-        TestSupport.assertFalse(params.containsKey("disableOutputCap"), "output cap retained");
-        TestSupport.assertEquals(
-            Long.valueOf(30L * 60L * 1000L),
-            params.get("timeoutMs"),
-            "terminal timeout"
-        );
-        TestSupport.assertEquals(
-            Long.valueOf(8L * 1024L * 1024L),
-            params.get("outputBytesCap"),
-            "terminal output cap"
-        );
+        TestSupport.assertEquals(Boolean.TRUE, params.get("disableTimeout"), "terminal has no server deadline");
+        TestSupport.assertEquals(Boolean.TRUE, params.get("disableOutputCap"), "terminal output remains streamed");
+        TestSupport.assertFalse(params.containsKey("timeoutMs"), "no conflicting timeout field");
+        TestSupport.assertFalse(params.containsKey("outputBytesCap"), "no conflicting lifetime capture cap");
         Map<String, Object> size = JsonCodec.requireObject(params.get("size"), "terminal size");
         TestSupport.assertEquals(Long.valueOf(31L), size.get("rows"), "terminal rows");
         TestSupport.assertEquals(Long.valueOf(101L), size.get("cols"), "terminal columns");
@@ -4019,6 +4015,148 @@ public final class CodexSessionControllerTest {
         } finally {
             controller.close();
         }
+    }
+
+    private static void givesHumanRequestsTimeDuringLongWork() throws Exception {
+        final FixtureServer server = new FixtureServer(true);
+        server.holdTurnOpen = true;
+        final CodexSessionController controller = new CodexSessionController(server, "/private/workspace");
+        try {
+            startHeldTurn(server, controller);
+            server.requestFromServer(970L, "mcpServer/elicitation/request",
+                mcpToolApproval("thr_existing", "turn_fixture"));
+            server.requestFromServer(971L, "item/tool/requestUserInput",
+                singleQuestionRequest("long_work_question", null, true));
+            server.requestFromServer(972L, "item/commandExecution/requestApproval", JsonCodec.object(
+                "threadId", "thr_existing", "turnId", "turn_fixture", "itemId", "long_work_command",
+                "startedAtMs", Long.valueOf(1L), "command", "./build.sh", "cwd", "/private/workspace"));
+            server.requestFromServer(973L, "item/fileChange/requestApproval", JsonCodec.object(
+                "threadId", "thr_existing", "turnId", "turn_fixture", "itemId", "long_work_file",
+                "startedAtMs", Long.valueOf(1L), "reason", "Review changes after the build"));
+            waitFor(new Condition() {
+                @Override public boolean isTrue() {
+                    return controller.snapshot().getInteractiveRequests().size() == 4;
+                }
+            }, "all four human request types are pending");
+            long nextDay = System.currentTimeMillis() + 24L * 60L * 60L * 1000L;
+            for (CodexInteractiveRequest request : controller.snapshot().getInteractiveRequests()) {
+                TestSupport.assertTrue(request.getExpiresAtMilliseconds() > nextDay,
+                    request.getKind() + " is not automatically rejected after ten minutes");
+                TestSupport.assertEquals(null, server.responseFor(request.getRequestId()),
+                    "extending a human deadline never approves an action automatically");
+            }
+            controller.dismissUserInput(971L);
+            controller.resolveApproval(970L, CodexApprovalDecision.DECLINE, -1);
+            controller.resolveApproval(972L, CodexApprovalDecision.CANCEL, -1);
+            controller.resolveApproval(973L, CodexApprovalDecision.DECLINE, -1);
+            waitFor(new Condition() {
+                @Override public boolean isTrue() {
+                    return server.responseFor(970L) != null && server.responseFor(971L) != null
+                        && server.responseFor(972L) != null && server.responseFor(973L) != null;
+                }
+            }, "human controls still resolve all long-lived requests");
+        } finally { controller.close(); }
+    }
+
+    private static void honorsLongServerUserInputDeadline() throws Exception {
+        final FixtureServer server = new FixtureServer(true);
+        server.holdTurnOpen = true;
+        final CodexSessionController controller = new CodexSessionController(server, "/private/workspace");
+        try {
+            startHeldTurn(server, controller);
+            long before = System.currentTimeMillis();
+            server.requestFromServer(974L, "item/tool/requestUserInput",
+                singleQuestionRequest("long_server_deadline", Long.valueOf(60L * 60L * 1000L), true));
+            waitFor(new Condition() {
+                @Override public boolean isTrue() { return controller.snapshot().hasInteractiveRequest(); }
+            }, "server user-input deadline is projected");
+            long expiry = controller.snapshot().getInteractiveRequests().get(0).getExpiresAtMilliseconds();
+            TestSupport.assertTrue(expiry >= before + 60L * 60L * 1000L,
+                "an explicit one-hour deadline is not shortened to ten minutes");
+            TestSupport.assertTrue(expiry <= System.currentTimeMillis() + 60L * 60L * 1000L,
+                "an explicit server deadline is not lengthened");
+        } finally { controller.close(); }
+    }
+
+    private static void releasesResolvedInteractiveTimers() throws Exception {
+        final FixtureServer server = new FixtureServer(true);
+        server.holdTurnOpen = true;
+        final CodexSessionController controller = new CodexSessionController(server, "/private/workspace");
+        // Observe the actual schedule/cancel behavior with a stock, inspectable executor.
+        java.util.concurrent.ScheduledThreadPoolExecutor timers =
+            new java.util.concurrent.ScheduledThreadPoolExecutor(1);
+        timers.setRemoveOnCancelPolicy(true);
+        java.lang.reflect.Field field = CodexSessionController.class.getDeclaredField("interactiveResponses");
+        field.setAccessible(true);
+        ((java.util.concurrent.ScheduledExecutorService) field.get(controller)).shutdownNow();
+        field.set(controller, timers);
+        try {
+            startHeldTurn(server, controller);
+            server.requestFromServer(975L, "mcpServer/elicitation/request",
+                mcpToolApproval("thr_existing", "turn_fixture"));
+            waitFor(new Condition() {
+                @Override public boolean isTrue() {
+                    return controller.snapshot().hasInteractiveRequest() && timers.getQueue().size() == 1;
+                }
+            }, "MCP approval owns a scheduled deadline");
+            server.notifyMessage("serverRequest/resolved", JsonCodec.object(
+                "threadId", "thr_existing", "requestId", Long.valueOf(975L)));
+            waitFor(new Condition() {
+                @Override public boolean isTrue() { return !controller.snapshot().hasInteractiveRequest(); }
+            }, "MCP approval is server-resolved");
+            TestSupport.assertEquals(Integer.valueOf(0), Integer.valueOf(timers.getQueue().size()),
+                "resolved requests release their timer and retained request contents immediately");
+        } finally { controller.close(); timers.shutdownNow(); }
+    }
+
+    private static void keepsReusedRequestIdsSafeFromAlreadyRunningTimers() throws Exception {
+        final FixtureServer server = new FixtureServer(true);
+        server.holdTurnOpen = true;
+        final CodexSessionController controller = new CodexSessionController(server, "/private/workspace");
+        final AtomicReference<Thread> timerThread = new AtomicReference<Thread>();
+        java.util.concurrent.ScheduledThreadPoolExecutor timers = new java.util.concurrent.ScheduledThreadPoolExecutor(
+            1, new java.util.concurrent.ThreadFactory() {
+                @Override public Thread newThread(Runnable runnable) {
+                    Thread thread = new Thread(runnable, "interactive-timer-race-fixture");
+                    timerThread.set(thread);
+                    return thread;
+                }
+            });
+        timers.setRemoveOnCancelPolicy(true);
+        java.lang.reflect.Field field = CodexSessionController.class.getDeclaredField("interactiveResponses");
+        field.setAccessible(true);
+        ((java.util.concurrent.ScheduledExecutorService) field.get(controller)).shutdownNow();
+        field.set(controller, timers);
+        try {
+            startHeldTurn(server, controller);
+            controller.onServerRequest(976L, "mcpServer/elicitation/request",
+                mcpToolApproval("thr_existing", "turn_fixture"));
+            CodexInteractiveRequest request = controller.snapshot().getInteractiveRequests().get(0);
+            CodexInteractiveRequest expired = CodexInteractiveRequest.mcpToolApproval(
+                request.getRequestId(), request.getThreadId(), request.getTurnId(),
+                request.getMcpServerName(), request.getReason(), request.getMcpToolArguments(),
+                System.currentTimeMillis());
+            java.lang.reflect.Method schedule = CodexSessionController.class.getDeclaredMethod(
+                "scheduleInteractiveTimeout", CodexInteractiveRequest.class);
+            schedule.setAccessible(true);
+            synchronized (controller) {
+                schedule.invoke(controller, expired);
+                waitFor(new Condition() {
+                    @Override public boolean isTrue() {
+                        return timerThread.get() != null && timerThread.get().getState() == Thread.State.BLOCKED;
+                    }
+                }, "expired callback has started and is waiting for the controller lock");
+                controller.onNotification("serverRequest/resolved", JsonCodec.object(
+                    "threadId", "thr_existing", "requestId", Long.valueOf(976L)));
+                controller.onServerRequest(976L, "mcpServer/elicitation/request",
+                    mcpToolApproval("thr_existing", "turn_fixture"));
+            }
+            timers.submit(new Runnable() {
+                @Override public void run() { }
+            }).get(3L, java.util.concurrent.TimeUnit.SECONDS);
+            TestSupport.assertTrue(controller.snapshot().hasInteractiveRequest(),
+                "an already-running old timer cannot cancel a new request reusing its RPC id");
+        } finally { controller.close(); timers.shutdownNow(); }
     }
 
     private static Map<String, Object> mcpToolApproval(String threadId, String turnId) {

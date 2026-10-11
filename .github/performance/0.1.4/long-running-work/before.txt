@@ -1,0 +1,9 @@
+FAIL de.agentcodi.core.LongRunningTerminalTest#survivesFormerServerDeadline: java.lang.AssertionError: terminal survives the former 30-minute server deadline
+FAIL de.agentcodi.core.LongRunningTerminalTest#waitsForExitWithoutClientDeadline: java.lang.AssertionError: terminal waits for exit or cancellation without a client time limit expected=<WAITING> actual=<TIMED_WAITING>
+FAIL de.agentcodi.core.LongRunningTerminalTest#streamsBeyondFormerCaptureLimits: java.lang.AssertionError: build output must not terminate the PTY after 18 MiB
+FAIL de.agentcodi.core.LongRunningTerminalTest#acceptsCoalescedServerOutput: java.lang.AssertionError: a valid coalesced server chunk above 64 KiB does not kill the PTY
+FAIL de.agentcodi.tests.CodexSessionControllerTest#givesHumanRequestsTimeDuringLongWork: java.lang.AssertionError: MCP_TOOL_APPROVAL is not automatically rejected after ten minutes
+FAIL de.agentcodi.tests.CodexSessionControllerTest#honorsLongServerUserInputDeadline: java.lang.AssertionError: an explicit one-hour deadline is not shortened to ten minutes
+FAIL de.agentcodi.tests.CodexSessionControllerTest#releasesResolvedInteractiveTimers: java.lang.AssertionError: resolved requests release their timer and retained request contents immediately expected=<0> actual=<1>
+FAIL de.agentcodi.tests.CodexSessionControllerTest#keepsReusedRequestIdsSafeFromAlreadyRunningTimers: java.lang.AssertionError: an already-running old timer cannot cancel a new request reusing its RPC id
+Failures: 8/8

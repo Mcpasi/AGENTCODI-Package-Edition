@@ -20,6 +20,7 @@ public final class TestMain {
         passed += CodexLargeIncomingFrameTest.run();
         passed += CodexWorkspaceAttachmentContextTest.run();
         passed += CodexSessionControllerTest.run();
+        passed += de.agentcodi.core.LongRunningTerminalTest.run();
         passed += McpCatalogLoaderTest.run();
         passed += McpConfigurationControllerTest.run();
         passed += ConnectorCatalogLoaderTest.run();

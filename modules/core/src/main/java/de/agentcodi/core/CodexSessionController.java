@@ -17,7 +17,8 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.concurrent.RejectedExecutionException;
-import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.ScheduledFuture;
+import java.util.concurrent.ScheduledThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
 
@@ -58,7 +59,9 @@ public final class CodexSessionController
     private static final int MAX_FILE_CHANGE_DIFF_CHARACTERS = 12 * 1024;
     private static final int MAX_FILE_CHANGE_TOTAL_CHARACTERS = 48 * 1024;
     private static final int MAX_POLICY_AMENDMENT_PARTS = 32;
-    private static final long MAX_INTERACTIVE_WAIT_MS = 10L * 60L * 1000L;
+    // Human decisions must survive an overnight build or an extended absence.
+    // Expiry remains fail-closed; an explicit shorter server deadline still wins.
+    private static final long MAX_INTERACTIVE_WAIT_MS = 7L * 24L * 60L * 60L * 1000L;
     private static final String WORKSPACE_PERMISSION_PROFILE =
         CodexExecutionMode.COMPATIBILITY_PERMISSION_PROFILE_ID;
     private static final String APPROVAL_POLICY_ON_REQUEST = "on-request";
@@ -98,8 +101,9 @@ public final class CodexSessionController
     private final ConnectionFailureListener connectionFailureListener;
     private final ExecutorService operations = Executors.newSingleThreadExecutor();
     private final ExecutorService turnControls = Executors.newSingleThreadExecutor();
-    private final ScheduledExecutorService interactiveResponses =
-        Executors.newSingleThreadScheduledExecutor();
+    private final ScheduledThreadPoolExecutor interactiveResponses = newInteractiveResponseExecutor();
+    private final Map<Long, InteractiveTimeoutTask> interactiveTimeouts =
+        new HashMap<Long, InteractiveTimeoutTask>();
     private final AtomicLong localMessageIds = new AtomicLong(1L);
     private final List<CodexModelOption> models = new ArrayList<CodexModelOption>();
     private final List<CodexThreadSummary> threads = new ArrayList<CodexThreadSummary>();
@@ -811,7 +815,7 @@ public final class CodexSessionController
                     activeTurnId = "";
                     lastCompletedTurnId = "";
                     reviewState = CodexReviewState.idle();
-                    interactiveRequests.clear();
+                    clearInteractiveRequestsLocked();
                     pendingFileChanges.clear();
                     clearCardStreamsLocked();
                     operationMessage = "Chat ist geöffnet.";
@@ -1561,7 +1565,7 @@ public final class CodexSessionController
                 setUserError(error.getMessage());
                 return;
             }
-            interactiveRequests.remove(index);
+            removeInteractiveRequestLocked(index);
             errorMessage = "";
             operationMessage = "Freigabeentscheidung wird übermittelt.";
             publishLocked();
@@ -1588,7 +1592,7 @@ public final class CodexSessionController
                             validationError = error.getMessage();
                         }
                         if (response != null) {
-                            interactiveRequests.remove(index);
+                            removeInteractiveRequestLocked(index);
                             errorMessage = "";
                             operationMessage = "Antwort wird an Codex übermittelt.";
                             publishLocked();
@@ -1621,7 +1625,7 @@ public final class CodexSessionController
                 setUserError("Diese Anfrage erwartet eine Freigabeentscheidung.");
                 return;
             }
-            interactiveRequests.remove(index);
+            removeInteractiveRequestLocked(index);
             response = emptyUserInputResponse();
             operationMessage = "Eingabeanfrage wird ohne Antwort geschlossen.";
             publishLocked();
@@ -1747,7 +1751,7 @@ public final class CodexSessionController
             operationActive = false;
             clearTurnInterruptLocked();
             rateLimitsRefreshQueued = false;
-            interactiveRequests.clear();
+            clearInteractiveRequestsLocked();
             pendingFileChanges.clear();
             clearCardStreamsLocked();
             connectionMessage = "Verbindung zum Codex App-Server wurde beendet.";
@@ -1777,7 +1781,7 @@ public final class CodexSessionController
             reviewState = CodexReviewState.idle();
             operationActive = false;
             clearTurnInterruptLocked();
-            interactiveRequests.clear();
+            clearInteractiveRequestsLocked();
             pendingFileChanges.clear();
             clearCardStreamsLocked();
             connectionMessage = "Codex App-Server wurde gestoppt.";
@@ -2209,7 +2213,7 @@ public final class CodexSessionController
             activeTurnId = "";
             lastCompletedTurnId = "";
             reviewState = CodexReviewState.idle();
-            interactiveRequests.clear();
+            clearInteractiveRequestsLocked();
             pendingFileChanges.clear();
             clearCardStreamsLocked();
             upsertThreadLocked(new CodexThreadSummary(id, activeThreadTitle, 0L, false));
@@ -3897,39 +3901,67 @@ public final class CodexSessionController
         submitInteractiveResponse(request.getRequestId(), safeInteractiveRejection(request));
     }
 
-    private void scheduleInteractiveTimeout(final CodexInteractiveRequest request) {
+    private static ScheduledThreadPoolExecutor newInteractiveResponseExecutor() {
+        ScheduledThreadPoolExecutor executor = new ScheduledThreadPoolExecutor(1);
+        executor.setRemoveOnCancelPolicy(true);
+        return executor;
+    }
+
+    private synchronized void scheduleInteractiveTimeout(final CodexInteractiveRequest request) {
+        if (closed || findInteractiveRequestLocked(request.getRequestId()) < 0) {
+            return;
+        }
         long delay = Math.max(
             0L,
             request.getExpiresAtMilliseconds() - System.currentTimeMillis()
         );
         try {
-            interactiveResponses.schedule(new Runnable() {
-                @Override
-                public void run() {
-                    boolean removed;
-                    synchronized (CodexSessionController.this) {
-                        int index = findInteractiveRequestLocked(request.getRequestId());
-                        removed = index >= 0;
-                        if (removed) {
-                            interactiveRequests.remove(index);
-                            operationMessage = "Eine Codex-Anfrage ist sicher abgelaufen.";
-                            publishLocked();
-                        }
-                    }
-                    if (removed) {
-                        try {
-                            client.respondToServerRequest(
-                                request.getRequestId(),
-                                safeInteractiveRejection(request)
-                            );
-                        } catch (Throwable error) {
-                            handleInteractiveResponseFailure(error);
-                        }
-                    }
-                }
-            }, delay, TimeUnit.MILLISECONDS);
+            InteractiveTimeoutTask previous = interactiveTimeouts.remove(Long.valueOf(request.getRequestId()));
+            if (previous != null) {
+                previous.future.cancel(false);
+            }
+            InteractiveTimeoutTask timeout = new InteractiveTimeoutTask(request);
+            timeout.future = interactiveResponses.schedule(timeout, delay, TimeUnit.MILLISECONDS);
+            // Scheduling and removal share the controller lock, including an
+            // immediate server deadline or an answer racing with projection.
+            interactiveTimeouts.put(Long.valueOf(request.getRequestId()), timeout);
         } catch (RejectedExecutionException ignored) {
             // Runtime shutdown is already authoritative.
+        }
+    }
+
+    private final class InteractiveTimeoutTask implements Runnable {
+        private final CodexInteractiveRequest request;
+        private ScheduledFuture<?> future;
+
+        InteractiveTimeoutTask(CodexInteractiveRequest request) {
+            this.request = request;
+        }
+
+        @Override
+        public void run() {
+            boolean removed;
+            synchronized (CodexSessionController.this) {
+                // cancel(false) cannot stop a callback that already started and
+                // waited for this lock. Never let it expire a reused server id.
+                if (interactiveTimeouts.get(Long.valueOf(request.getRequestId())) != this) {
+                    return;
+                }
+                int index = findInteractiveRequestLocked(request.getRequestId());
+                removed = index >= 0;
+                if (removed) {
+                    removeInteractiveRequestLocked(index);
+                    operationMessage = "Eine Codex-Anfrage ist sicher abgelaufen.";
+                    publishLocked();
+                }
+            }
+            if (removed) {
+                try {
+                    client.respondToServerRequest(request.getRequestId(), safeInteractiveRejection(request));
+                } catch (Throwable error) {
+                    handleInteractiveResponseFailure(error);
+                }
+            }
         }
     }
 
@@ -3946,7 +3978,7 @@ public final class CodexSessionController
         synchronized (this) {
             int index = findInteractiveRequestLocked(requestId);
             if (index >= 0) {
-                interactiveRequests.remove(index);
+                removeInteractiveRequestLocked(index);
                 operationMessage = "Codex hat die Anfrage geschlossen.";
                 publishLocked();
             }
@@ -3965,7 +3997,7 @@ public final class CodexSessionController
             reviewState = CodexReviewState.idle();
             operationActive = false;
             clearTurnInterruptLocked();
-            interactiveRequests.clear();
+            clearInteractiveRequestsLocked();
             pendingFileChanges.clear();
             clearCardStreamsLocked();
             connectionMessage = "Eine Antwort an den Codex App-Server ist fehlgeschlagen.";
@@ -3999,7 +4031,7 @@ public final class CodexSessionController
             operationActive = false;
             clearTurnInterruptLocked();
             rateLimitsRefreshQueued = false;
-            interactiveRequests.clear();
+            clearInteractiveRequestsLocked();
             pendingFileChanges.clear();
             finishStreamingTranscriptLocked("failed");
             clearCardStreamsLocked();
@@ -4042,11 +4074,27 @@ public final class CodexSessionController
         return -1;
     }
 
+    private void removeInteractiveRequestLocked(int index) {
+        CodexInteractiveRequest removed = interactiveRequests.remove(index);
+        InteractiveTimeoutTask timeout = interactiveTimeouts.remove(Long.valueOf(removed.getRequestId()));
+        if (timeout != null) {
+            timeout.future.cancel(false);
+        }
+    }
+
+    private void clearInteractiveRequestsLocked() {
+        for (InteractiveTimeoutTask timeout : interactiveTimeouts.values()) {
+            timeout.future.cancel(false);
+        }
+        interactiveTimeouts.clear();
+        interactiveRequests.clear();
+    }
+
     private void clearInteractiveRequestsForTurnLocked(String turnId) {
         for (int index = interactiveRequests.size() - 1; index >= 0; index--) {
             CodexInteractiveRequest request = interactiveRequests.get(index);
             if (turnId.equals(request.getTurnId())) {
-                interactiveRequests.remove(index);
+                removeInteractiveRequestLocked(index);
                 client.abandonServerRequest(request.getRequestId());
             }
         }
@@ -4678,7 +4726,7 @@ public final class CodexSessionController
         activeTurnId = "";
         lastCompletedTurnId = "";
         reviewState = CodexReviewState.idle();
-        interactiveRequests.clear();
+        clearInteractiveRequestsLocked();
         pendingFileChanges.clear();
         clearCardStreamsLocked();
         return true;

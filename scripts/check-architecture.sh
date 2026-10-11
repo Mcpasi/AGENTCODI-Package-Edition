@@ -882,8 +882,9 @@ if ! rg -Uq 'android:name="de\.agentcodi\.app\.TerminalActivity"[[:space:][:prin
     || ! rg -q 'setPermissionProfile' "$terminal_session" \
     || ! rg -q '"permissionProfile", requestedPermissionProfile' "$terminal_session" \
     || ! rg -q '"tty", Boolean\.TRUE' "$terminal_session" \
-    || ! rg -q 'OUTPUT_BYTES_CAP = 8L \* 1024L \* 1024L' "$terminal_session" \
-    || ! rg -q 'SERVER_TIMEOUT_MS = 30L \* 60L \* 1000L' "$terminal_session"; then
+    || ! rg -q '"disableOutputCap", Boolean\.TRUE' "$terminal_session" \
+    || ! rg -q '"disableTimeout", Boolean\.TRUE' "$terminal_session" \
+    || rg -q '"(timeoutMs|outputBytesCap)",' "$terminal_session"; then
   echo "The Full-access app-server PTY, runtime facade, or non-exported UI route is incomplete." >&2
   exit 1
 fi
