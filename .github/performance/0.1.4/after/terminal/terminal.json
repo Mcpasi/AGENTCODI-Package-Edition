@@ -1,0 +1,211 @@
+{
+  "schema_version": 1,
+  "source_revision": "45731fd0b35907a6298afa36b82ee9d95ddc1e17",
+  "dirty": false,
+  "environment": {
+    "java_version": "openjdk version \"17.0.20.1\" 2026-08-18\nOpenJDK Runtime Environment Temurin-17.0.20.1+1 (build 17.0.20.1+1)\nOpenJDK 64-Bit Server VM Temurin-17.0.20.1+1 (build 17.0.20.1+1, mixed mode, sharing)",
+    "platform": "Linux-6.18.44-x86_64-with-glibc2.41",
+    "machine": "x86_64",
+    "cpu_model": "AMD EPYC 9V45 96-Core Processor",
+    "cpu_count": 3,
+    "python_version": "3.12.14",
+    "runner_os": null,
+    "runner_arch": null
+  },
+  "measurement_config": {
+    "forks": 3,
+    "warmups": 2,
+    "samples": 5,
+    "jvm_flags": [
+      "-Xms128m",
+      "-Xmx512m",
+      "-XX:+UseG1GC",
+      "-XX:ActiveProcessorCount=2"
+    ]
+  },
+  "production_sha256": "b5456183e5bd5ae89e06e9d76879655369ed406af4392678c7a8bdfb4a5b55dc",
+  "harness_sha256": "2eb10e88214d51ce1d6c361c0bead6250412fb0550b23cb757b59eec010fe2c8",
+  "driver_sha256": "e6f625b72b33ed465577e00fe23737a278b83370b5981cda0e964cd16908ec18",
+  "started_at_unix": 1791729309.93782,
+  "scope": "Portable production Java; no build scripts, APK, SDK, NDK or device",
+  "suite": "terminal",
+  "workloads": [
+    {
+      "id": "terminal.output-256b",
+      "boundary": "JsonCodec.parseObject -> onNotification -> Base64 validation -> terminal cells; no UI",
+      "parameters": {
+        "chunk_bytes": 256,
+        "rows": 24,
+        "columns": 80
+      },
+      "operations": 1281,
+      "input_bytes": 327703,
+      "warmups": 2,
+      "sample_count": 15,
+      "median_ms": 16.53686,
+      "median_cpu_ms": 15.017184,
+      "median_allocated_bytes": 57166920,
+      "allocated_bytes_per_operation": 44626.79156908665,
+      "allocation_per_input_byte": 174.44735019209466,
+      "median_event_p95_ms": 0.014702,
+      "median_event_p99_ms": 0.026559,
+      "max_event_ms": 5.845437,
+      "gc_count": 7,
+      "gc_ms": 20,
+      "fork_median_ms": [
+        16.052868,
+        16.53686,
+        17.533684
+      ]
+    },
+    {
+      "id": "terminal.output-4096b",
+      "boundary": "JsonCodec.parseObject -> onNotification -> Base64 validation -> terminal cells; no UI",
+      "parameters": {
+        "chunk_bytes": 4096,
+        "rows": 24,
+        "columns": 80
+      },
+      "operations": 81,
+      "input_bytes": 327703,
+      "warmups": 2,
+      "sample_count": 15,
+      "median_ms": 13.490052,
+      "median_cpu_ms": 11.38784,
+      "median_allocated_bytes": 54877640,
+      "allocated_bytes_per_operation": 677501.7283950617,
+      "allocation_per_input_byte": 167.4615124060506,
+      "median_event_p95_ms": 0.186237,
+      "median_event_p99_ms": 0.464742,
+      "max_event_ms": 11.228774,
+      "gc_count": 7,
+      "gc_ms": 28,
+      "fork_median_ms": [
+        13.87213,
+        11.308403,
+        13.490052
+      ]
+    },
+    {
+      "id": "terminal.utf8-7b",
+      "boundary": "TerminalOutputBuffer.append; split UTF-8 and ANSI sequences",
+      "parameters": {
+        "chunk_bytes": 7,
+        "rows": 24,
+        "columns": 80
+      },
+      "operations": 9366,
+      "input_bytes": 65557,
+      "warmups": 2,
+      "sample_count": 15,
+      "median_ms": 8.86265,
+      "median_cpu_ms": 8.85448,
+      "median_allocated_bytes": 10570512,
+      "allocated_bytes_per_operation": 1128.604740550929,
+      "allocation_per_input_byte": 161.2415455252681,
+      "median_event_p95_ms": 0.001332,
+      "median_event_p99_ms": 0.001603,
+      "max_event_ms": 9.793316,
+      "gc_count": 0,
+      "gc_ms": 0,
+      "fork_median_ms": [
+        7.790473,
+        8.86265,
+        9.29263
+      ]
+    },
+    {
+      "id": "terminal.idle-empty",
+      "boundary": "Two terminalSnapshot calls per unchanged refresh, as in TerminalActivity.refreshTask; no TextView",
+      "parameters": {
+        "refreshes": 12,
+        "snapshots_per_refresh": 2,
+        "scrollback_input_bytes": 0
+      },
+      "operations": 12,
+      "input_bytes": 0,
+      "warmups": 2,
+      "sample_count": 15,
+      "median_ms": 0.004487,
+      "median_cpu_ms": 0.005448,
+      "median_allocated_bytes": 0,
+      "allocated_bytes_per_operation": 0.0,
+      "allocation_per_input_byte": null,
+      "median_event_p95_ms": 0.000641,
+      "median_event_p99_ms": 0.000641,
+      "max_event_ms": 0.010365,
+      "gc_count": 0,
+      "gc_ms": 0,
+      "fork_median_ms": [
+        0.004487,
+        0.004517,
+        0.004416
+      ]
+    },
+    {
+      "id": "terminal.idle-full",
+      "boundary": "Two terminalSnapshot calls per unchanged refresh, as in TerminalActivity.refreshTask; no TextView",
+      "parameters": {
+        "refreshes": 12,
+        "snapshots_per_refresh": 2,
+        "scrollback_input_bytes": 327703
+      },
+      "operations": 12,
+      "input_bytes": 0,
+      "warmups": 2,
+      "sample_count": 15,
+      "median_ms": 0.003235,
+      "median_cpu_ms": 0.004747,
+      "median_allocated_bytes": 0,
+      "allocated_bytes_per_operation": 0.0,
+      "allocation_per_input_byte": null,
+      "median_event_p95_ms": 0.000821,
+      "median_event_p99_ms": 0.000821,
+      "max_event_ms": 0.001412,
+      "gc_count": 0,
+      "gc_ms": 0,
+      "fork_median_ms": [
+        0.003595,
+        0.003155,
+        0.003145
+      ]
+    }
+  ],
+  "signals": [],
+  "baseline": {
+    "source_revision": "7c977c423ef3381517529f195c5095c2409512bf",
+    "workloads": [
+      {
+        "id": "terminal.output-256b",
+        "median_ms_ratio": 0.9413608674278072,
+        "median_allocated_bytes_ratio": 1.0,
+        "median_event_p95_ms_ratio": 0.9314495691839838
+      },
+      {
+        "id": "terminal.output-4096b",
+        "median_ms_ratio": 1.0134825718858014,
+        "median_allocated_bytes_ratio": 1.0,
+        "median_event_p95_ms_ratio": 0.9954992275990358
+      },
+      {
+        "id": "terminal.utf8-7b",
+        "median_ms_ratio": 0.9914745261643043,
+        "median_allocated_bytes_ratio": 1.0,
+        "median_event_p95_ms_ratio": 1.023041474654378
+      },
+      {
+        "id": "terminal.idle-empty",
+        "median_ms_ratio": 0.1127982101108625,
+        "median_allocated_bytes_ratio": 0.0,
+        "median_event_p95_ms_ratio": 0.04654709171447244
+      },
+      {
+        "id": "terminal.idle-full",
+        "median_ms_ratio": 9.419339200831408e-06,
+        "median_allocated_bytes_ratio": 0.0,
+        "median_event_p95_ms_ratio": 2.7157661305261376e-05
+      }
+    ],
+    "note": "Host timing ratios are observations; shared runner load can vary."
+  }
+}

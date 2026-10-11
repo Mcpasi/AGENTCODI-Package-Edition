@@ -1,0 +1,182 @@
+{
+  "schema_version": 1,
+  "source_revision": "45731fd0b35907a6298afa36b82ee9d95ddc1e17",
+  "dirty": false,
+  "environment": {
+    "java_version": "openjdk version \"17.0.20.1\" 2026-08-18\nOpenJDK Runtime Environment Temurin-17.0.20.1+1 (build 17.0.20.1+1)\nOpenJDK 64-Bit Server VM Temurin-17.0.20.1+1 (build 17.0.20.1+1, mixed mode, sharing)",
+    "platform": "Linux-6.18.44-x86_64-with-glibc2.41",
+    "machine": "x86_64",
+    "cpu_model": "AMD EPYC 9V45 96-Core Processor",
+    "cpu_count": 3,
+    "python_version": "3.12.14",
+    "runner_os": null,
+    "runner_arch": null
+  },
+  "measurement_config": {
+    "forks": 3,
+    "warmups": 2,
+    "samples": 5,
+    "jvm_flags": [
+      "-Xms128m",
+      "-Xmx512m",
+      "-XX:+UseG1GC",
+      "-XX:ActiveProcessorCount=2"
+    ]
+  },
+  "production_sha256": "b5456183e5bd5ae89e06e9d76879655369ed406af4392678c7a8bdfb4a5b55dc",
+  "harness_sha256": "e8608ff23ad2b35c93ace2062b17481e388e7e65236376b93007ebcda5a17eaa",
+  "consumer_sha256": "b205e1d7c115cbea383bece87e60b7b08bc91f4dbbb8c8cdee257688d874fe92",
+  "driver_sha256": "22582527f9339f1396494c1f26104e9fcc56f30926001163e37f67ba1226f4d7",
+  "started_at_unix": 1791729323.1617625,
+  "scope": "Supplemental full text consumption; no build scripts, Android, native PTY or network",
+  "suite": "consumer",
+  "workloads": [
+    {
+      "id": "consumer.assistant-64k-64b",
+      "boundary": "JsonCodec -> controller delta -> snapshot -> complete text getter on every event; no Android layout",
+      "parameters": {
+        "kind": "assistant",
+        "payload_characters": 65536,
+        "chunk_characters": 64,
+        "text_reads_per_delta": 1
+      },
+      "operations": 1024,
+      "input_bytes": 65536,
+      "warmups": 2,
+      "sample_count": 15,
+      "median_ms": 10.842457,
+      "median_cpu_ms": 9.749666,
+      "median_allocated_bytes": 36505824,
+      "allocated_bytes_per_operation": 35650.21875,
+      "allocation_per_input_byte": 557.03466796875,
+      "median_event_p95_ms": 0.010886,
+      "median_event_p99_ms": 0.023125,
+      "max_event_ms": 7.110781,
+      "gc_count": 9,
+      "gc_ms": 20,
+      "fork_median_ms": [
+        11.447089,
+        10.544895,
+        10.842457
+      ]
+    },
+    {
+      "id": "consumer.tool-32k-128b",
+      "boundary": "JsonCodec -> controller delta -> snapshot -> complete text getter on every event; no Android layout",
+      "parameters": {
+        "kind": "tool",
+        "payload_characters": 32768,
+        "chunk_characters": 128,
+        "text_reads_per_delta": 1
+      },
+      "operations": 256,
+      "input_bytes": 32768,
+      "warmups": 2,
+      "sample_count": 15,
+      "median_ms": 4.084854,
+      "median_cpu_ms": 4.081349,
+      "median_allocated_bytes": 5112592,
+      "allocated_bytes_per_operation": 19971.0625,
+      "allocation_per_input_byte": 156.02392578125,
+      "median_event_p95_ms": 0.017466,
+      "median_event_p99_ms": 0.034361,
+      "max_event_ms": 0.111226,
+      "gc_count": 0,
+      "gc_ms": 0,
+      "fork_median_ms": [
+        4.131704,
+        4.028219,
+        4.046326
+      ]
+    },
+    {
+      "id": "consumer.reasoning-32k-128b",
+      "boundary": "JsonCodec -> controller delta -> snapshot -> complete text getter on every event; no Android layout",
+      "parameters": {
+        "kind": "reasoning",
+        "payload_characters": 32768,
+        "chunk_characters": 128,
+        "text_reads_per_delta": 1
+      },
+      "operations": 256,
+      "input_bytes": 32768,
+      "warmups": 2,
+      "sample_count": 15,
+      "median_ms": 3.759639,
+      "median_cpu_ms": 3.761241,
+      "median_allocated_bytes": 5079600,
+      "allocated_bytes_per_operation": 19842.1875,
+      "allocation_per_input_byte": 155.01708984375,
+      "median_event_p95_ms": 0.016284,
+      "median_event_p99_ms": 0.030776,
+      "max_event_ms": 0.0739,
+      "gc_count": 0,
+      "gc_ms": 0,
+      "fork_median_ms": [
+        3.463368,
+        3.802252,
+        3.789113
+      ]
+    },
+    {
+      "id": "consumer.reasoning-multipart-32k-128b",
+      "boundary": "JsonCodec -> controller delta -> snapshot -> complete text getter on every event; no Android layout",
+      "parameters": {
+        "kind": "reasoning-multipart",
+        "payload_characters": 32768,
+        "chunk_characters": 128,
+        "text_reads_per_delta": 1
+      },
+      "operations": 256,
+      "input_bytes": 32768,
+      "warmups": 2,
+      "sample_count": 15,
+      "median_ms": 5.71405,
+      "median_cpu_ms": 5.66372,
+      "median_allocated_bytes": 9792752,
+      "allocated_bytes_per_operation": 38252.9375,
+      "allocation_per_input_byte": 298.85107421875,
+      "median_event_p95_ms": 0.029334,
+      "median_event_p99_ms": 0.041802,
+      "max_event_ms": 4.099205,
+      "gc_count": 0,
+      "gc_ms": 0,
+      "fork_median_ms": [
+        5.568974,
+        5.724475,
+        9.835859
+      ]
+    }
+  ],
+  "signals": [],
+  "baseline": {
+    "source_revision": "7c977c423ef3381517529f195c5095c2409512bf",
+    "workloads": [
+      {
+        "id": "consumer.assistant-64k-64b",
+        "median_ms_ratio": 0.006561668547286356,
+        "median_allocated_bytes_ratio": 0.9753571642314236,
+        "median_event_p95_ms_ratio": 0.0035502927703306934
+      },
+      {
+        "id": "consumer.tool-32k-128b",
+        "median_ms_ratio": 0.00645855917160625,
+        "median_allocated_bytes_ratio": 0.35939861970918513,
+        "median_event_p95_ms_ratio": 0.0037567955605026697
+      },
+      {
+        "id": "consumer.reasoning-32k-128b",
+        "median_ms_ratio": 0.009006244916612465,
+        "median_allocated_bytes_ratio": 0.35543650760330164,
+        "median_event_p95_ms_ratio": 0.00526791849283959
+      },
+      {
+        "id": "consumer.reasoning-multipart-32k-128b",
+        "median_ms_ratio": 0.013665060316292726,
+        "median_allocated_bytes_ratio": 0.4304680453011726,
+        "median_event_p95_ms_ratio": 0.00953640782301436
+      }
+    ],
+    "note": "Host timing ratios are observations; shared runner load can vary."
+  }
+}

@@ -882,8 +882,9 @@ if ! rg -Uq 'android:name="de\.agentcodi\.app\.TerminalActivity"[[:space:][:prin
     || ! rg -q 'setPermissionProfile' "$terminal_session" \
     || ! rg -q '"permissionProfile", requestedPermissionProfile' "$terminal_session" \
     || ! rg -q '"tty", Boolean\.TRUE' "$terminal_session" \
-    || ! rg -q 'OUTPUT_BYTES_CAP = 8L \* 1024L \* 1024L' "$terminal_session" \
-    || ! rg -q 'SERVER_TIMEOUT_MS = 30L \* 60L \* 1000L' "$terminal_session"; then
+    || ! rg -q '"disableOutputCap", Boolean\.TRUE' "$terminal_session" \
+    || ! rg -q '"disableTimeout", Boolean\.TRUE' "$terminal_session" \
+    || rg -q '"(timeoutMs|outputBytesCap)",' "$terminal_session"; then
   echo "The Full-access app-server PTY, runtime facade, or non-exported UI route is incomplete." >&2
   exit 1
 fi
@@ -953,13 +954,13 @@ if ! rg -q 'command/exec/outputDelta' "$PROJECT_ROOT/tests/cpp/android_app_serve
   exit 1
 fi
 
-if ! rg -q 'VERSION_NAME = "0\.1\.3"' "$core_root/BuildIdentity.java" \
-    || ! rg -q 'VERSION_CODE = 6' "$core_root/BuildIdentity.java" \
+if ! rg -q 'VERSION_NAME = "0\.1\.4"' "$core_root/BuildIdentity.java" \
+    || ! rg -q 'VERSION_CODE = 7' "$core_root/BuildIdentity.java" \
     || ! rg -q 'CODEX_RUNTIME_VERSION = "0\.156\.1-termux\.1"' "$core_root/BuildIdentity.java" \
-    || ! rg -q 'android:versionName="0\.1\.3"' "$manifest" \
-    || ! rg -q 'android:versionCode="6"' "$manifest" \
-    || ! rg -q 'APP_VERSION="0\.1\.3"' "$apk_builder" \
-    || ! rg -q 'VERSION_CODE="6"' "$apk_builder" \
+    || ! rg -q 'android:versionName="0\.1\.4"' "$manifest" \
+    || ! rg -q 'android:versionCode="7"' "$manifest" \
+    || ! rg -q 'APP_VERSION="0\.1\.4"' "$apk_builder" \
+    || ! rg -q 'VERSION_CODE="7"' "$apk_builder" \
     || ! rg -q 'CODEX_ANDROID_VERSION="0\.156\.1-termux\.1"' "$apk_builder" \
     || ! rg -q 'CODEX_TERMUX_SOURCE_TAG="v0\.156\.1-termux\.1"' "$apk_builder" \
     || ! rg -q 'CODEX_TERMUX_SOURCE_COMMIT="ea762071ec4acbf1531fcc7daf47524836f70a09"' "$apk_builder" \
@@ -980,7 +981,7 @@ if ! rg -q 'VERSION_NAME = "0\.1\.3"' "$core_root/BuildIdentity.java" \
     || ! rg -q 'ea762071ec4acbf1531fcc7daf47524836f70a09' "$PROJECT_ROOT/app/src/main/res/raw/third_party_notices.txt" \
     || ! rg -q 'b412ff32c417f855c2b2d1581b77058eed87c84b' "$PROJECT_ROOT/NOTICE.md" \
     || ! rg -q 'b412ff32c417f855c2b2d1581b77058eed87c84b' "$PROJECT_ROOT/app/src/main/res/raw/third_party_notices.txt"; then
-  echo "The 0.1.3 / Codex 0.156.1-termux.1 identity is inconsistent." >&2
+  echo "The 0.1.4 / Codex 0.156.1-termux.1 identity is inconsistent." >&2
   exit 1
 fi
 

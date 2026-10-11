@@ -1,0 +1,119 @@
+{
+  "schema_version": 1,
+  "source_revision": "7c977c423ef3381517529f195c5095c2409512bf",
+  "dirty": false,
+  "environment": {
+    "java_version": "openjdk version \"17.0.20.1\" 2026-08-18\nOpenJDK Runtime Environment Temurin-17.0.20.1+1 (build 17.0.20.1+1)\nOpenJDK 64-Bit Server VM Temurin-17.0.20.1+1 (build 17.0.20.1+1, mixed mode, sharing)",
+    "platform": "Linux-6.18.44-x86_64-with-glibc2.41",
+    "machine": "x86_64",
+    "cpu_model": "AMD EPYC 9V45 96-Core Processor",
+    "cpu_count": 3,
+    "python_version": "3.12.14",
+    "runner_os": null,
+    "runner_arch": null
+  },
+  "measurement_config": {
+    "forks": 3,
+    "warmups": 2,
+    "samples": 5,
+    "jvm_flags": [
+      "-Xms128m",
+      "-Xmx512m",
+      "-XX:+UseG1GC",
+      "-XX:ActiveProcessorCount=2"
+    ]
+  },
+  "production_sha256": "8fef9adcc45ff862be68560a72d60d7d8b6b9523975c64076bda0137f8ea224a",
+  "harness_sha256": "2eb10e88214d51ce1d6c361c0bead6250412fb0550b23cb757b59eec010fe2c8",
+  "driver_sha256": "e6f625b72b33ed465577e00fe23737a278b83370b5981cda0e964cd16908ec18",
+  "started_at_unix": 1791727395.8752966,
+  "scope": "Portable production Java; no build scripts, APK, SDK, NDK or device",
+  "suite": "protocol",
+  "workloads": [
+    {
+      "id": "protocol.history-16x4096",
+      "boundary": "JsonCodec.parseObject on incoming thread history with escaped text; transport/image compaction excluded",
+      "parameters": {
+        "items": 16,
+        "characters_per_item": 4092,
+        "frame_bytes": 67619
+      },
+      "operations": 12,
+      "input_bytes": 811428,
+      "warmups": 2,
+      "sample_count": 15,
+      "median_ms": 4.088039,
+      "median_cpu_ms": 4.089612,
+      "median_allocated_bytes": 6118848,
+      "allocated_bytes_per_operation": 509904.0,
+      "allocation_per_input_byte": 7.540839113266981,
+      "median_event_p95_ms": 0.707654,
+      "median_event_p99_ms": 0.707654,
+      "max_event_ms": 3.98851,
+      "gc_count": 0,
+      "gc_ms": 0,
+      "fork_median_ms": [
+        9.165931,
+        3.906628,
+        3.678529
+      ]
+    },
+    {
+      "id": "protocol.history-240x4096",
+      "boundary": "JsonCodec.parseObject on incoming thread history with escaped text; transport/image compaction excluded",
+      "parameters": {
+        "items": 240,
+        "characters_per_item": 4092,
+        "frame_bytes": 1012899
+      },
+      "operations": 4,
+      "input_bytes": 4051596,
+      "warmups": 2,
+      "sample_count": 15,
+      "median_ms": 13.855846,
+      "median_cpu_ms": 12.709521,
+      "median_allocated_bytes": 30479104,
+      "allocated_bytes_per_operation": 7619776.0,
+      "allocation_per_input_byte": 7.522740174489263,
+      "median_event_p95_ms": 3.757096,
+      "median_event_p99_ms": 3.757096,
+      "max_event_ms": 5.564057,
+      "gc_count": 6,
+      "gc_ms": 7,
+      "fork_median_ms": [
+        12.492065,
+        13.855846,
+        14.746112
+      ]
+    },
+    {
+      "id": "protocol.history-240x16384",
+      "boundary": "JsonCodec.parseObject on incoming thread history with escaped text; transport/image compaction excluded",
+      "parameters": {
+        "items": 240,
+        "characters_per_item": 16380,
+        "frame_bytes": 4010499
+      },
+      "operations": 2,
+      "input_bytes": 8020998,
+      "warmups": 2,
+      "sample_count": 15,
+      "median_ms": 24.240112,
+      "median_cpu_ms": 22.762448,
+      "median_allocated_bytes": 59491712,
+      "allocated_bytes_per_operation": 29745856.0,
+      "allocation_per_input_byte": 7.416996239121366,
+      "median_event_p95_ms": 13.118618,
+      "median_event_p99_ms": 13.118618,
+      "max_event_ms": 45.563989,
+      "gc_count": 13,
+      "gc_ms": 22,
+      "fork_median_ms": [
+        24.053693,
+        24.240112,
+        24.345418
+      ]
+    }
+  ],
+  "signals": []
+}

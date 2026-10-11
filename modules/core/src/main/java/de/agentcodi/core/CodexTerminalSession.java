@@ -17,14 +17,12 @@ final class CodexTerminalSession implements AutoCloseable {
     static final String OUTPUT_DELTA_METHOD = "command/exec/outputDelta";
     static final int MAXIMUM_INPUT_CHARACTERS = 4096;
     static final int MAXIMUM_INPUT_BYTES = 16 * 1024;
-    static final int MAXIMUM_OUTPUT_CHUNK_BYTES = 64 * 1024;
-    static final long OUTPUT_BYTES_CAP = 8L * 1024L * 1024L;
-    static final long SERVER_TIMEOUT_MS = 30L * 60L * 1000L;
-    static final long CLIENT_TIMEOUT_MS = SERVER_TIMEOUT_MS + 30_000L;
+    // command/exec coalesces towards 64 KiB and may append one more 8 KiB
+    // native read. The target is a hint, not a protocol maximum.
+    static final int MAXIMUM_OUTPUT_CHUNK_BYTES = (64 + 8) * 1024;
     static final long CONTROL_TIMEOUT_MS = 10_000L;
 
     private static final int STILL_RUNNING = Integer.MIN_VALUE;
-    private static final long MAXIMUM_TOTAL_OUTPUT_BYTES = OUTPUT_BYTES_CAP * 2L;
 
     private final Object lock = new Object();
     private final CodexAppServerClient client;
@@ -39,7 +37,7 @@ final class CodexTerminalSession implements AutoCloseable {
 
     private long generation;
     private long revision;
-    private long receivedOutputBytes;
+    private TerminalSessionSnapshot cachedSnapshot;
     private boolean starting;
     private boolean running;
     private boolean stopRequested;
@@ -82,7 +80,10 @@ final class CodexTerminalSession implements AutoCloseable {
 
     TerminalSessionSnapshot snapshot() {
         synchronized (lock) {
-            return new TerminalSessionSnapshot(
+            if (cachedSnapshot != null && cachedSnapshot.getRevision() == revision) {
+                return cachedSnapshot;
+            }
+            cachedSnapshot = new TerminalSessionSnapshot(
                 revision,
                 running,
                 starting,
@@ -90,6 +91,7 @@ final class CodexTerminalSession implements AutoCloseable {
                 output.snapshot(),
                 safeFailure(failure)
             );
+            return cachedSnapshot;
         }
     }
 
@@ -116,7 +118,6 @@ final class CodexTerminalSession implements AutoCloseable {
             requestedGeneration = generation;
             requestedProcessId = "agentcodi-terminal-" + requestedGeneration;
             processId = requestedProcessId;
-            receivedOutputBytes = 0L;
             starting = true;
             running = false;
             stopRequested = false;
@@ -281,10 +282,6 @@ final class CodexTerminalSession implements AutoCloseable {
                 if (closed || !processId.equals(notificationProcessId)) {
                     return true;
                 }
-                receivedOutputBytes += decoded.length;
-                if (receivedOutputBytes > MAXIMUM_TOTAL_OUTPUT_BYTES) {
-                    throw new IOException("Terminal output exceeded the cumulative limit");
-                }
                 output.append(decoded);
                 revision++;
                 if (capReached) {
@@ -386,10 +383,12 @@ final class CodexTerminalSession implements AutoCloseable {
                     "permissionProfile", requestedPermissionProfile,
                     "tty", Boolean.TRUE,
                     "size", terminalSize(initialRows, initialColumns),
-                    "outputBytesCap", Long.valueOf(OUTPUT_BYTES_CAP),
-                    "timeoutMs", Long.valueOf(SERVER_TIMEOUT_MS)
+                    // PTY output is streamed into a bounded rolling display. A
+                    // lifetime capture quota or deadline would kill long builds.
+                    "disableOutputCap", Boolean.TRUE,
+                    "disableTimeout", Boolean.TRUE
                 ),
-                CLIENT_TIMEOUT_MS,
+                0L, // Wait for exit, explicit Stop, interruption or transport closure.
                 new Runnable() {
                     @Override
                     public void run() {

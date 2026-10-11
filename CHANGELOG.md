@@ -1,5 +1,81 @@
 # Package Edition
 
+## 0.1.4 — Package Edition (Android versionCode 7) — 2026-10-11
+
+**In development. Host performance and long-running session fixes verified. Physical Android device tests pending.**
+
+- Remove the interactive terminal's 30-minute server deadline and its additional
+  client deadline. Use the pinned protocol's `disableTimeout` flag and wait for
+  process exit, explicit Stop, interruption or transport closure. Keep ordinary
+  administrative, finite streaming and terminal-control RPC timeouts intact.
+- Stream terminal output without the 8-MiB per-stream capture quota or the
+  16-MiB cumulative session limit. Retain the rolling 128-K-character display,
+  redaction, PTY rendering and strict chunk/Base64 validation. Long builds no
+  longer terminate because their lifetime output exhausts a capture budget.
+- Accept valid output chunks up to 72 KiB. The unchanged Codex server coalesces
+  towards 64 KiB and can append another 8-KiB native read; real captured chunks
+  above the former 64-KiB limit previously caused a terminal protocol failure.
+  Oversized and malformed chunks and unexpected server capture failures still
+  terminate the affected PTY and report their cause.
+- Extend the local wait for command/file/MCP approvals and user questions from
+  ten minutes to seven days. Honor explicit shorter user-input deadlines,
+  including a one-hour deadline that was previously shortened to ten minutes.
+  Preserve all decisions, server resolution, overload/stale rejection and
+  fail-closed expiry; waiting never automatically approves an action.
+- Cancel and remove interactive-request timers immediately on answers,
+  dismissals, decisions, server resolution, turn completion and shutdown. Guard
+  already-running callbacks by their timer identity so an expired old request
+  cannot cancel a new request that reuses its server RPC id.
+- Add deterministic long-work replays and a pinned, source-matched native host
+  PTY probe. All eight regression cases fail on the original three production
+  classes at `1f714a1` and pass after the fixes. The real server probe reproduces
+  timeout exit code 124 and the old output cap, streams 18 MiB to completion
+  with the new flags, and verifies explicit Stop on a quiet unlimited PTY.
+  Preserve commands, source hashes and before/after results in
+  [the long-running work evidence](.github/performance/0.1.4/long-running-work/).
+- Long-work validation: all 402 Java host tests, architecture contracts,
+  Android source/resource compilation and six signing/update checks pass.
+  Added checks preserve natural completion, interruption, transport failure,
+  finite RPC deadlines, malformed/oversized output handling, bounded display
+  storage, approval expiry, timer cleanup and cancellation races. Native host
+  probes verify the shared execution implementation; physical Android screen
+  lock, Doze and OEM process-management behavior remain device tests.
+
+- Reuse immutable terminal snapshots while their revision is unchanged. Rebuild
+  the bounded, redacted output after output, state, clear, resize and session
+  changes. Preserve PTY geometry, cursor handling, scrollback, UTF-8 and errors.
+- Replace whole-prefix chat concatenation and repeated whole-text redaction with
+  immutable text segments and incremental redaction of the unsettled suffix.
+  Share settled text across snapshots and ordinary reasoning parts; preserve
+  complete redaction across sensitive part boundaries and clipping.
+- Apply the stream storage to assistant, plan, reasoning, tool-output, MCP
+  progress and terminal-interaction cards. Keep every accepted delta, snapshot
+  revision, history limit, metadata and authoritative completion event.
+- Reuse thread-local regex matcher storage, clearing input in `finally`.
+  Preserve the existing secret patterns and their replacement order.
+- Compare the unchanged build-independent replays on the same JDK/host, with
+  three JVM forks, two warmups and five samples per fork. A full unchanged
+  terminal workload (12 refreshes, two snapshots each) drops from 343.44 ms /
+  49.57 MiB allocated to 0.003 ms / 0 bytes. The 64 KiB assistant stream in
+  64-byte deltas drops from 1654.43 ms / 35.69 MiB to 7.91 ms / 2.74 MiB.
+  Tool and reasoning streams at 32 KiB drop from 617.80 / 422.30 ms to
+  3.04 / 2.82 ms. All 17 primary workloads pass the original diagnostic gates.
+- Add a separate chat-workflow replay that reads the complete text after every
+  delta, including multipart reasoning. Its assistant workload drops from
+  1652.39 to 10.84 ms; allocations remain 35.69 → 34.81 MiB because a full
+  `String` is requested on every event. Keep this consumption cost visible.
+- Preserve the baseline, post-fix source hashes, configuration and raw fork
+  samples in [the 0.1.4 evidence](.github/performance/0.1.4/).
+  [The 0.1.4 roadmap record](ROADMAP-package-edition.md#package-edition-014-performance-fixes-host-verified)
+  contains the full comparison and reproduction commands.
+- Validation: 389 Java host tests, architecture contracts, ten benchmark
+  reporting checks and chat workflow lint pass. Added checks cover immutable
+  snapshots, terminal invalidation, chunk/word/Unicode boundaries, exact
+  clipping, NUL removal, over 50,000 randomized stream transitions, concurrent
+  redaction, matcher input release, multipart secrets and final-item authority.
+- Bump the application, manifest, APK builder and native identity to `0.1.4`,
+  Android versionCode 7, after confirming both performance fixes.
+
 ## 0.1.3 — Package Edition (Android versionCode 6) — 2026-10-11
 
 **Experimental prerelease (published). Device tests: passed on physical Android hardware.**

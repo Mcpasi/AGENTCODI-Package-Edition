@@ -1,0 +1,45 @@
+{
+  "version_name": "0.1.4",
+  "version_code": 7,
+  "performance_fix_revision": "45731fd0b35907a6298afa36b82ee9d95ddc1e17",
+  "scope": "Local host validation after version bump; hosted CI and physical device checks recorded separately",
+  "checks": [
+    {
+      "command": [
+        "bash",
+        ".github/ci/run-java-tests.sh"
+      ],
+      "exit_code": 0,
+      "stdout": "Using javac 17.0.20.1\nJava source list is in sync with scripts/test.sh.\nCompiling 144 Java files.\nJava tests passed: 389\n",
+      "stderr": ""
+    },
+    {
+      "command": [
+        "bash",
+        "scripts/check-architecture.sh"
+      ],
+      "exit_code": 0,
+      "stdout": "Architecture checks passed.\nFinal Package Edition source/test contract verified.\n",
+      "stderr": ""
+    },
+    {
+      "command": [
+        "python3",
+        "-B",
+        ".github/ci/test-performance-report.py"
+      ],
+      "exit_code": 0,
+      "stdout": "",
+      "stderr": "..........\n----------------------------------------------------------------------\nRan 10 tests in 0.001s\n\nOK\n"
+    },
+    {
+      "command": [
+        "/workspace/scratch/perf-tools/actionlint",
+        ".github/workflows/performance-chat.yml"
+      ],
+      "exit_code": 0,
+      "stdout": "",
+      "stderr": ""
+    }
+  ]
+}

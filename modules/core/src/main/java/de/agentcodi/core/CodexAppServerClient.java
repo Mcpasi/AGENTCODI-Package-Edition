@@ -131,6 +131,13 @@ public final class CodexAppServerClient implements AutoCloseable {
         if (!initialized) {
             throw new IllegalStateException("Codex app-server connection is not initialized");
         }
+        // Zero means no response deadline only for a streamed interactive PTY
+        // whose server deadline is explicitly disabled. Other RPCs stay finite.
+        boolean unlimitedTerminal = timeoutMilliseconds == 0L
+            && "command/exec".equals(method)
+            && params != null
+            && Boolean.TRUE.equals(params.get("tty"))
+            && Boolean.TRUE.equals(params.get("disableTimeout"));
         return requestPrepared(
             method,
             timeoutMilliseconds,
@@ -148,7 +155,7 @@ public final class CodexAppServerClient implements AutoCloseable {
                     writeMessage(message);
                 }
             },
-            MAX_STREAMING_REQUEST_TIMEOUT_MS,
+            unlimitedTerminal ? 0L : MAX_STREAMING_REQUEST_TIMEOUT_MS,
             afterWrite
         );
     }
@@ -382,7 +389,12 @@ public final class CodexAppServerClient implements AutoCloseable {
 
         boolean received;
         try {
-            received = response.latch.await(timeoutMilliseconds, TimeUnit.MILLISECONDS);
+            if (timeoutMilliseconds == 0L) {
+                response.latch.await();
+                received = true;
+            } else {
+                received = response.latch.await(timeoutMilliseconds, TimeUnit.MILLISECONDS);
+            }
         } catch (InterruptedException error) {
             Thread.currentThread().interrupt();
             synchronized (pendingLock) {
@@ -776,7 +788,8 @@ public final class CodexAppServerClient implements AutoCloseable {
         if (method == null || method.trim().isEmpty()) {
             throw new IllegalArgumentException("RPC method must not be blank");
         }
-        if (timeoutMilliseconds <= 0L
+        if (timeoutMilliseconds < 0L
+            || (timeoutMilliseconds == 0L && maximumTimeoutMilliseconds != 0L)
             || timeoutMilliseconds > maximumTimeoutMilliseconds) {
             throw new IllegalArgumentException("RPC timeout is outside the allowed range");
         }

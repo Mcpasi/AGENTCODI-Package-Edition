@@ -1,0 +1,32 @@
+{
+  "schema_version": 1,
+  "source_revision": "45731fd0b35907a6298afa36b82ee9d95ddc1e17",
+  "dirty": false,
+  "environment": {
+    "java_version": "openjdk version \"17.0.20.1\" 2026-08-18\nOpenJDK Runtime Environment Temurin-17.0.20.1+1 (build 17.0.20.1+1)\nOpenJDK 64-Bit Server VM Temurin-17.0.20.1+1 (build 17.0.20.1+1, mixed mode, sharing)",
+    "platform": "Linux-6.18.44-x86_64-with-glibc2.41",
+    "machine": "x86_64",
+    "cpu_model": "AMD EPYC 9V45 96-Core Processor",
+    "cpu_count": 3,
+    "python_version": "3.12.14",
+    "runner_os": null,
+    "runner_arch": null
+  },
+  "measurement_config": {
+    "forks": 3,
+    "warmups": 2,
+    "samples": 5,
+    "jvm_flags": [
+      "-Xms128m",
+      "-Xmx512m",
+      "-XX:+UseG1GC",
+      "-XX:ActiveProcessorCount=2"
+    ]
+  },
+  "production_sha256": "b5456183e5bd5ae89e06e9d76879655369ed406af4392678c7a8bdfb4a5b55dc",
+  "harness_sha256": "e8608ff23ad2b35c93ace2062b17481e388e7e65236376b93007ebcda5a17eaa",
+  "consumer_sha256": "b205e1d7c115cbea383bece87e60b7b08bc91f4dbbb8c8cdee257688d874fe92",
+  "driver_sha256": "22582527f9339f1396494c1f26104e9fcc56f30926001163e37f67ba1226f4d7",
+  "started_at_unix": 1791729323.1617625,
+  "scope": "Supplemental full text consumption; no build scripts, Android, native PTY or network"
+}

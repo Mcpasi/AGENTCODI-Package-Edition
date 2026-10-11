@@ -1,0 +1,346 @@
+{
+  "schema_version": 1,
+  "source_revision": "7c977c423ef3381517529f195c5095c2409512bf",
+  "dirty": false,
+  "environment": {
+    "java_version": "openjdk version \"17.0.20.1\" 2026-08-18\nOpenJDK Runtime Environment Temurin-17.0.20.1+1 (build 17.0.20.1+1)\nOpenJDK 64-Bit Server VM Temurin-17.0.20.1+1 (build 17.0.20.1+1, mixed mode, sharing)",
+    "platform": "Linux-6.18.44-x86_64-with-glibc2.41",
+    "machine": "x86_64",
+    "cpu_model": "AMD EPYC 9V45 96-Core Processor",
+    "cpu_count": 3,
+    "python_version": "3.12.14",
+    "runner_os": null,
+    "runner_arch": null
+  },
+  "measurement_config": {
+    "forks": 3,
+    "warmups": 2,
+    "samples": 5,
+    "jvm_flags": [
+      "-Xms128m",
+      "-Xmx512m",
+      "-XX:+UseG1GC",
+      "-XX:ActiveProcessorCount=2"
+    ]
+  },
+  "production_sha256": "8fef9adcc45ff862be68560a72d60d7d8b6b9523975c64076bda0137f8ea224a",
+  "harness_sha256": "2eb10e88214d51ce1d6c361c0bead6250412fb0550b23cb757b59eec010fe2c8",
+  "driver_sha256": "e6f625b72b33ed465577e00fe23737a278b83370b5981cda0e964cd16908ec18",
+  "started_at_unix": 1791727395.8752966,
+  "scope": "Portable production Java; no build scripts, APK, SDK, NDK or device",
+  "suite": "chat",
+  "workloads": [
+    {
+      "id": "chat.assistant-16k-64b",
+      "boundary": "JsonCodec.parseObject -> CodexSessionController.onNotification -> stream merge/redaction -> published snapshot; no Android layout",
+      "parameters": {
+        "kind": "assistant",
+        "payload_characters": 16384,
+        "chunk_characters": 64,
+        "history_items": 0
+      },
+      "operations": 256,
+      "input_bytes": 16384,
+      "warmups": 2,
+      "sample_count": 15,
+      "median_ms": 104.069319,
+      "median_cpu_ms": 104.020831,
+      "median_allocated_bytes": 3069928,
+      "allocated_bytes_per_operation": 11991.90625,
+      "allocation_per_input_byte": 187.37353515625,
+      "median_event_p95_ms": 0.764469,
+      "median_event_p99_ms": 0.795295,
+      "max_event_ms": 2.636777,
+      "gc_count": 0,
+      "gc_ms": 0,
+      "fork_median_ms": [
+        105.594959,
+        104.069319,
+        102.751732
+      ]
+    },
+    {
+      "id": "chat.assistant-32k-64b",
+      "boundary": "JsonCodec.parseObject -> CodexSessionController.onNotification -> stream merge/redaction -> published snapshot; no Android layout",
+      "parameters": {
+        "kind": "assistant",
+        "payload_characters": 32768,
+        "chunk_characters": 64,
+        "history_items": 0
+      },
+      "operations": 512,
+      "input_bytes": 32768,
+      "warmups": 2,
+      "sample_count": 15,
+      "median_ms": 415.831696,
+      "median_cpu_ms": 413.943081,
+      "median_allocated_bytes": 10334184,
+      "allocated_bytes_per_operation": 20183.953125,
+      "allocation_per_input_byte": 315.374267578125,
+      "median_event_p95_ms": 1.537149,
+      "median_event_p99_ms": 1.612932,
+      "max_event_ms": 5.178815,
+      "gc_count": 3,
+      "gc_ms": 6,
+      "fork_median_ms": [
+        415.831696,
+        410.858817,
+        426.611126
+      ]
+    },
+    {
+      "id": "chat.assistant-64k-64b",
+      "boundary": "JsonCodec.parseObject -> CodexSessionController.onNotification -> stream merge/redaction -> published snapshot; no Android layout",
+      "parameters": {
+        "kind": "assistant",
+        "payload_characters": 65536,
+        "chunk_characters": 64,
+        "history_items": 0
+      },
+      "operations": 1024,
+      "input_bytes": 65536,
+      "warmups": 2,
+      "sample_count": 15,
+      "median_ms": 1654.431612,
+      "median_cpu_ms": 1653.401407,
+      "median_allocated_bytes": 37421032,
+      "allocated_bytes_per_operation": 36543.9765625,
+      "allocation_per_input_byte": 570.9996337890625,
+      "median_event_p95_ms": 3.062092,
+      "median_event_p99_ms": 3.217092,
+      "max_event_ms": 6.184162,
+      "gc_count": 6,
+      "gc_ms": 7,
+      "fork_median_ms": [
+        1688.010944,
+        1633.568769,
+        1705.989644
+      ]
+    },
+    {
+      "id": "chat.assistant-64k-4096b",
+      "boundary": "JsonCodec.parseObject -> CodexSessionController.onNotification -> stream merge/redaction -> published snapshot; no Android layout",
+      "parameters": {
+        "kind": "assistant",
+        "payload_characters": 65536,
+        "chunk_characters": 4096,
+        "history_items": 0
+      },
+      "operations": 16,
+      "input_bytes": 65536,
+      "warmups": 2,
+      "sample_count": 15,
+      "median_ms": 27.951282,
+      "median_cpu_ms": 27.794588,
+      "median_allocated_bytes": 824104,
+      "allocated_bytes_per_operation": 51506.5,
+      "allocation_per_input_byte": 12.5748291015625,
+      "median_event_p95_ms": 3.26201,
+      "median_event_p99_ms": 3.26201,
+      "max_event_ms": 4.525572,
+      "gc_count": 1,
+      "gc_ms": 1,
+      "fork_median_ms": [
+        27.791938,
+        27.752636,
+        29.892794
+      ]
+    },
+    {
+      "id": "chat.assistant-64k-64b-history",
+      "boundary": "JsonCodec.parseObject -> CodexSessionController.onNotification -> stream merge/redaction -> published snapshot; no Android layout",
+      "parameters": {
+        "kind": "assistant",
+        "payload_characters": 65536,
+        "chunk_characters": 64,
+        "history_items": 200
+      },
+      "operations": 1024,
+      "input_bytes": 65536,
+      "warmups": 2,
+      "sample_count": 15,
+      "median_ms": 1670.827702,
+      "median_cpu_ms": 1669.24564,
+      "median_allocated_bytes": 41295792,
+      "allocated_bytes_per_operation": 40327.921875,
+      "allocation_per_input_byte": 630.123779296875,
+      "median_event_p95_ms": 3.082552,
+      "median_event_p99_ms": 3.198715,
+      "max_event_ms": 21.51345,
+      "gc_count": 9,
+      "gc_ms": 11,
+      "fork_median_ms": [
+        1651.025975,
+        1670.827702,
+        1688.354273
+      ]
+    },
+    {
+      "id": "chat.tool-16k-128b",
+      "boundary": "JsonCodec.parseObject -> CodexSessionController.onNotification -> stream merge/redaction -> published snapshot; no Android layout",
+      "parameters": {
+        "kind": "tool",
+        "payload_characters": 16384,
+        "chunk_characters": 128,
+        "history_items": 0
+      },
+      "operations": 128,
+      "input_bytes": 16384,
+      "warmups": 2,
+      "sample_count": 15,
+      "median_ms": 158.485068,
+      "median_cpu_ms": 158.416495,
+      "median_allocated_bytes": 3966976,
+      "allocated_bytes_per_operation": 30992.0,
+      "allocation_per_input_byte": 242.125,
+      "median_event_p95_ms": 2.336721,
+      "median_event_p99_ms": 2.411562,
+      "max_event_ms": 4.751078,
+      "gc_count": 0,
+      "gc_ms": 0,
+      "fork_median_ms": [
+        159.717446,
+        154.766798,
+        155.991821
+      ]
+    },
+    {
+      "id": "chat.tool-32k-128b",
+      "boundary": "JsonCodec.parseObject -> CodexSessionController.onNotification -> stream merge/redaction -> published snapshot; no Android layout",
+      "parameters": {
+        "kind": "tool",
+        "payload_characters": 32768,
+        "chunk_characters": 128,
+        "history_items": 0
+      },
+      "operations": 256,
+      "input_bytes": 32768,
+      "warmups": 2,
+      "sample_count": 15,
+      "median_ms": 617.79681,
+      "median_cpu_ms": 617.638267,
+      "median_allocated_bytes": 14225408,
+      "allocated_bytes_per_operation": 55568.0,
+      "allocation_per_input_byte": 434.125,
+      "median_event_p95_ms": 4.585531,
+      "median_event_p99_ms": 4.757077,
+      "max_event_ms": 5.254578,
+      "gc_count": 3,
+      "gc_ms": 3,
+      "fork_median_ms": [
+        618.3423,
+        617.479267,
+        621.240278
+      ]
+    },
+    {
+      "id": "chat.reasoning-16k-128b",
+      "boundary": "JsonCodec.parseObject -> CodexSessionController.onNotification -> stream merge/redaction -> published snapshot; no Android layout",
+      "parameters": {
+        "kind": "reasoning",
+        "payload_characters": 16384,
+        "chunk_characters": 128,
+        "history_items": 0
+      },
+      "operations": 128,
+      "input_bytes": 16384,
+      "warmups": 2,
+      "sample_count": 15,
+      "median_ms": 104.549716,
+      "median_cpu_ms": 104.547727,
+      "median_allocated_bytes": 3999960,
+      "allocated_bytes_per_operation": 31249.6875,
+      "allocation_per_input_byte": 244.13818359375,
+      "median_event_p95_ms": 1.551271,
+      "median_event_p99_ms": 1.618441,
+      "max_event_ms": 2.104395,
+      "gc_count": 0,
+      "gc_ms": 0,
+      "fork_median_ms": [
+        104.367953,
+        103.506582,
+        107.672391
+      ]
+    },
+    {
+      "id": "chat.reasoning-32k-128b",
+      "boundary": "JsonCodec.parseObject -> CodexSessionController.onNotification -> stream merge/redaction -> published snapshot; no Android layout",
+      "parameters": {
+        "kind": "reasoning",
+        "payload_characters": 32768,
+        "chunk_characters": 128,
+        "history_items": 0
+      },
+      "operations": 256,
+      "input_bytes": 32768,
+      "warmups": 2,
+      "sample_count": 15,
+      "median_ms": 422.304005,
+      "median_cpu_ms": 420.318242,
+      "median_allocated_bytes": 14291160,
+      "allocated_bytes_per_operation": 55824.84375,
+      "allocation_per_input_byte": 436.131591796875,
+      "median_event_p95_ms": 3.11484,
+      "median_event_p99_ms": 3.217783,
+      "max_event_ms": 5.660813,
+      "gc_count": 3,
+      "gc_ms": 4,
+      "fork_median_ms": [
+        426.919841,
+        415.29044,
+        413.923536
+      ]
+    }
+  ],
+  "signals": [
+    {
+      "id": "stream-allocation-scaling:chat.assistant-32k-64b",
+      "workloads": [
+        "chat.assistant-16k-64b",
+        "chat.assistant-32k-64b"
+      ],
+      "allocation_ratio": 3.366262661534733,
+      "input_ratio": 2.0,
+      "message": "chat.assistant-32k-64b: doubling stream input allocates 3.37x as much memory. Diagnostic threshold: 3x; inspect accumulated-text work."
+    },
+    {
+      "id": "stream-allocation-scaling:chat.assistant-64k-64b",
+      "workloads": [
+        "chat.assistant-32k-64b",
+        "chat.assistant-64k-64b"
+      ],
+      "allocation_ratio": 3.6210920959022985,
+      "input_ratio": 2.0,
+      "message": "chat.assistant-64k-64b: doubling stream input allocates 3.62x as much memory. Diagnostic threshold: 3x; inspect accumulated-text work."
+    },
+    {
+      "id": "stream-allocation-scaling:chat.tool-32k-128b",
+      "workloads": [
+        "chat.tool-16k-128b",
+        "chat.tool-32k-128b"
+      ],
+      "allocation_ratio": 3.585957666494579,
+      "input_ratio": 2.0,
+      "message": "chat.tool-32k-128b: doubling stream input allocates 3.59x as much memory. Diagnostic threshold: 3x; inspect accumulated-text work."
+    },
+    {
+      "id": "stream-allocation-scaling:chat.reasoning-32k-128b",
+      "workloads": [
+        "chat.reasoning-16k-128b",
+        "chat.reasoning-32k-128b"
+      ],
+      "allocation_ratio": 3.5728257282572824,
+      "input_ratio": 2.0,
+      "message": "chat.reasoning-32k-128b: doubling stream input allocates 3.57x as much memory. Diagnostic threshold: 3x; inspect accumulated-text work."
+    },
+    {
+      "id": "chat-fragmentation",
+      "workloads": [
+        "chat.assistant-64k-64b",
+        "chat.assistant-64k-4096b"
+      ],
+      "allocation_ratio": 45.408142661605815,
+      "message": "Same 64 KiB assistant text allocates 45.41x as much with 64-byte versus 4096-byte events. Diagnostic threshold: 8x; event counts differ by design."
+    }
+  ]
+}

@@ -1,0 +1,28 @@
+Baseline Java
+Using javac 17.0.20.1
+Java source list is in sync with scripts/test.sh.
+Compiling 144 Java files.
+Java tests passed: 389
+
+After Java
+Using javac 17.0.20.1
+Java source list is in sync with scripts/test.sh.
+Compiling 145 Java files.
+Java tests passed: 402
+
+Architecture
+Architecture checks passed.
+Final Package Edition source/test contract verified.
+
+Android compile and signer/update
+Note: Some input files use or override a deprecated API.
+Note: Recompile with -Xlint:deprecation for details.
+Package installation identity and all manifest component classes verified.
+......
+----------------------------------------------------------------------
+Ran 6 tests in 10.574s
+
+OK
+Signing fixture versionCodes: 7 -> 8
+Two clean APK builds keep the same update signer: a40da80a59d170caa950cf15c18c454d47a39b26989d8b640ecd745ba71bf5dc
+Android sources and resources compiled for Package Edition (target 28, minimum 29).

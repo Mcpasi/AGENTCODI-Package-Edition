@@ -1,0 +1,183 @@
+{
+  "schema_version": 1,
+  "source_revision": "7c977c423ef3381517529f195c5095c2409512bf",
+  "dirty": false,
+  "environment": {
+    "java_version": "openjdk version \"17.0.20.1\" 2026-08-18\nOpenJDK Runtime Environment Temurin-17.0.20.1+1 (build 17.0.20.1+1)\nOpenJDK 64-Bit Server VM Temurin-17.0.20.1+1 (build 17.0.20.1+1, mixed mode, sharing)",
+    "platform": "Linux-6.18.44-x86_64-with-glibc2.41",
+    "machine": "x86_64",
+    "cpu_model": "AMD EPYC 9V45 96-Core Processor",
+    "cpu_count": 3,
+    "python_version": "3.12.14",
+    "runner_os": null,
+    "runner_arch": null
+  },
+  "measurement_config": {
+    "forks": 3,
+    "warmups": 2,
+    "samples": 5,
+    "jvm_flags": [
+      "-Xms128m",
+      "-Xmx512m",
+      "-XX:+UseG1GC",
+      "-XX:ActiveProcessorCount=2"
+    ]
+  },
+  "production_sha256": "8fef9adcc45ff862be68560a72d60d7d8b6b9523975c64076bda0137f8ea224a",
+  "harness_sha256": "2eb10e88214d51ce1d6c361c0bead6250412fb0550b23cb757b59eec010fe2c8",
+  "driver_sha256": "e6f625b72b33ed465577e00fe23737a278b83370b5981cda0e964cd16908ec18",
+  "started_at_unix": 1791727395.8752966,
+  "scope": "Portable production Java; no build scripts, APK, SDK, NDK or device",
+  "suite": "terminal",
+  "workloads": [
+    {
+      "id": "terminal.output-256b",
+      "boundary": "JsonCodec.parseObject -> onNotification -> Base64 validation -> terminal cells; no UI",
+      "parameters": {
+        "chunk_bytes": 256,
+        "rows": 24,
+        "columns": 80
+      },
+      "operations": 1281,
+      "input_bytes": 327703,
+      "warmups": 2,
+      "sample_count": 15,
+      "median_ms": 17.566972,
+      "median_cpu_ms": 15.305455,
+      "median_allocated_bytes": 57166920,
+      "allocated_bytes_per_operation": 44626.79156908665,
+      "allocation_per_input_byte": 174.44735019209466,
+      "median_event_p95_ms": 0.015784,
+      "median_event_p99_ms": 0.029664,
+      "max_event_ms": 8.89976,
+      "gc_count": 8,
+      "gc_ms": 22,
+      "fork_median_ms": [
+        17.566972,
+        18.37742,
+        16.738038
+      ]
+    },
+    {
+      "id": "terminal.output-4096b",
+      "boundary": "JsonCodec.parseObject -> onNotification -> Base64 validation -> terminal cells; no UI",
+      "parameters": {
+        "chunk_bytes": 4096,
+        "rows": 24,
+        "columns": 80
+      },
+      "operations": 81,
+      "input_bytes": 327703,
+      "warmups": 2,
+      "sample_count": 15,
+      "median_ms": 13.310591,
+      "median_cpu_ms": 11.734437,
+      "median_allocated_bytes": 54877640,
+      "allocated_bytes_per_operation": 677501.7283950617,
+      "allocation_per_input_byte": 167.4615124060506,
+      "median_event_p95_ms": 0.187079,
+      "median_event_p99_ms": 1.538022,
+      "max_event_ms": 4.569137,
+      "gc_count": 8,
+      "gc_ms": 23,
+      "fork_median_ms": [
+        12.388247,
+        13.632772,
+        13.310591
+      ]
+    },
+    {
+      "id": "terminal.utf8-7b",
+      "boundary": "TerminalOutputBuffer.append; split UTF-8 and ANSI sequences",
+      "parameters": {
+        "chunk_bytes": 7,
+        "rows": 24,
+        "columns": 80
+      },
+      "operations": 9366,
+      "input_bytes": 65557,
+      "warmups": 2,
+      "sample_count": 15,
+      "median_ms": 8.938858,
+      "median_cpu_ms": 8.942842,
+      "median_allocated_bytes": 10570512,
+      "allocated_bytes_per_operation": 1128.604740550929,
+      "allocation_per_input_byte": 161.2415455252681,
+      "median_event_p95_ms": 0.001302,
+      "median_event_p99_ms": 0.001682,
+      "max_event_ms": 5.163243,
+      "gc_count": 1,
+      "gc_ms": 1,
+      "fork_median_ms": [
+        9.288829,
+        7.636047,
+        9.093489
+      ]
+    },
+    {
+      "id": "terminal.idle-empty",
+      "boundary": "Two terminalSnapshot calls per unchanged refresh, as in TerminalActivity.refreshTask; no TextView",
+      "parameters": {
+        "refreshes": 12,
+        "snapshots_per_refresh": 2,
+        "scrollback_input_bytes": 0
+      },
+      "operations": 12,
+      "input_bytes": 0,
+      "warmups": 2,
+      "sample_count": 15,
+      "median_ms": 0.039779,
+      "median_cpu_ms": 0.040751,
+      "median_allocated_bytes": 106752,
+      "allocated_bytes_per_operation": 8896.0,
+      "allocation_per_input_byte": null,
+      "median_event_p95_ms": 0.013771,
+      "median_event_p99_ms": 0.013771,
+      "max_event_ms": 0.108351,
+      "gc_count": 0,
+      "gc_ms": 0,
+      "fork_median_ms": [
+        0.058808,
+        0.038858,
+        0.039779
+      ]
+    },
+    {
+      "id": "terminal.idle-full",
+      "boundary": "Two terminalSnapshot calls per unchanged refresh, as in TerminalActivity.refreshTask; no TextView",
+      "parameters": {
+        "refreshes": 12,
+        "snapshots_per_refresh": 2,
+        "scrollback_input_bytes": 327703
+      },
+      "operations": 12,
+      "input_bytes": 0,
+      "warmups": 2,
+      "sample_count": 15,
+      "median_ms": 343.442351,
+      "median_cpu_ms": 342.582828,
+      "median_allocated_bytes": 51974976,
+      "allocated_bytes_per_operation": 4331248.0,
+      "allocation_per_input_byte": null,
+      "median_event_p95_ms": 30.23088,
+      "median_event_p99_ms": 30.23088,
+      "max_event_ms": 36.455215,
+      "gc_count": 2,
+      "gc_ms": 8,
+      "fork_median_ms": [
+        343.442351,
+        360.37557,
+        336.708811
+      ]
+    }
+  ],
+  "signals": [
+    {
+      "id": "terminal-idle-allocation",
+      "workloads": [
+        "terminal.idle-full"
+      ],
+      "message": "Unchanged full terminal refresh allocates 4.13 MiB per refresh (two production snapshots). Diagnostic threshold: 1 MiB."
+    }
+  ]
+}

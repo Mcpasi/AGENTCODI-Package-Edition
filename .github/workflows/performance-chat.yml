@@ -1,0 +1,79 @@
+name: Chat performance reproduction
+
+on:
+  push:
+    paths:
+      - 'modules/core/src/main/java/**'
+      - 'tests/performance/**'
+      - '.github/ci/*performance*'
+      - '.github/ci/StreamConsumerBenchmark.java'
+      - '.github/ci/run-stream-consumer-benchmark.py'
+      - '.github/workflows/performance-chat.yml'
+  pull_request:
+    paths:
+      - 'modules/core/src/main/java/**'
+      - 'tests/performance/**'
+      - '.github/ci/*performance*'
+      - '.github/ci/StreamConsumerBenchmark.java'
+      - '.github/ci/run-stream-consumer-benchmark.py'
+      - '.github/workflows/performance-chat.yml'
+  workflow_dispatch:
+    inputs:
+      profile:
+        description: Record an additional JFR replay for hotspot inspection
+        type: boolean
+        default: false
+      fail_on_findings:
+        description: Fail on diagnostic performance signals (default is report-only)
+        type: boolean
+        default: false
+
+permissions:
+  contents: read
+
+concurrency:
+  group: performance-chat-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  chat:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    env:
+      LANG: C.UTF-8
+      LC_ALL: C.UTF-8
+      PYTHONDONTWRITEBYTECODE: '1'
+      PROFILE: ${{ inputs.profile || false }}
+      FAIL_ON_FINDINGS: ${{ inputs.fail_on_findings || false }}
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-java@v6
+        with:
+          distribution: temurin
+          java-version: '17'
+      - uses: actions/setup-python@v7
+        with:
+          python-version: '3.12'
+      - name: Check measurement aggregation
+        run: python3 -B .github/ci/test-performance-report.py
+      - name: Replay assistant, tool and reasoning streams
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          options=()
+          if [ "$PROFILE" = true ]; then options+=(--profile); fi
+          if [ "$FAIL_ON_FINDINGS" = true ]; then options+=(--fail-on-findings); fi
+          python3 -B .github/ci/run-performance-benchmarks.py \
+            --suite chat --output "$RUNNER_TEMP/performance-chat" "${options[@]}"
+      - name: Replay full text consumers and multipart reasoning
+        run: |
+          python3 -B .github/ci/run-stream-consumer-benchmark.py \
+            --output "$RUNNER_TEMP/performance-chat/consumer"
+      - name: Upload measurements and optional JFR
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: performance-chat-${{ github.run_attempt }}
+          path: ${{ runner.temp }}/performance-chat/
+          if-no-files-found: error
+          retention-days: 30
