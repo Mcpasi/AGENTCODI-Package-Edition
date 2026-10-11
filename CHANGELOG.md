@@ -1,5 +1,44 @@
 # Package Edition
 
+## 0.1.4 — Package Edition (Android versionCode 7) — 2026-10-11
+
+**In development. Host performance fixes verified. Physical Android device tests pending.**
+
+- Reuse immutable terminal snapshots while their revision is unchanged. Rebuild
+  the bounded, redacted output after output, state, clear, resize and session
+  changes. Preserve PTY geometry, cursor handling, scrollback, UTF-8 and errors.
+- Replace whole-prefix chat concatenation and repeated whole-text redaction with
+  immutable text segments and incremental redaction of the unsettled suffix.
+  Share settled text across snapshots and ordinary reasoning parts; preserve
+  complete redaction across sensitive part boundaries and clipping.
+- Apply the stream storage to assistant, plan, reasoning, tool-output, MCP
+  progress and terminal-interaction cards. Keep every accepted delta, snapshot
+  revision, history limit, metadata and authoritative completion event.
+- Reuse thread-local regex matcher storage, clearing input in `finally`.
+  Preserve the existing secret patterns and their replacement order.
+- Compare the unchanged build-independent replays on the same JDK/host, with
+  three JVM forks, two warmups and five samples per fork. A full unchanged
+  terminal workload (12 refreshes, two snapshots each) drops from 343.44 ms /
+  49.57 MiB allocated to 0.003 ms / 0 bytes. The 64 KiB assistant stream in
+  64-byte deltas drops from 1654.43 ms / 35.69 MiB to 7.91 ms / 2.74 MiB.
+  Tool and reasoning streams at 32 KiB drop from 617.80 / 422.30 ms to
+  3.04 / 2.82 ms. All 17 primary workloads pass the original diagnostic gates.
+- Add a separate chat-workflow replay that reads the complete text after every
+  delta, including multipart reasoning. Its assistant workload drops from
+  1652.39 to 10.84 ms; allocations remain 35.69 → 34.81 MiB because a full
+  `String` is requested on every event. Keep this consumption cost visible.
+- Preserve the baseline, post-fix source hashes, configuration and raw fork
+  samples in [the 0.1.4 evidence](.github/performance/0.1.4/).
+  [The 0.1.4 roadmap record](ROADMAP-package-edition.md#package-edition-014-performance-fixes-host-verified)
+  contains the full comparison and reproduction commands.
+- Validation: 389 Java host tests, architecture contracts, ten benchmark
+  reporting checks and chat workflow lint pass. Added checks cover immutable
+  snapshots, terminal invalidation, chunk/word/Unicode boundaries, exact
+  clipping, NUL removal, over 50,000 randomized stream transitions, concurrent
+  redaction, matcher input release, multipart secrets and final-item authority.
+- Bump the application, manifest, APK builder and native identity to `0.1.4`,
+  Android versionCode 7, after confirming both performance fixes.
+
 ## 0.1.3 — Package Edition (Android versionCode 6) — 2026-10-11
 
 **Experimental prerelease (published). Device tests: passed on physical Android hardware.**

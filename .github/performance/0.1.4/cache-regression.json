@@ -1,0 +1,17 @@
+{
+  "test": "CodexSessionControllerTest.reusesTerminalSnapshotsUntilTheStateChanges",
+  "test_source_sha256": "d48b0dcafa6acb0299fe18a121506191a20ec61f243ff9fd470c9b16e65d92ec",
+  "before_revision": "7c977c423ef3381517529f195c5095c2409512bf",
+  "after_performance_revision": "45731fd0b35907a6298afa36b82ee9d95ddc1e17",
+  "after_version_name": "0.1.4",
+  "before": {
+    "exit_code": 0,
+    "stdout": "EXPECTED PRE-FIX FAILURE: AssertionError: unchanged snapshot is reused\n",
+    "stderr": ""
+  },
+  "after": {
+    "exit_code": 0,
+    "stdout": "PASS: snapshot reuse, invalidation, redaction, frozen output, clear and stop\n",
+    "stderr": ""
+  }
+}

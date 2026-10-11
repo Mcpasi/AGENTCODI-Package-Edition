@@ -7,6 +7,134 @@ are documented in the [setup guide](.github/ci/PACKAGE_EDITION_SETUP.md).
 The dated records below retain historical CI links and branch names from the
 original AGENTCODI repository.
 
+### Package Edition 0.1.4: performance fixes (host verified)
+
+Development identity: `0.1.4`, Android `versionCode 7`, application ID
+`de.agentcodi.pkg`. Both reproduced performance causes are fixed and verified
+with portable host replays. Physical Android device tests for 0.1.4 are pending.
+
+1. **Repeated terminal snapshot reconstruction.** `CodexTerminalSession` now
+   returns its immutable cached snapshot for an unchanged revision, under the
+   existing session lock. Output and visible state transitions advance that
+   revision. The first snapshot after a change still renders and redacts the
+   complete bounded scrollback. The refresh cadence and two snapshot calls per
+   benchmark refresh remain unchanged.
+2. **Whole-history work on each chat delta.** `StreamText` shares settled,
+   redacted segments and rechecks the suffix whose secret match could change
+   on append. It retains preceding code-point context for word boundaries.
+   Tiny fragments are compacted into bounded segments; ordinary chunks share
+   their existing text. Assistant, plan, reasoning and tool-related streams
+   publish current immutable snapshots on every accepted update. Visible
+   character counts use exact redacted lengths without flattening text.
+   Public getters return complete, cached strings and reuse an already rendered
+   append-only prefix when available. Reasoning joins and tool formatting keep
+   full redaction where part boundaries or clipping require it. Regex matchers
+   reuse storage per thread and release input in `finally`.
+
+The original workload Java and benchmark/report driver are unchanged between
+baseline [`7c977c4`](https://github.com/Mcpasi/AGENTCODI-Package-Edition/commit/7c977c423ef3381517529f195c5095c2409512bf)
+and verified fixes [`45731fd`](https://github.com/Mcpasi/AGENTCODI-Package-Edition/commit/45731fd0b35907a6298afa36b82ee9d95ddc1e17).
+Measurements precede the version bump; only the release identity changes
+after these verified fixes.
+
+Both runs use Temurin `17.0.20.1`, the same AMD EPYC 9V45 host, three fresh
+JVMs, two warmups and five measured samples per workload per JVM (15 samples).
+Flags: `-Xms128m -Xmx512m -XX:+UseG1GC -XX:ActiveProcessorCount=2`.
+Fixtures, handshake, correctness checks and teardown are outside timing.
+Times below are whole-workload medians; allocation is replay-thread churn,
+not retained heap. Event p95, CPU, GC and individual samples are in the JSON.
+Host scheduling can affect timings. Android layout, device FPS, native PTY
+execution and network latency are outside these measurement boundaries.
+
+| Original workload | Before ms | After ms | Before MiB | After MiB |
+| --- | ---: | ---: | ---: | ---: |
+| Terminal output, 256-byte chunks | 17.57 | 16.54 | 54.52 | 54.52 |
+| Terminal output, 4096-byte chunks | 13.31 | 13.49 | 52.34 | 52.34 |
+| Terminal split UTF-8/ANSI, 7-byte chunks | 8.94 | 8.86 | 10.08 | 10.08 |
+| Terminal unchanged empty, 12 refreshes | 0.040 | 0.004 | 0.10 | 0 bytes |
+| Terminal unchanged full, 12 refreshes | 343.44 | 0.003 | 49.57 | 0 bytes |
+| Assistant 16 KiB, 64-byte deltas | 104.07 | 3.90 | 2.93 | 0.69 |
+| Assistant 32 KiB, 64-byte deltas | 415.83 | 3.96 | 9.86 | 1.37 |
+| Assistant 64 KiB, 64-byte deltas | 1654.43 | 7.91 | 35.69 | 2.74 |
+| Assistant 64 KiB, 4096-byte deltas | 27.95 | 4.87 | 0.79 | 0.36 |
+| Assistant 64 KiB with 200 history items | 1670.83 | 8.68 | 39.38 | 6.42 |
+| Tool 16 KiB, 128-byte deltas | 158.49 | 1.64 | 3.78 | 0.42 |
+| Tool 32 KiB, 128-byte deltas | 617.80 | 3.04 | 13.57 | 0.85 |
+| Reasoning 16 KiB, 128-byte deltas | 104.55 | 1.50 | 3.81 | 0.41 |
+| Reasoning 32 KiB, 128-byte deltas | 422.30 | 2.82 | 13.63 | 0.82 |
+| JSON history 16 × 4096 characters | 4.09 | 3.79 | 5.84 | 5.84 |
+| JSON history 240 × 4096 characters | 13.86 | 13.57 | 29.07 | 29.07 |
+| JSON history 240 × 16384 characters | 24.24 | 25.98 | 56.74 | 56.74 |
+
+An unchanged full terminal refresh allocates **4.13 MiB → 0 bytes** for its
+two snapshots. Assistant allocation doubles with 16 → 32 → 64 KiB after the
+fix, instead of the previous approximately 3.4–3.6× growth on each doubling.
+Small versus large assistant deltas allocate 7.55× as much after the fix,
+down from 45.41×; their event counts differ. All 17 original workloads pass
+`--fail-on-findings` with the original thresholds.
+
+The additional consumer replay, run against both exact commits with the same
+consumer source, reads the complete visible text **after every delta**:
+
+| Complete-text consumer | Before ms | After ms | Before MiB | After MiB |
+| --- | ---: | ---: | ---: | ---: |
+| Assistant 64 KiB, 64-byte deltas | 1652.39 | 10.84 | 35.69 | 34.81 |
+| Tool 32 KiB, 128-byte deltas | 632.47 | 4.08 | 13.57 | 4.88 |
+| Reasoning 32 KiB, 128-byte deltas | 417.45 | 3.76 | 13.63 | 4.84 |
+| Multipart reasoning 32 KiB, 128-byte deltas | 418.15 | 5.71 | 21.70 | 9.34 |
+
+This boundary confirms the runtime gain when text is actually consumed.
+Requesting a full assistant `String` on every event still copies accumulated
+text; its allocation stays near the baseline. The core replay's 2.74 MiB result
+measures delta processing and snapshot publication, with final text validation
+outside timing. The chat workflow now reports both boundaries separately.
+
+Evidence:
+
+- [Before](.github/performance/0.1.4/before/) and
+  [after](.github/performance/0.1.4/after/) contain per-suite manifests,
+  production/harness SHA-256 hashes, aggregate JSON and raw fork JSONL.
+  Primary CSV files include event latency, CPU and GC measurements.
+- [Terminal comparison](.github/performance/0.1.4/after/terminal/terminal.json),
+  [chat comparison](.github/performance/0.1.4/after/chat/chat.json),
+  [protocol control](.github/performance/0.1.4/after/protocol/protocol.json) and
+  [complete text consumers](.github/performance/0.1.4/after/consumer/consumer.json)
+  record baseline ratios. Profiling runs are separate from measured samples.
+- [Local post-bump validation](.github/performance/0.1.4/validation.json),
+  [terminal regression before/after](.github/performance/0.1.4/cache-regression.json)
+  and [evidence checksums](.github/performance/0.1.4/sha256sums.txt) preserve the
+  checks. The snapshot-reuse regression fails against the original core and
+  passes after the fix.
+- 389 Java host tests pass. New regression checks cover unchanged terminal
+  snapshot reuse and invalidation, frozen assistant/tool snapshots, metadata,
+  authoritative completion, cross-part secrets, exact limits and NUL removal.
+  `StreamTextTest` compares chunked output to the original whole-text algorithm
+  at every step, including more than 50,000 randomized bounded transitions,
+  split Unicode, word boundaries and 128 KiB of single-character deltas.
+  Concurrent redaction and released matcher input are checked separately.
+  Architecture contracts, ten reporting checks and chat workflow lint pass.
+
+Reproduce with a stock JDK 17+ and Python, using empty output directories:
+
+```sh
+git worktree add --detach ../agentcodi-perf-before 7c977c423ef3381517529f195c5095c2409512bf
+git worktree add --detach ../agentcodi-perf-after 45731fd0b35907a6298afa36b82ee9d95ddc1e17
+(cd ../agentcodi-perf-before && python3 -B .github/ci/run-performance-benchmarks.py --suite all --output ../perf-before)
+cd ../agentcodi-perf-after
+for benchmark_suite in terminal chat protocol; do
+  python3 -B .github/ci/run-performance-benchmarks.py --suite "$benchmark_suite" \
+    --output "../perf-after/$benchmark_suite" --baseline "../perf-before/$benchmark_suite.json" \
+    --profile --fail-on-findings
+done
+python3 -B .github/ci/run-stream-consumer-benchmark.py --source-root ../agentcodi-perf-before --output ../consumer-before
+python3 -B .github/ci/run-stream-consumer-benchmark.py --output ../consumer-after --baseline ../consumer-before/consumer.json
+```
+
+Run these sequentially on the same host/JDK. They compile production sources
+directly with `javac`, independently of APK/package build scripts and Android
+SDK/NDK. Run `.github/ci/run-java-tests.sh` for the functional regression suite.
+The existing terminal, chat and protocol workflows remain independently runnable.
+
 ### Package Edition 0.1.3: chat, terminal and package diagnostics (published)
 
 Current release identity: `0.1.3`, Android `versionCode 6`, application ID

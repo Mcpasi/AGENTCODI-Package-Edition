@@ -1,0 +1,143 @@
+{
+  "schema_version": 1,
+  "source_revision": "45731fd0b35907a6298afa36b82ee9d95ddc1e17",
+  "dirty": false,
+  "environment": {
+    "java_version": "openjdk version \"17.0.20.1\" 2026-08-18\nOpenJDK Runtime Environment Temurin-17.0.20.1+1 (build 17.0.20.1+1)\nOpenJDK 64-Bit Server VM Temurin-17.0.20.1+1 (build 17.0.20.1+1, mixed mode, sharing)",
+    "platform": "Linux-6.18.44-x86_64-with-glibc2.41",
+    "machine": "x86_64",
+    "cpu_model": "AMD EPYC 9V45 96-Core Processor",
+    "cpu_count": 3,
+    "python_version": "3.12.14",
+    "runner_os": null,
+    "runner_arch": null
+  },
+  "measurement_config": {
+    "forks": 3,
+    "warmups": 2,
+    "samples": 5,
+    "jvm_flags": [
+      "-Xms128m",
+      "-Xmx512m",
+      "-XX:+UseG1GC",
+      "-XX:ActiveProcessorCount=2"
+    ]
+  },
+  "production_sha256": "b5456183e5bd5ae89e06e9d76879655369ed406af4392678c7a8bdfb4a5b55dc",
+  "harness_sha256": "2eb10e88214d51ce1d6c361c0bead6250412fb0550b23cb757b59eec010fe2c8",
+  "driver_sha256": "e6f625b72b33ed465577e00fe23737a278b83370b5981cda0e964cd16908ec18",
+  "started_at_unix": 1791729319.7610247,
+  "scope": "Portable production Java; no build scripts, APK, SDK, NDK or device",
+  "suite": "protocol",
+  "workloads": [
+    {
+      "id": "protocol.history-16x4096",
+      "boundary": "JsonCodec.parseObject on incoming thread history with escaped text; transport/image compaction excluded",
+      "parameters": {
+        "items": 16,
+        "characters_per_item": 4092,
+        "frame_bytes": 67619
+      },
+      "operations": 12,
+      "input_bytes": 811428,
+      "warmups": 2,
+      "sample_count": 15,
+      "median_ms": 3.788122,
+      "median_cpu_ms": 3.789624,
+      "median_allocated_bytes": 6118848,
+      "allocated_bytes_per_operation": 509904.0,
+      "allocation_per_input_byte": 7.540839113266981,
+      "median_event_p95_ms": 0.40313,
+      "median_event_p99_ms": 0.40313,
+      "max_event_ms": 0.752982,
+      "gc_count": 0,
+      "gc_ms": 0,
+      "fork_median_ms": [
+        3.902402,
+        3.845467,
+        3.432943
+      ]
+    },
+    {
+      "id": "protocol.history-240x4096",
+      "boundary": "JsonCodec.parseObject on incoming thread history with escaped text; transport/image compaction excluded",
+      "parameters": {
+        "items": 240,
+        "characters_per_item": 4092,
+        "frame_bytes": 1012899
+      },
+      "operations": 4,
+      "input_bytes": 4051596,
+      "warmups": 2,
+      "sample_count": 15,
+      "median_ms": 13.574287,
+      "median_cpu_ms": 13.138351,
+      "median_allocated_bytes": 30479104,
+      "allocated_bytes_per_operation": 7619776.0,
+      "allocation_per_input_byte": 7.522740174489263,
+      "median_event_p95_ms": 3.957695,
+      "median_event_p99_ms": 3.957695,
+      "max_event_ms": 10.87768,
+      "gc_count": 6,
+      "gc_ms": 6,
+      "fork_median_ms": [
+        15.149964,
+        12.713495,
+        13.574287
+      ]
+    },
+    {
+      "id": "protocol.history-240x16384",
+      "boundary": "JsonCodec.parseObject on incoming thread history with escaped text; transport/image compaction excluded",
+      "parameters": {
+        "items": 240,
+        "characters_per_item": 16380,
+        "frame_bytes": 4010499
+      },
+      "operations": 2,
+      "input_bytes": 8020998,
+      "warmups": 2,
+      "sample_count": 15,
+      "median_ms": 25.978702,
+      "median_cpu_ms": 23.705216,
+      "median_allocated_bytes": 59491712,
+      "allocated_bytes_per_operation": 29745856.0,
+      "allocation_per_input_byte": 7.416996239121366,
+      "median_event_p95_ms": 13.996476,
+      "median_event_p99_ms": 13.996476,
+      "max_event_ms": 17.372104,
+      "gc_count": 13,
+      "gc_ms": 32,
+      "fork_median_ms": [
+        28.383173,
+        26.492717,
+        25.649732
+      ]
+    }
+  ],
+  "signals": [],
+  "baseline": {
+    "source_revision": "7c977c423ef3381517529f195c5095c2409512bf",
+    "workloads": [
+      {
+        "id": "protocol.history-16x4096",
+        "median_ms_ratio": 0.9266354846419028,
+        "median_allocated_bytes_ratio": 1.0,
+        "median_event_p95_ms_ratio": 0.5696710539331368
+      },
+      {
+        "id": "protocol.history-240x4096",
+        "median_ms_ratio": 0.9796794075222834,
+        "median_allocated_bytes_ratio": 1.0,
+        "median_event_p95_ms_ratio": 1.05339203469914
+      },
+      {
+        "id": "protocol.history-240x16384",
+        "median_ms_ratio": 1.0717236785044557,
+        "median_allocated_bytes_ratio": 1.0,
+        "median_event_p95_ms_ratio": 1.06691695725876
+      }
+    ],
+    "note": "Host timing ratios are observations; shared runner load can vary."
+  }
+}

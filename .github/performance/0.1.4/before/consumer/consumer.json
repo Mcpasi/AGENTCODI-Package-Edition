@@ -1,0 +1,152 @@
+{
+  "schema_version": 1,
+  "source_revision": "7c977c423ef3381517529f195c5095c2409512bf",
+  "dirty": false,
+  "environment": {
+    "java_version": "openjdk version \"17.0.20.1\" 2026-08-18\nOpenJDK Runtime Environment Temurin-17.0.20.1+1 (build 17.0.20.1+1)\nOpenJDK 64-Bit Server VM Temurin-17.0.20.1+1 (build 17.0.20.1+1, mixed mode, sharing)",
+    "platform": "Linux-6.18.44-x86_64-with-glibc2.41",
+    "machine": "x86_64",
+    "cpu_model": "AMD EPYC 9V45 96-Core Processor",
+    "cpu_count": 3,
+    "python_version": "3.12.14",
+    "runner_os": null,
+    "runner_arch": null
+  },
+  "measurement_config": {
+    "forks": 3,
+    "warmups": 2,
+    "samples": 5,
+    "jvm_flags": [
+      "-Xms128m",
+      "-Xmx512m",
+      "-XX:+UseG1GC",
+      "-XX:ActiveProcessorCount=2"
+    ]
+  },
+  "production_sha256": "8fef9adcc45ff862be68560a72d60d7d8b6b9523975c64076bda0137f8ea224a",
+  "harness_sha256": "e8608ff23ad2b35c93ace2062b17481e388e7e65236376b93007ebcda5a17eaa",
+  "consumer_sha256": "b205e1d7c115cbea383bece87e60b7b08bc91f4dbbb8c8cdee257688d874fe92",
+  "driver_sha256": "22582527f9339f1396494c1f26104e9fcc56f30926001163e37f67ba1226f4d7",
+  "started_at_unix": 1791728990.5033429,
+  "scope": "Supplemental full text consumption; no build scripts, Android, native PTY or network",
+  "suite": "consumer",
+  "workloads": [
+    {
+      "id": "consumer.assistant-64k-64b",
+      "boundary": "JsonCodec -> controller delta -> snapshot -> complete text getter on every event; no Android layout",
+      "parameters": {
+        "kind": "assistant",
+        "payload_characters": 65536,
+        "chunk_characters": 64,
+        "text_reads_per_delta": 1
+      },
+      "operations": 1024,
+      "input_bytes": 65536,
+      "warmups": 2,
+      "sample_count": 15,
+      "median_ms": 1652.393278,
+      "median_cpu_ms": 1651.947749,
+      "median_allocated_bytes": 37428160,
+      "allocated_bytes_per_operation": 36550.9375,
+      "allocation_per_input_byte": 571.1083984375,
+      "median_event_p95_ms": 3.066226,
+      "median_event_p99_ms": 3.181858,
+      "max_event_ms": 6.936942,
+      "gc_count": 9,
+      "gc_ms": 11,
+      "fork_median_ms": [
+        1652.393278,
+        1640.410056,
+        1694.300343
+      ]
+    },
+    {
+      "id": "consumer.tool-32k-128b",
+      "boundary": "JsonCodec -> controller delta -> snapshot -> complete text getter on every event; no Android layout",
+      "parameters": {
+        "kind": "tool",
+        "payload_characters": 32768,
+        "chunk_characters": 128,
+        "text_reads_per_delta": 1
+      },
+      "operations": 256,
+      "input_bytes": 32768,
+      "warmups": 2,
+      "sample_count": 15,
+      "median_ms": 632.471406,
+      "median_cpu_ms": 630.439978,
+      "median_allocated_bytes": 14225408,
+      "allocated_bytes_per_operation": 55568.0,
+      "allocation_per_input_byte": 434.125,
+      "median_event_p95_ms": 4.649175,
+      "median_event_p99_ms": 4.880208,
+      "max_event_ms": 6.734409,
+      "gc_count": 3,
+      "gc_ms": 3,
+      "fork_median_ms": [
+        617.986716,
+        640.881213,
+        632.471406
+      ]
+    },
+    {
+      "id": "consumer.reasoning-32k-128b",
+      "boundary": "JsonCodec -> controller delta -> snapshot -> complete text getter on every event; no Android layout",
+      "parameters": {
+        "kind": "reasoning",
+        "payload_characters": 32768,
+        "chunk_characters": 128,
+        "text_reads_per_delta": 1
+      },
+      "operations": 256,
+      "input_bytes": 32768,
+      "warmups": 2,
+      "sample_count": 15,
+      "median_ms": 417.448008,
+      "median_cpu_ms": 417.376013,
+      "median_allocated_bytes": 14291160,
+      "allocated_bytes_per_operation": 55824.84375,
+      "allocation_per_input_byte": 436.131591796875,
+      "median_event_p95_ms": 3.091164,
+      "median_event_p99_ms": 3.257091,
+      "max_event_ms": 10.635339,
+      "gc_count": 3,
+      "gc_ms": 4,
+      "fork_median_ms": [
+        413.237681,
+        418.236873,
+        422.023936
+      ]
+    },
+    {
+      "id": "consumer.reasoning-multipart-32k-128b",
+      "boundary": "JsonCodec -> controller delta -> snapshot -> complete text getter on every event; no Android layout",
+      "parameters": {
+        "kind": "reasoning-multipart",
+        "payload_characters": 32768,
+        "chunk_characters": 128,
+        "text_reads_per_delta": 1
+      },
+      "operations": 256,
+      "input_bytes": 32768,
+      "warmups": 2,
+      "sample_count": 15,
+      "median_ms": 418.150368,
+      "median_cpu_ms": 417.670463,
+      "median_allocated_bytes": 22749080,
+      "allocated_bytes_per_operation": 88863.59375,
+      "allocation_per_input_byte": 694.246826171875,
+      "median_event_p95_ms": 3.076001,
+      "median_event_p99_ms": 3.212575,
+      "max_event_ms": 4.741942,
+      "gc_count": 6,
+      "gc_ms": 7,
+      "fork_median_ms": [
+        415.276137,
+        418.150368,
+        419.604484
+      ]
+    }
+  ],
+  "signals": []
+}

@@ -8,8 +8,8 @@
 
 ![Android](https://img.shields.io/badge/Android-10%2B-3DDC84?logo=android&logoColor=white)
 ![Architecture](https://img.shields.io/badge/Architecture-ARM64-555555)
-![Version](https://img.shields.io/badge/Package%20Edition-0.1.3-blue)
-![Status](https://img.shields.io/badge/Status-published%20experimental%20prerelease-orange)
+![Version](https://img.shields.io/badge/Package%20Edition-0.1.4-blue)
+![Status](https://img.shields.io/badge/Status-in%20development-orange)
 ![License](https://img.shields.io/badge/License-Apache%202.0-blue)
 
 </div>
@@ -17,6 +17,11 @@
 AGENTCODI Package Edition brings Codex workflows to Android with an interactive terminal, installable development tools, workspace management, MCP support, and a native local app-server.
 
 The Package Edition has its own application ID, `de.agentcodi.pkg`, so it can be installed alongside the regular AGENTCODI app.
+
+**Development version: 0.1.4 / Android versionCode 7.** The terminal and chat
+performance fixes are host-verified; measurements and reproduction evidence are
+recorded in the [changelog](CHANGELOG.md) and [roadmap](ROADMAP-package-edition.md).
+Physical Android device tests for 0.1.4 are pending.
 
 **[Package Edition 0.1.3](https://github.com/Mcpasi/AGENTCODI-Package-Edition/releases/tag/v0.1.3-package.3) is published as an experimental prerelease.**
 **Device tests for version 0.1.3: passed on physical Android hardware.**
