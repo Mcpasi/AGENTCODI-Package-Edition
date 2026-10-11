@@ -7,12 +7,12 @@ on this repository's `main`. It uses the same container, pinned build inputs
 and verified bootstrap as the debug build and invokes
 `scripts/build-release-apk.sh`.
 
-The current release is [AGENTCODI Package Edition V0.1.3](https://github.com/Mcpasi/AGENTCODI-Package-Edition/releases/tag/v0.1.3-package.3),
+The current release is [AGENTCODI Package Edition V0.1.4](https://github.com/Mcpasi/AGENTCODI-Package-Edition/releases/tag/v.0.1.4.package.3),
 published on 2026-10-11 as an experimental prerelease, tagged
-`v0.1.3-package.3` (Android `versionCode 6`). The signed release asset is
-`AGENTCODI-Package-0.1.3-arm64-v8a-release.apk`; its SHA-256 is
-`d364d96d1be777323be5a422a696d0c480d4e2487912d952dceec548880dd2bf`.
-Physical Android device tests for version 0.1.3 passed.
+`v.0.1.4.package.3` (Android `versionCode 7`). The signed release asset is
+`AGENTCODI-Package-0.1.4-arm64-v8a-release.apk`; its SHA-256 is
+`3cb67f229a596648cc13679e2d2354b393f9ee15736fa7e074eb21eb353ba4f5`.
+Physical Android device tests for version 0.1.4 passed.
 
 The first public Package Edition APK was published on 2026-10-06 as
 [AGENTCODI Package Edition V0.1.0](https://github.com/Mcpasi/AGENTCODI/releases/tag/v0.1.0-package.3),
@@ -114,6 +114,6 @@ For later Android updates, retain the same private signer and increase
 debug key cannot be updated directly using a different release key. Physical
 Android installation, update and data retention remain separate device tests.
 Release APK tests through MCP passed.
-Physical Android device tests for version 0.1.3 passed.
+Physical Android device tests for versions 0.1.3 and 0.1.4 passed.
 The full installation/update/version matrix and new MPL source-saving feature are not
 documented as hardware-validated.

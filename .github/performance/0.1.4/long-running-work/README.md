@@ -91,6 +91,10 @@ after the short `turn/start` acknowledgement, and the UI does not stop the
 shared foreground runtime when the chat/terminal screen is closed. The native
 supervisor's two-second stop budget applies to explicit teardown. Existing MCP
 tool budgets remain configurable. No further changes were made without a
-reproduced failure. Screen lock, Doze, OEM process termination and prolonged
-physical Android builds still require device tests; host checks cannot prove
-their behavior. Version remains `0.1.4` / Android versionCode 7.
+reproduced failure. Host checks alone cannot establish screen-lock, Doze,
+OEM process-termination or prolonged physical Android build behavior.
+
+Version `0.1.4` / Android versionCode 7 was published on 2026-10-11 as an
+[experimental prerelease](https://github.com/Mcpasi/AGENTCODI-Package-Edition/releases/tag/v.0.1.4.package.3), tagged
+`v.0.1.4.package.3`. Physical Android device tests for version 0.1.4 passed.
+These release device-test results are separate from the host evidence above.

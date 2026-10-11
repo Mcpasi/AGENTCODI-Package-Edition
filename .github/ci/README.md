@@ -25,18 +25,19 @@ Ubuntu runner. They are additional entry points only:
 | Android sources and resources | `compile-android-sources.sh` | Compile against API 35, check SDK pins and Package Edition identity, and resolve every manifest component against its compiled Java class. |
 
 Package Edition builds use installation ID `de.agentcodi.pkg`, their own
-version line (published `0.1.3` / Android versionCode 6), and APK names
+version line (published `0.1.4` / Android versionCode 7), and APK names
 starting with `AGENTCODI-Package-`. The APK workflow in this repository
 uploads `agentcodi-package-debug-apk`. Java classes and resources retain the
 `de.agentcodi.app` namespace via AAPT2's `--custom-package`; manifest components
 use their full Java class names. Host compilation does not replace an APK
 installation and parallel-app test on Android hardware.
 
-[Package Edition 0.1.3](https://github.com/Mcpasi/AGENTCODI-Package-Edition/releases/tag/v0.1.3-package.3)
-was published on 2026-10-11 as an experimental prerelease.
-Physical Android device tests for version 0.1.3 passed.
+[Package Edition 0.1.4](https://github.com/Mcpasi/AGENTCODI-Package-Edition/releases/tag/v.0.1.4.package.3)
+was published on 2026-10-11 as an experimental prerelease, tagged
+`v.0.1.4.package.3`.
+Physical Android device tests for version 0.1.4 passed.
 This result is separate from hosted CI. The published 0.1.0
-(`v0.1.0-package.3`), 0.1.1 and 0.1.2 releases remain experimental prereleases.
+(`v0.1.0-package.3`), 0.1.1, 0.1.2 and 0.1.3 releases remain experimental prereleases.
 Their artifacts below are historical evidence for those earlier versions.
 
 ## Running them locally
@@ -339,8 +340,8 @@ and license work are complete, and the signed Package Edition prerelease
 was published on 2026-10-06. Release APK tests from APT through MCP passed,
 and physical Android hardware tests for 0.1.1 passed on 2026-10-07.
 Physical Android device tests for version 0.1.2 also passed.
-Physical Android device tests for version 0.1.3 passed.
-Versions 0.1.0, 0.1.1, 0.1.2 and 0.1.3 are published experimental prereleases.
+Physical Android device tests for versions 0.1.3 and 0.1.4 passed.
+Versions 0.1.0, 0.1.1, 0.1.2, 0.1.3 and 0.1.4 are published experimental prereleases.
 
 
 ## Final payload and supplied-license contract

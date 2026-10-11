@@ -2,7 +2,10 @@
 
 ## 0.1.4 — Package Edition (Android versionCode 7) — 2026-10-11
 
-**In development. Host performance and long-running session fixes verified. Physical Android device tests pending.**
+**Experimental prerelease (published). Device tests: passed on physical Android hardware.**
+
+- Published [AGENTCODI Package Edition V0.1.4](https://github.com/Mcpasi/AGENTCODI-Package-Edition/releases/tag/v.0.1.4.package.3) on 2026-10-11 as an experimental prerelease, tagged `v.0.1.4.package.3`.
+- Physical Android device tests for version 0.1.4 passed.
 
 - Remove the interactive terminal's 30-minute server deadline and its additional
   client deadline. Use the pinned protocol's `disableTimeout` flag and wait for
@@ -66,7 +69,7 @@
   `String` is requested on every event. Keep this consumption cost visible.
 - Preserve the baseline, post-fix source hashes, configuration and raw fork
   samples in [the 0.1.4 evidence](.github/performance/0.1.4/).
-  [The 0.1.4 roadmap record](ROADMAP-package-edition.md#package-edition-014-performance-fixes-host-verified)
+  [The 0.1.4 roadmap record](ROADMAP-package-edition.md#package-edition-014-performance-fixes-published)
   contains the full comparison and reproduction commands.
 - Validation: 389 Java host tests, architecture contracts, ten benchmark
   reporting checks and chat workflow lint pass. Added checks cover immutable

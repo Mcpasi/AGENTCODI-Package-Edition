@@ -122,4 +122,4 @@ release pins together when changing releases, and verify the actual final APK.
 The APK contract checks every ZIP text/hash and lock/component/release binding.
 Its format-2 license_release_ready flag concerns licensing prerequisites.
 Physical Android tests remain separate from the license checks.
-Physical Android device tests for version 0.1.3 passed.
+Physical Android device tests for versions 0.1.3 and 0.1.4 passed.

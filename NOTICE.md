@@ -76,7 +76,7 @@ files are indexed and verified with the same dpkg ownership/ZIP contracts.
 The format-2 report separates license_release_ready from physical-device
 validation, which is not performed by the report. A release build fails if
 legal gaps reappear; these checks do not publish a final APK or complete
-hardware tests. Physical Android device tests for version 0.1.3 passed.
+hardware tests. Physical Android device tests for versions 0.1.3 and 0.1.4 passed.
 
 The original distributor material is never rewritten. The historical
 regular-edition provenance below is retained in this repository; it is excluded

@@ -9,7 +9,7 @@
 ![Android](https://img.shields.io/badge/Android-10%2B-3DDC84?logo=android&logoColor=white)
 ![Architecture](https://img.shields.io/badge/Architecture-ARM64-555555)
 ![Version](https://img.shields.io/badge/Package%20Edition-0.1.4-blue)
-![Status](https://img.shields.io/badge/Status-in%20development-orange)
+![Status](https://img.shields.io/badge/Status-experimental%20prerelease-orange)
 ![License](https://img.shields.io/badge/License-Apache%202.0-blue)
 
 </div>
@@ -18,13 +18,13 @@ AGENTCODI Package Edition brings Codex workflows to Android with an interactive 
 
 The Package Edition has its own application ID, `de.agentcodi.pkg`, so it can be installed alongside the regular AGENTCODI app.
 
-**Development version: 0.1.4 / Android versionCode 7.** The terminal and chat
-performance fixes are host-verified; measurements and reproduction evidence are
-recorded in the [changelog](CHANGELOG.md) and [roadmap](ROADMAP-package-edition.md).
-Physical Android device tests for 0.1.4 are pending.
+**[Package Edition 0.1.4](https://github.com/Mcpasi/AGENTCODI-Package-Edition/releases/tag/v.0.1.4.package.3) is published as an experimental prerelease.**
+Released on 2026-10-11, tagged `v.0.1.4.package.3` (Android `versionCode 7`).
+**Device tests for version 0.1.4: passed on physical Android hardware.**
 
-**[Package Edition 0.1.3](https://github.com/Mcpasi/AGENTCODI-Package-Edition/releases/tag/v0.1.3-package.3) is published as an experimental prerelease.**
-**Device tests for version 0.1.3: passed on physical Android hardware.**
+The terminal, chat and long-running session improvements are recorded in the
+[changelog](CHANGELOG.md), with host benchmark measurements and reproduction
+evidence in the [roadmap](ROADMAP-package-edition.md).
 
 No Termux installation, WebView shell, or separate gateway setup is required.
 
@@ -61,7 +61,7 @@ Recent Android versions may display a warning during installation because of the
 
 ## Install
 
-Download the Package Edition 0.1.3 APK from [GitHub Releases](https://github.com/Mcpasi/AGENTCODI-Package-Edition/releases/tag/v0.1.3-package.3) and install it on your Android device. The signed release asset is `AGENTCODI-Package-0.1.3-arm64-v8a-release.apk`.
+Download the Package Edition 0.1.4 APK from [GitHub Releases](https://github.com/Mcpasi/AGENTCODI-Package-Edition/releases/tag/v.0.1.4.package.3) and install it on your Android device. The signed release asset is `AGENTCODI-Package-0.1.4-arm64-v8a-release.apk`.
 
 Release APKs use the package name:
 
@@ -209,7 +209,7 @@ Package Edition preserves the managed package prefix across normal app restarts 
 
 Packages, caches and existing user-installed files are retained. APT remains responsible for package updates and removals.
 
-Version 0.1.2 uses the original APT endpoint. The published 0.1.3 APK uses the dedicated repository listed above and migrates the original managed source on APK update while retaining installed packages and custom sources.
+Version 0.1.2 uses the original APT endpoint. Published APKs from 0.1.3 onward use the dedicated repository listed above and migrate the original managed source on APK update while retaining installed packages and custom sources.
 
 Older development APKs may have used a different signing identity. Android cannot update an installation when the signing certificate changes. In that case, export any data you need before uninstalling the older APK, because uninstalling removes the app's private data.
 
