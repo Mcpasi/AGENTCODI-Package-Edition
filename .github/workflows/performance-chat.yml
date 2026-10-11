@@ -42,12 +42,12 @@ jobs:
       PROFILE: ${{ inputs.profile || false }}
       FAIL_ON_FINDINGS: ${{ inputs.fail_on_findings || false }}
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-java@v4
+      - uses: actions/checkout@v7
+      - uses: actions/setup-java@v6
         with:
           distribution: temurin
           java-version: '17'
-      - uses: actions/setup-python@v5
+      - uses: actions/setup-python@v7
         with:
           python-version: '3.12'
       - name: Check measurement aggregation
@@ -63,7 +63,7 @@ jobs:
             --suite chat --output "$RUNNER_TEMP/performance-chat" "${options[@]}"
       - name: Upload measurements and optional JFR
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: performance-chat-${{ github.run_attempt }}
           path: ${{ runner.temp }}/performance-chat/

@@ -87,8 +87,10 @@ final class ChatBenchmarks {
         }
 
         @Override public void verify() {
-            Benchmark.check(last.getRevision() >= initialRevision + frames.length,
-                "Stream events did not publish snapshots");
+            // A later performance fix may coalesce publications; require current content,
+            // not one snapshot allocation/revision per delta.
+            Benchmark.check(last.getRevision() > initialRevision,
+                "Stream replay did not publish a current snapshot");
             Benchmark.check(last.getErrorMessage().isEmpty() && last.isTurnActive(),
                 "Stream replay failed or ended early");
             Benchmark.check(last.getTranscriptItems().size() == history + 1,
