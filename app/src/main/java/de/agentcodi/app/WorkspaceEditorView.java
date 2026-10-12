@@ -1,10 +1,8 @@
 package de.agentcodi.app;
 
 import android.content.Context;
-import android.graphics.Typeface;
 import android.text.Editable;
 import android.text.InputFilter;
-import android.text.InputType;
 import android.text.Spanned;
 import android.text.TextUtils;
 import android.text.TextWatcher;
@@ -12,7 +10,6 @@ import android.view.Gravity;
 import android.view.KeyEvent;
 import android.view.View;
 import android.view.ViewGroup;
-import android.view.inputmethod.EditorInfo;
 import android.widget.Button;
 import android.widget.EditText;
 import android.widget.ImageButton;
@@ -35,6 +32,7 @@ final class WorkspaceEditorView extends LinearLayout {
     private final TextView pathView;
     private final TextView statusView;
     private final EditText input;
+    private final WorkspaceCodeEditor codeEditor;
     private final Button saveButton;
     private final ImageButton exportButton;
     private Actions actions;
@@ -49,18 +47,8 @@ final class WorkspaceEditorView extends LinearLayout {
         pathView.setEllipsize(TextUtils.TruncateAt.MIDDLE);
         addView(pathView);
 
-        input = new EditText(context);
-        input.setInputType(InputType.TYPE_CLASS_TEXT | InputType.TYPE_TEXT_FLAG_MULTI_LINE
-            | InputType.TYPE_TEXT_FLAG_NO_SUGGESTIONS);
-        input.setImeOptions(EditorInfo.IME_FLAG_NO_EXTRACT_UI | EditorInfo.IME_FLAG_NO_ENTER_ACTION);
-        input.setTypeface(Typeface.MONOSPACE);
-        input.setTextSize(15);
-        input.setTextColor(theme.codeText);
-        input.setGravity(Gravity.TOP | Gravity.START);
-        input.setHorizontallyScrolling(false);
-        input.setPadding(theme.dp(12), theme.dp(12), theme.dp(12), theme.dp(12));
-        input.setBackground(theme.background(theme.code, theme.border, 12));
-        input.setContentDescription(context.getString(R.string.editor_content_description));
+        codeEditor = new WorkspaceCodeEditor(context, theme);
+        input = codeEditor.input;
         input.setFilters(new InputFilter[] {
             new InputFilter() {
                 @Override public CharSequence filter(CharSequence source, int start, int end,
@@ -75,8 +63,6 @@ final class WorkspaceEditorView extends LinearLayout {
                 }
             }
         });
-        // Large documents must not be serialized into Android's bounded view-state Bundle.
-        input.setSaveEnabled(false);
         input.addTextChangedListener(new TextWatcher() {
             @Override public void beforeTextChanged(CharSequence s, int start, int count, int after) { }
             @Override public void onTextChanged(CharSequence s, int start, int before, int count) { }
@@ -102,7 +88,7 @@ final class WorkspaceEditorView extends LinearLayout {
             ViewGroup.LayoutParams.MATCH_PARENT, 0, 1.0f
         );
         body.topMargin = theme.dp(8);
-        addView(input, body);
+        addView(codeEditor, body);
 
         LinearLayout toolbar = new LinearLayout(context);
         toolbar.setGravity(Gravity.CENTER_VERTICAL);
@@ -143,6 +129,7 @@ final class WorkspaceEditorView extends LinearLayout {
     void bind(WorkspaceEditorDocument document) {
         pathView.setText(document.getRelativePath());
         binding = true;
+        codeEditor.setPath(document.getRelativePath());
         input.setText(document.getText());
         input.setSelection(0);
         binding = false;
@@ -150,11 +137,14 @@ final class WorkspaceEditorView extends LinearLayout {
 
     void clear() {
         binding = true;
+        codeEditor.setPath("");
         input.setText("");
         input.clearFocus();
         pathView.setText("");
         binding = false;
     }
+
+    void dispose() { codeEditor.dispose(); }
 
     void showState(int status, boolean error, boolean dirty, boolean busy) {
         if (!getContext().getString(status).contentEquals(statusView.getText())) {

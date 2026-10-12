@@ -228,6 +228,25 @@ public final class WorkspaceEditorUiTest {
         assertEquals("\ufefffirst\r\nsecond\nthird\rlast\r\nadded", diskText());
     }
 
+    @Test public void highlightedCodeSavesOnlySourceAndPreservesBomAndLineEndings() throws Exception {
+        String source = "\ufeffconst text = 'Grüße 世界 🐱';\r\n// comment\nreturn text;\r";
+        Path target = workspace.resolve("highlight.js");
+        Files.write(target, source.getBytes(StandardCharsets.UTF_8));
+        invoke("loadPreview", new Class<?>[] {String.class, int.class}, "highlight.js", 0);
+        drain();
+        layout(390, 844);
+        WorkspaceCodeEditor code = (WorkspaceCodeEditor) get(editorView(), "codeEditor");
+        WorkspaceCodeEditorUiTest.awaitSyntax(code);
+        assertTrue(input().getText().getSpans(0, input().length(), EditorSyntaxHighlighter.ColorSpan.class).length > 0);
+        assertFalse("colors do not make a saved document dirty", saveButton().isEnabled());
+        input().append("const n = 2;\n");
+        WorkspaceCodeEditorUiTest.awaitSyntax(code);
+        saveButton().performClick();
+        drain();
+        assertEquals(source + "const n = 2;\n", new String(Files.readAllBytes(target), StandardCharsets.UTF_8));
+        assertFalse(saveButton().isEnabled());
+    }
+
     @Test public void oversizedPasteIsRejectedAsAWhole() throws Exception {
         open("keep this");
         char[] chars = new char[WorkspaceEditorLimits.MAXIMUM_FILE_BYTES + 1];

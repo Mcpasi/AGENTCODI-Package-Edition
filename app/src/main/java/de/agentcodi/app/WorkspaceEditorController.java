@@ -76,7 +76,7 @@ final class WorkspaceEditorController {
         view.clear();
     }
 
-    void destroy() { destroyed = true; close(); }
+    void destroy() { destroyed = true; close(); view.dispose(); }
 
     void setExternalBusy(boolean busy) { externalBusy = busy; renderState(); }
 

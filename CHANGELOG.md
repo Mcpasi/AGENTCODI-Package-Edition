@@ -2,6 +2,18 @@
 
 ## Unreleased
 
+- Add automatic JavaScript, HTML, CSS and Python syntax highlighting in an
+  independent pure Java syntax module, with dedicated language lexers, embedded
+  HTML script/style support and light/dark colors. Debounce background scans,
+  reject stale results and render color spans only around the visible viewport.
+- Add a separate scrolling line-number gutter that follows actual text baselines,
+  numbers logical source lines rather than wrapped continuations, and resizes at
+  digit boundaries. Display LF, CRLF and CR without rewriting the editable source.
+- Cover language detection, comments, strings, interpolation, numeric literals,
+  incomplete edits, Unicode offsets, large documents and cancellation with host
+  tests. Add Android tests for live colors, scrolling, gutter geometry, IME spans,
+  cursor retention, lifecycle cleanup and byte-preserving saves on API 29/35.
+
 - Add **New file** for the selected workspace folder, with a translated filename
   dialog and a new-file draft state. Create the file only on first Save, including
   empty files; preserve the draft after failures and leave no file after Discard.
@@ -20,10 +32,10 @@
 - Keep installed package files, images, binary files and oversized text in their
   read-only previews. Text-file export remains available after saving.
 - Separate editor contracts, pure client, runtime persistence and Android
-  view/controller code. Syntax highlighting and Codex integration remain future
-  work.
-- Validation: 419 Java host tests, 100 Android UI tests on API 29/35, architecture
-  checks, Android source/resource compilation and signing checks pass. Native
+  view/controller code. Codex integration remains future work.
+- Validation: 436 Java host tests, 126 Android UI tests on API 29/35, architecture
+  checks, Android source/resource compilation, isolated module/DEX compilation
+  and signing checks pass. Native
   file-reader/save regressions and a host JNI persistence smoke pass. Physical
   device testing of this unreleased editor remains outstanding.
 

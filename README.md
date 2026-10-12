@@ -166,6 +166,18 @@ The editor wraps long lines on phones and keeps Save accessible above the soft
 keyboard. Unsaved changes are marked, and Back or Refresh offers Save, Discard
 and Cancel. Export becomes available after saving.
 
+JavaScript (`.js`, `.mjs`, `.cjs`), HTML (`.html`, `.htm`), CSS (`.css`) and Python
+(`.py`, `.pyw`) get syntax highlighting automatically, including new drafts.
+HTML script/style blocks use JavaScript/CSS highlighting. Other extensions stay
+plain text. Colors follow the light/dark theme, update after edits and never alter
+the saved source. Tokenization runs in the background; only the visible area and
+a small buffer receive color spans, including when scrolling through large files.
+
+All editable files show source line numbers. Wrapped continuations share their
+source line's number, and the gutter follows scrolling, font scaling and layout
+changes. Empty lines and the final empty line are numbered. LF, CRLF and CR line
+breaks display correctly while retaining their original characters when saved.
+
 Tap **New file** in a workspace folder, enter a filename (including the extension
 you want), and open the draft in the editor. The file is created only on the first
 Save; empty files are supported. Canceling or discarding a new draft leaves no
@@ -178,9 +190,11 @@ If another program has changed the file, the draft stays in the editor; copy any
 text you need before reloading. Images, binary files, larger text files and all
 package files retain their read-only previews.
 
-The editor has separate pure Java contracts and client modules, an Android
-runtime repository, and independent view/controller classes. Syntax highlighting
-and Codex integration are reserved for later work.
+The editor has separate pure Java contracts, persistence client and syntax
+modules, an Android runtime repository, and independent view/controller classes.
+Language lexers and the logical line index have no Android dependencies. The
+native editing surface, background color renderer and line-number gutter are
+separate components. Codex integration is reserved for later work.
 
 Files can be imported into the workspace through Android's document picker. Individual files and folders can be exported again. Folder exports are ZIP archives.
 
