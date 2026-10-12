@@ -50,6 +50,10 @@
             android:exported="false" />
 
         <activity
+            android:name="de.agentcodi.app.AndroidFreedomActivity"
+            android:exported="false" />
+
+        <activity
             android:name="de.agentcodi.app.TerminalActivity"
             android:configChanges="keyboard|keyboardHidden|orientation|screenLayout|screenSize|smallestScreenSize"
             android:exported="false" />
