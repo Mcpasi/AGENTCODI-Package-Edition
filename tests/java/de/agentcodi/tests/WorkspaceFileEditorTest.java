@@ -14,6 +14,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
+import java.nio.file.FileAlreadyExistsException;
 import java.nio.file.Path;
 import java.nio.file.attribute.FileTime;
 import java.nio.file.attribute.PosixFilePermission;
@@ -37,7 +38,14 @@ public final class WorkspaceFileEditorTest {
         replacesAtomicallyAndPreservesExecutablePermissions();
         failedSaveKeepsOriginalAndCleansTemporaryFiles();
         rejectsMutationBeforeReplacement();
-        return 10;
+        newDraftWritesOnlyOnSaveAndCanBeEditedAgain();
+        newEmptyFileIsUnsavedUntilFirstSave();
+        rejectsInvalidNamesBeforeAccessingStorage();
+        refusesExistingAndLaterAppearingDestinations();
+        newFilesCannotEscapeThroughUnsafePathsOrLinks();
+        failedNewFileSaveKeepsDraftAndDoesNotCreateAFile();
+        oversizedNewFileDoesNotWritePartialContents();
+        return 17;
     }
 
     private static void preservesUnicodeBomAndLineEndings() throws Exception {
@@ -228,6 +236,133 @@ public final class WorkspaceFileEditorTest {
 
     private static byte[] utf8(String text) { return text.getBytes(StandardCharsets.UTF_8); }
 
+    private static void newDraftWritesOnlyOnSaveAndCanBeEditedAgain() throws Exception {
+        try (Fixture fixture = new Fixture()) {
+            Files.createDirectory(fixture.root.resolve("project"));
+            String name = "新文件 🚀.py";
+            WorkspaceEditorDocument draft = fixture.editor.newDocument("project", name);
+            Path target = fixture.root.resolve("project").resolve(name);
+            TestSupport.assertTrue(draft.isNewFile(), "new file begins as a draft");
+            TestSupport.assertFalse(Files.exists(target), "opening a draft does not touch the filesystem");
+            WorkspaceEditorDocument saved = fixture.editor.save(draft, "print('Grüße 世界')\n");
+            TestSupport.assertFalse(saved.isNewFile(), "first save transitions to an existing revision");
+            TestSupport.assertEquals("project/" + name, saved.getRelativePath(), "selected folder and Unicode filename");
+            TestSupport.assertEquals("print('Grüße 世界')\n", new String(Files.readAllBytes(target),
+                StandardCharsets.UTF_8), "complete UTF-8 text is saved");
+            TestSupport.assertEquals(PosixFilePermissions.fromString("rw-------"),
+                Files.getPosixFilePermissions(target), "new files are private and non-executable");
+            fixture.editor.save(saved, "second revision\n");
+            TestSupport.assertEquals("second revision\n", fixture.editor.open(saved.getRelativePath()).getText(),
+                "subsequent saves use the normal replacement path");
+        }
+    }
+
+    private static void newEmptyFileIsUnsavedUntilFirstSave() throws Exception {
+        try (Fixture fixture = new Fixture()) {
+            WorkspaceEditorSession session = new WorkspaceEditorSession(fixture.editor.newDocument("", "empty.txt"));
+            TestSupport.assertTrue(session.isDirty(), "an empty new file still needs saving");
+            session.setText("temporary");
+            session.setText("");
+            TestSupport.assertTrue(session.isDirty(), "undoing all text does not discard the new file");
+            session.acceptSaved(fixture.editor.save(session.getDocument(), session.getText()));
+            TestSupport.assertFalse(session.isDirty(), "a successfully saved empty file is clean");
+            TestSupport.assertEquals(Long.valueOf(0), Long.valueOf(Files.size(fixture.root.resolve("empty.txt"))),
+                "empty new file is created");
+        }
+    }
+
+    private static void rejectsInvalidNamesBeforeAccessingStorage() throws Exception {
+        RecordingStore store = new RecordingStore(null);
+        WorkspaceFileEditor editor = new WorkspaceFileEditor(store);
+        String wide = new String(new char[86]).replace('\0', '界');
+        String longName = new String(new char[256]).replace('\0', 'a');
+        for (String name : new String[] {null, "", " ", ".", "..", "../escape", "a/b", "a\\b",
+            "a:b", "a\nb", "a\u007fb", "a\ud800", " leading", "trailing ", wide, longName}) {
+            expectReason(WorkspaceEditorException.Reason.INVALID_NAME, () -> editor.newDocument("", name));
+        }
+        for (String directory : new String[] {"..", "/absolute", "a/../b", "a//b", "a/"}) {
+            expectReason(WorkspaceEditorException.Reason.INVALID_NAME, () -> editor.newDocument(directory, "safe.txt"));
+        }
+        TestSupport.assertEquals(Integer.valueOf(0), Integer.valueOf(store.writes),
+            "invalid names cannot write to storage");
+        TestSupport.assertEquals(".gitignore", editor.newDocument("", ".gitignore").getRelativePath(),
+            "ordinary hidden filenames are allowed");
+        String limit = new String(new char[255]).replace('\0', 'a');
+        TestSupport.assertEquals(limit, editor.newDocument("", limit).getRelativePath(),
+            "exact filesystem byte limit is accepted");
+    }
+
+    private static void refusesExistingAndLaterAppearingDestinations() throws Exception {
+        try (Fixture fixture = new Fixture()) {
+            Files.write(fixture.file, utf8("existing"));
+            expectReason(WorkspaceEditorException.Reason.FILE_EXISTS,
+                () -> fixture.editor.newDocument("", "code.txt"));
+            Files.createDirectory(fixture.root.resolve("folder"));
+            expectReason(WorkspaceEditorException.Reason.FILE_EXISTS,
+                () -> fixture.editor.newDocument("", "folder"));
+            WorkspaceEditorSession session = new WorkspaceEditorSession(fixture.editor.newDocument("", "later.txt"));
+            session.setText("draft");
+            Path target = fixture.root.resolve("later.txt");
+            Files.write(target, new byte[0]);
+            expectReason(WorkspaceEditorException.Reason.FILE_EXISTS,
+                () -> fixture.editor.save(session.getDocument(), session.getText()));
+            TestSupport.assertEquals(Long.valueOf(0), Long.valueOf(Files.size(target)),
+                "a file appearing after preflight is not overwritten, even if empty");
+            TestSupport.assertTrue(session.isDirty() && session.getDocument().isNewFile(),
+                "collision keeps the new draft unsaved");
+            TestSupport.assertEquals("draft", session.getText(), "collision keeps draft text");
+            assertNoTemporaryFiles(fixture.root);
+        }
+    }
+
+    private static void newFilesCannotEscapeThroughUnsafePathsOrLinks() throws Exception {
+        try (Fixture fixture = new Fixture()) {
+            Path outside = Files.createTempDirectory("agentcodi-create-outside-");
+            try {
+                Files.createSymbolicLink(fixture.root.resolve("linked"), outside);
+                Files.createSymbolicLink(fixture.root.resolve("dangling.txt"), outside.resolve("missing.txt"));
+                TestSupport.expectThrows(IOException.class,
+                    () -> fixture.editor.newDocument("linked", "escape.txt"), "preflight rejects linked parents");
+                expectReason(WorkspaceEditorException.Reason.FILE_EXISTS,
+                    () -> fixture.editor.newDocument("", "dangling.txt"));
+                for (String path : new String[] {"../escape.txt", "/absolute.txt", "./new.txt",
+                    "nested/../new.txt", "linked/escape.txt", "missing/new.txt", "dangling.txt"}) {
+                    TestSupport.expectThrows(IOException.class, () -> fixture.store.create(path, utf8("draft")),
+                        "creation refuses unsafe destination: " + path);
+                }
+                TestSupport.assertFalse(Files.exists(outside.resolve("escape.txt")), "no file is created outside the workspace");
+                TestSupport.assertFalse(Files.exists(outside.resolve("missing.txt")), "dangling link is not followed");
+                TestSupport.assertFalse(Files.exists(fixture.root.resolve("missing")), "missing folders are not implicitly created");
+            } finally { Files.deleteIfExists(outside); }
+        }
+    }
+
+    private static void failedNewFileSaveKeepsDraftAndDoesNotCreateAFile() throws Exception {
+        try (Fixture fixture = new Fixture()) {
+            WorkspaceEditorSession session = new WorkspaceEditorSession(fixture.editor.newDocument("", "new.txt"));
+            session.setText("keep me");
+            Files.setPosixFilePermissions(fixture.root, PosixFilePermissions.fromString("r-x------"));
+            try {
+                TestSupport.expectThrows(IOException.class,
+                    () -> fixture.editor.save(session.getDocument(), session.getText()), "failed first save propagates");
+            } finally { Files.setPosixFilePermissions(fixture.root, PosixFilePermissions.fromString("rwx------")); }
+            TestSupport.assertFalse(Files.exists(fixture.root.resolve("new.txt")), "failed first save leaves no file");
+            TestSupport.assertTrue(session.isDirty() && session.getDocument().isNewFile(), "new draft remains unsaved");
+            TestSupport.assertEquals("keep me", session.getText(), "failed first save retains text");
+            assertNoTemporaryFiles(fixture.root);
+        }
+    }
+
+    private static void oversizedNewFileDoesNotWritePartialContents() throws Exception {
+        try (Fixture fixture = new Fixture()) {
+            WorkspaceEditorDocument draft = fixture.editor.newDocument("", "large.txt");
+            char[] chars = new char[WorkspaceEditorLimits.MAXIMUM_FILE_BYTES / 2];
+            Arrays.fill(chars, '界');
+            expectReason(WorkspaceEditorException.Reason.TOO_LARGE, () -> fixture.editor.save(draft, new String(chars)));
+            TestSupport.assertFalse(Files.exists(fixture.root.resolve("large.txt")), "oversized UTF-8 creates no partial file");
+        }
+    }
+
     private static void assertNoTemporaryFiles(Path root) throws IOException {
         try (Stream<Path> files = Files.list(root)) {
             TestSupport.assertFalse(files.anyMatch(path -> path.getFileName().toString()
@@ -252,6 +387,15 @@ public final class WorkspaceFileEditorTest {
 
         RecordingStore(byte[] bytes) { this.bytes = bytes; }
         @Override public byte[] read(String path) { return bytes.clone(); }
+        @Override public void checkCreate(String path) throws IOException {
+            if (bytes != null) { throw new WorkspaceEditorException(WorkspaceEditorException.Reason.FILE_EXISTS); }
+        }
+        @Override public void create(String path, byte[] contents) throws IOException {
+            if (fail) { throw new IOException("fixture creation failure"); }
+            checkCreate(path);
+            bytes = contents.clone();
+            writes++;
+        }
         @Override public void replace(String path, byte[] expected, byte[] replacement) throws IOException {
             if (fail) { throw new IOException("fixture write failure"); }
             bytes = replacement.clone();
@@ -263,6 +407,21 @@ public final class WorkspaceFileEditorTest {
         final Path root = Files.createTempDirectory("agentcodi-editor-").toRealPath();
         final Path file = root.resolve("code.txt");
         final WorkspaceEditorStore store = new WorkspaceEditorStore() {
+            @Override public void checkCreate(String path) throws IOException {
+                try {
+                    WorkspaceFileEdit.checkCreate(root.toFile(), path);
+                } catch (FileAlreadyExistsException error) {
+                    throw new WorkspaceEditorException(WorkspaceEditorException.Reason.FILE_EXISTS);
+                }
+            }
+            @Override public void create(String path, byte[] contents) throws IOException {
+                try {
+                    WorkspaceFileEdit.create(root.toFile(), path, contents,
+                        WorkspaceEditorLimits.MAXIMUM_FILE_BYTES, WorkspaceFileEdit.secureNioCreator());
+                } catch (FileAlreadyExistsException error) {
+                    throw new WorkspaceEditorException(WorkspaceEditorException.Reason.FILE_EXISTS);
+                }
+            }
             @Override public byte[] read(String path) throws IOException {
                 return WorkspaceFileEdit.read(root.toFile(), path, WorkspaceEditorLimits.MAXIMUM_FILE_BYTES,
                     WorkspaceFileAccess.secureNioOpener());

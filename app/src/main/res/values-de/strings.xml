@@ -1,6 +1,15 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="editor_title">Editor</string>
+    <string name="editor_new_file">Neue Datei</string>
+    <string name="editor_new_file_location">Ordner: %1$s</string>
+    <string name="editor_new_file_name">Dateiname</string>
+    <string name="editor_new_file_name_hint">Dateiname, z. B. main.py</string>
+    <string name="editor_new_file_open">Editor öffnen</string>
+    <string name="editor_new_file_failed">In diesem Ordner kann keine neue Datei angelegt werden.</string>
+    <string name="editor_invalid_name">Verwende einen gültigen, kurzen Dateinamen ohne Pfadtrennzeichen oder Doppelpunkt.</string>
+    <string name="editor_file_exists">Eine Datei oder ein Ordner mit diesem Namen existiert bereits. Wähle einen anderen Dateinamen.</string>
+    <string name="editor_new_unsaved">Neue Datei · Ungespeichert</string>
     <string name="editor_content_description">Bearbeitbarer Dateiinhalt</string>
     <string name="editor_save">Speichern</string>
     <string name="editor_saved">Gespeichert</string>

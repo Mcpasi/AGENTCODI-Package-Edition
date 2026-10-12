@@ -2,6 +2,13 @@
 
 ## Unreleased
 
+- Add **New file** for the selected workspace folder, with a translated filename
+  dialog and a new-file draft state. Create the file only on first Save, including
+  empty files; preserve the draft after failures and leave no file after Discard.
+- Reject invalid filenames and existing file/folder names. Publish new Android
+  files atomically without replacement, including concurrent creation of the same
+  filename. Keep package areas read-only and check narrow-phone controls.
+
 - Open workspace UTF-8 text and code files up to 1 MiB in a modular native editor
   with Save, Ctrl+S, saved/unsaved status and guarded Back/Refresh navigation.
 - Save complete files through a synced temporary sibling and atomic replacement,
@@ -15,7 +22,7 @@
 - Separate editor contracts, pure client, runtime persistence and Android
   view/controller code. Syntax highlighting and Codex integration remain future
   work.
-- Validation: 412 Java host tests, 82 Android UI tests on API 29/35, architecture
+- Validation: 419 Java host tests, 100 Android UI tests on API 29/35, architecture
   checks, Android source/resource compilation and signing checks pass. Native
   file-reader/save regressions and a host JNI persistence smoke pass. Physical
   device testing of this unreleased editor remains outstanding.

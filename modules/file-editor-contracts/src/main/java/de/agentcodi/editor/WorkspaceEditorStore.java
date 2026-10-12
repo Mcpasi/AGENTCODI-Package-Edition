@@ -8,4 +8,10 @@ public interface WorkspaceEditorStore {
 
     /** Replace the entire file only if it still matches the opened bytes. */
     void replace(String relativePath, byte[] expected, byte[] replacement) throws IOException;
+
+    /** Preflight only; create must still reject a destination that appears later. */
+    void checkCreate(String relativePath) throws IOException;
+
+    /** Create a complete new file without overwriting any existing entry. */
+    void create(String relativePath, byte[] contents) throws IOException;
 }

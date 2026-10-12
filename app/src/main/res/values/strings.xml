@@ -1,6 +1,15 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="editor_title">Editor</string>
+    <string name="editor_new_file">New file</string>
+    <string name="editor_new_file_location">Folder: %1$s</string>
+    <string name="editor_new_file_name">Filename</string>
+    <string name="editor_new_file_name_hint">Filename, e.g. main.py</string>
+    <string name="editor_new_file_open">Open editor</string>
+    <string name="editor_new_file_failed">Could not create a new file in this folder.</string>
+    <string name="editor_invalid_name">Use a valid, short filename without folder separators or a colon.</string>
+    <string name="editor_file_exists">A file or folder with this name already exists. Choose a different filename.</string>
+    <string name="editor_new_unsaved">New file · Unsaved</string>
     <string name="editor_content_description">Editable file contents</string>
     <string name="editor_save">Save</string>
     <string name="editor_saved">Saved</string>

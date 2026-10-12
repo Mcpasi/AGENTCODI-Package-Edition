@@ -1,12 +1,15 @@
 #include "workspace_file_reader.h"
 
 #include <cerrno>
+#include <atomic>
 #include <cstdlib>
 #include <filesystem>
+#include <functional>
 #include <iostream>
 #include <memory>
 #include <stdexcept>
 #include <string>
+#include <thread>
 #include <vector>
 
 #include <fcntl.h>
@@ -307,10 +310,151 @@ void failed_save_keeps_original_when_parent_is_unwritable() {
   }
 }
 
+void expect_no_pending_files(const std::filesystem::path& directory) {
+  for (const auto& entry : std::filesystem::directory_iterator(directory)) {
+    expect(entry.path().filename().string().rfind(".agentcodi-edit-", 0) != 0,
+        "creation left a pending file behind");
+  }
+}
+
+void creates_valid_filename_matching_first_temporary_candidate() {
+  TemporaryDirectory temporary;
+  const auto workspace = temporary.path() / "workspace";
+  make_directory(workspace);
+  const std::string name = ".agentcodi-edit-" + std::to_string(getpid()) + "-0";
+  std::string error;
+  expect(agentcodi::WorkspaceFileReader::Create(workspace.string(), name, nullptr, 0, 1024, &error)
+      == agentcodi::WorkspaceFileCreationResult::Created,
+      "valid filename collided with the creator's own temporary file");
+  expect(std::filesystem::exists(workspace / name), "valid hidden file disappeared after creation");
+  expect(std::distance(std::filesystem::directory_iterator(workspace),
+      std::filesystem::directory_iterator()) == 1, "creation left its own temporary file behind");
+}
+
+void creates_complete_unicode_and_empty_files_in_selected_directory() {
+  TemporaryDirectory temporary;
+  const auto workspace = temporary.path() / "workspace";
+  make_directory(workspace);
+  make_directory(workspace / "project");
+  const std::string text = "print('Grüße 世界')\n";
+  std::string error;
+  expect(agentcodi::WorkspaceFileReader::Create(workspace.string(), "project/新文件 🚀.py",
+      reinterpret_cast<const unsigned char*>(text.data()), text.size(), 1024, &error)
+      == agentcodi::WorkspaceFileCreationResult::Created, error);
+  auto created = agentcodi::WorkspaceFileReader::Open(workspace.string(), "project/新文件 🚀.py", 1024, &error);
+  expect(created != nullptr && read_all(created.get()) == text, "new Unicode file was not saved completely");
+  struct stat attributes {};
+  expect(stat((workspace / "project" / "新文件 🚀.py").c_str(), &attributes) == 0
+      && (attributes.st_mode & 0777) == 0600 && attributes.st_nlink == 1,
+      "new file permissions or link count are wrong");
+  expect(agentcodi::WorkspaceFileReader::Create(workspace.string(), "empty.txt", nullptr, 0, 1024, &error)
+      == agentcodi::WorkspaceFileCreationResult::Created, error);
+  expect(std::filesystem::file_size(workspace / "empty.txt") == 0, "empty new file was not created");
+  expect_no_pending_files(workspace);
+  expect_no_pending_files(workspace / "project");
+}
+
+void creation_never_replaces_existing_entries_or_follows_links() {
+  TemporaryDirectory temporary;
+  const auto workspace = temporary.path() / "workspace";
+  const auto outside = temporary.path() / "outside";
+  make_directory(workspace);
+  make_directory(outside);
+  write_file(workspace / "existing.txt", "original");
+  write_file(outside / "original.txt", "outside");
+  make_directory(workspace / "folder");
+  expect(symlink((outside / "original.txt").c_str(), (workspace / "link.txt").c_str()) == 0,
+      "could not create existing symlink");
+  expect(symlink((outside / "missing.txt").c_str(), (workspace / "dangling.txt").c_str()) == 0,
+      "could not create dangling symlink");
+  expect(link((outside / "original.txt").c_str(), (workspace / "hard.txt").c_str()) == 0,
+      "could not create existing hard link");
+  expect(symlink(outside.c_str(), (workspace / "linked-parent").c_str()) == 0,
+      "could not create linked parent");
+  const std::string draft = "draft";
+  std::string error;
+  for (const char* raw_path : {"existing.txt", "folder", "link.txt", "dangling.txt", "hard.txt"}) {
+    const std::string path(raw_path);
+    expect(agentcodi::WorkspaceFileReader::Create(workspace.string(), path,
+        reinterpret_cast<const unsigned char*>(draft.data()), draft.size(), 1024, &error)
+        == agentcodi::WorkspaceFileCreationResult::AlreadyExists,
+        "creation replaced an existing destination: " + path);
+  }
+  for (const char* raw_path : {"../escape.txt", "/absolute.txt", "./new.txt", "a/../new.txt",
+      "linked-parent/escape.txt", "missing/new.txt"}) {
+    const std::string path(raw_path);
+    expect(agentcodi::WorkspaceFileReader::Create(workspace.string(), path,
+        reinterpret_cast<const unsigned char*>(draft.data()), draft.size(), 1024, &error)
+        == agentcodi::WorkspaceFileCreationResult::Failed,
+        "creation accepted an unsafe destination: " + path);
+  }
+  auto original = agentcodi::WorkspaceFileReader::Open(workspace.string(), "existing.txt", 1024, &error);
+  expect(original != nullptr && read_all(original.get()) == "original", "creation changed the existing file");
+  expect(!std::filesystem::exists(outside / "escape.txt")
+      && !std::filesystem::exists(outside / "missing.txt"), "creation escaped the workspace");
+  expect_no_pending_files(workspace);
+}
+
+void failed_creation_keeps_folder_clean_and_enforces_limits() {
+  TemporaryDirectory temporary;
+  const auto workspace = temporary.path() / "workspace";
+  make_directory(workspace);
+  std::string error;
+  const std::string text = "oversized";
+  expect(agentcodi::WorkspaceFileReader::Create(workspace.string(), "new.txt",
+      reinterpret_cast<const unsigned char*>(text.data()), text.size(), 8, &error)
+      == agentcodi::WorkspaceFileCreationResult::Failed, "creation ignored its byte limit");
+  expect(chmod(workspace.c_str(), 0500) == 0, "could not make creation directory unwritable");
+  const auto result = agentcodi::WorkspaceFileReader::Create(workspace.string(), "new.txt",
+      reinterpret_cast<const unsigned char*>(text.data()), text.size(), 1024, &error);
+  expect(chmod(workspace.c_str(), 0700) == 0, "could not restore creation directory permissions");
+  expect(result == agentcodi::WorkspaceFileCreationResult::Failed, "creation wrote into an unwritable directory");
+  expect(!std::filesystem::exists(workspace / "new.txt"), "failed creation left a partial destination");
+  expect_no_pending_files(workspace);
+}
+
+void concurrent_creations_have_one_winner_without_overwrite() {
+  TemporaryDirectory temporary;
+  const auto workspace = temporary.path() / "workspace";
+  make_directory(workspace);
+  const std::string first(64 * 1024, 'a');
+  const std::string second(64 * 1024, 'b');
+  for (int attempt = 0; attempt < 8; ++attempt) {
+    const std::string name = "race-" + std::to_string(attempt) + ".txt";
+    std::atomic<int> ready{0};
+    std::atomic<bool> start{false};
+    agentcodi::WorkspaceFileCreationResult results[2] = {
+        agentcodi::WorkspaceFileCreationResult::Failed, agentcodi::WorkspaceFileCreationResult::Failed};
+    std::string errors[2];
+    auto create = [&](int index, const std::string& contents) {
+      ready.fetch_add(1);
+      while (!start.load()) { std::this_thread::yield(); }
+      results[index] = agentcodi::WorkspaceFileReader::Create(workspace.string(), name,
+          reinterpret_cast<const unsigned char*>(contents.data()), contents.size(), 1024 * 1024, &errors[index]);
+    };
+    std::thread a(create, 0, std::cref(first));
+    std::thread b(create, 1, std::cref(second));
+    while (ready.load() != 2) { std::this_thread::yield(); }
+    start.store(true);
+    a.join();
+    b.join();
+    const int winner = results[0] == agentcodi::WorkspaceFileCreationResult::Created ? 0 : 1;
+    expect(results[winner] == agentcodi::WorkspaceFileCreationResult::Created, errors[winner]);
+    expect(results[1 - winner] == agentcodi::WorkspaceFileCreationResult::AlreadyExists,
+        "concurrent creation did not protect the first saved file");
+    std::string error;
+    auto saved = agentcodi::WorkspaceFileReader::Open(workspace.string(), name, 1024 * 1024, &error);
+    expect(saved != nullptr && read_all(saved.get()) == (winner == 0 ? first : second),
+        "losing creator changed the winner's contents");
+  }
+  expect_no_pending_files(workspace);
+}
+
 }  // namespace
 
 int main() {
   try {
+    creates_valid_filename_matching_first_temporary_candidate();
     reads_nested_regular_file();
     rejects_final_symbolic_link();
     rejects_symbolic_parent();
@@ -319,6 +463,10 @@ int main() {
     saves_complete_revisions_atomically_with_permissions();
     rejects_changed_revision_and_oversized_save();
     failed_save_keeps_original_when_parent_is_unwritable();
+    creates_complete_unicode_and_empty_files_in_selected_directory();
+    creation_never_replaces_existing_entries_or_follows_links();
+    failed_creation_keeps_folder_clean_and_enforces_limits();
+    concurrent_creations_have_one_winner_without_overwrite();
     std::cout << "Workspace file reader tests passed." << std::endl;
     return 0;
   } catch (const std::exception& error) {

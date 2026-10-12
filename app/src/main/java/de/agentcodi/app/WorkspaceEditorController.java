@@ -60,6 +60,7 @@ final class WorkspaceEditorController {
 
     boolean isOpen() { return session != null; }
     boolean isSaving() { return saving; }
+    boolean isNewFile() { return session != null && session.getDocument().isNewFile(); }
 
     void open(WorkspaceEditorDocument document) {
         close();
@@ -153,6 +154,7 @@ final class WorkspaceEditorController {
             if (reason == WorkspaceEditorException.Reason.FILE_CHANGED) { return R.string.editor_conflict; }
             if (reason == WorkspaceEditorException.Reason.TOO_LARGE) { return R.string.editor_too_large; }
             if (reason == WorkspaceEditorException.Reason.UNSUPPORTED_TEXT) { return R.string.editor_invalid_text; }
+            if (reason == WorkspaceEditorException.Reason.FILE_EXISTS) { return R.string.editor_file_exists; }
         }
         return R.string.editor_save_failed;
     }
@@ -160,7 +162,8 @@ final class WorkspaceEditorController {
     private void renderState() {
         if (session == null) { return; }
         int status = saving ? R.string.editor_saving : externalBusy ? R.string.editor_working
-            : failure != 0 ? failure : session.isDirty() ? R.string.editor_unsaved : R.string.editor_saved;
+            : failure != 0 ? failure : session.getDocument().isNewFile() ? R.string.editor_new_unsaved
+            : session.isDirty() ? R.string.editor_unsaved : R.string.editor_saved;
         view.showState(status, failure != 0, session.isDirty(), saving || externalBusy);
     }
 }

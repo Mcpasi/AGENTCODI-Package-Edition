@@ -23,7 +23,7 @@ public final class WorkspaceEditorSession {
         this.text = text;
     }
 
-    public boolean isDirty() { return !text.equals(document.getText()); }
+    public boolean isDirty() { return document.isNewFile() || !text.equals(document.getText()); }
 
     public void acceptSaved(WorkspaceEditorDocument saved) {
         if (saved == null || !saved.getRelativePath().equals(document.getRelativePath())) {

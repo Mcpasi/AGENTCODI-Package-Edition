@@ -1,6 +1,7 @@
 package de.agentcodi.runtime;
 
 import java.io.IOException;
+import java.nio.file.FileAlreadyExistsException;
 
 public final class NativeEngine {
     static {
@@ -104,6 +105,13 @@ public final class NativeEngine {
         nativeReplaceWorkspaceFile(handle, contents);
     }
 
+    static void createWorkspaceFile(String workspace, String relativePath, byte[] contents)
+        throws IOException {
+        if (!nativeCreateWorkspaceFile(workspace, relativePath, contents)) {
+            throw new FileAlreadyExistsException(relativePath);
+        }
+    }
+
     static void closeWorkspaceFile(long handle) {
         nativeCloseWorkspaceFile(handle);
     }
@@ -197,6 +205,10 @@ public final class NativeEngine {
 
     private static native void nativeReplaceWorkspaceFile(long handle, byte[] contents)
         throws IOException;
+
+    private static native boolean nativeCreateWorkspaceFile(
+        String workspace, String relativePath, byte[] contents
+    ) throws IOException;
 
     private static native void nativeCloseWorkspaceFile(long handle);
 

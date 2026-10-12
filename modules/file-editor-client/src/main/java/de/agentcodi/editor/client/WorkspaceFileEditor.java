@@ -3,6 +3,7 @@ package de.agentcodi.editor.client;
 import de.agentcodi.editor.WorkspaceEditorDocument;
 import de.agentcodi.editor.WorkspaceEditorException;
 import de.agentcodi.editor.WorkspaceEditorLimits;
+import de.agentcodi.editor.WorkspaceEditorPath;
 import de.agentcodi.editor.WorkspaceEditorStore;
 
 import java.io.IOException;
@@ -42,6 +43,12 @@ public final class WorkspaceFileEditor {
         return new WorkspaceEditorDocument(relativePath, text, bytes, bom);
     }
 
+    public WorkspaceEditorDocument newDocument(String directory, String name) throws IOException {
+        String path = WorkspaceEditorPath.newFilePath(directory, name);
+        store.checkCreate(path);
+        return WorkspaceEditorDocument.newFile(path);
+    }
+
     public WorkspaceEditorDocument save(WorkspaceEditorDocument document, String text)
         throws IOException {
         if (document == null || text == null) {
@@ -68,7 +75,11 @@ public final class WorkspaceFileEditor {
             bytes[2] = (byte) 0xbf;
         }
         encoded.get(bytes, offset, bytes.length - offset);
-        store.replace(document.getRelativePath(), document.getSavedBytes(), bytes);
+        if (document.isNewFile()) {
+            store.create(document.getRelativePath(), bytes);
+        } else {
+            store.replace(document.getRelativePath(), document.getSavedBytes(), bytes);
+        }
         return new WorkspaceEditorDocument(
             document.getRelativePath(), text, bytes, document.hasByteOrderMark()
         );

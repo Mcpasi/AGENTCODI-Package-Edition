@@ -51,6 +51,7 @@ import java.lang.reflect.Field;
 import java.lang.reflect.Method;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
+import java.nio.file.FileAlreadyExistsException;
 import java.nio.file.Path;
 import java.util.Arrays;
 import java.util.concurrent.ExecutorService;
@@ -80,6 +81,21 @@ public final class WorkspaceEditorUiTest {
             .getDeclaredConstructor(WorkspaceEditorStore.class);
         constructor.setAccessible(true);
         set(activity, "editorRepository", constructor.newInstance(new WorkspaceEditorStore() {
+            @Override public void checkCreate(String path) throws IOException {
+                try {
+                    WorkspaceFileEdit.checkCreate(workspace.toFile(), path);
+                } catch (FileAlreadyExistsException error) {
+                    throw new WorkspaceEditorException(WorkspaceEditorException.Reason.FILE_EXISTS);
+                }
+            }
+            @Override public void create(String path, byte[] contents) throws IOException {
+                try {
+                    WorkspaceFileEdit.create(workspace.toFile(), path, contents,
+                        WorkspaceEditorLimits.MAXIMUM_FILE_BYTES, WorkspaceFileEdit.secureNioCreator());
+                } catch (FileAlreadyExistsException error) {
+                    throw new WorkspaceEditorException(WorkspaceEditorException.Reason.FILE_EXISTS);
+                }
+            }
             @Override public byte[] read(String path) throws IOException {
                 return WorkspaceFileEdit.read(workspace.toFile(), path,
                     WorkspaceEditorLimits.MAXIMUM_FILE_BYTES, WorkspaceFileAccess.secureNioOpener());
@@ -266,6 +282,164 @@ public final class WorkspaceEditorUiTest {
         assertEquals("insets do not accumulate", 42, root.getPaddingTop());
     }
 
+    @Test public void newFileOpensDraftInSelectedFolderAndSavesThenUpdates() throws Exception {
+        Files.createDirectories(workspace.resolve("project"));
+        invoke("loadDirectory", new Class<?>[] {String.class, int.class}, "project", 0);
+        drain();
+        newFile("新文件 🚀.py");
+        Path target = workspace.resolve("project/新文件 🚀.py");
+        assertFalse(Files.exists(target));
+        assertTrue(((WorkspaceEditorController) get(activity, "editor")).isNewFile());
+        assertTrue("new empty draft can be saved", saveButton().isEnabled());
+        assertFalse(((View) get(editorView(), "exportButton")).isEnabled());
+        input().setText("print('Grüße 世界')\n");
+        saveButton().performClick();
+        drain();
+        assertEquals("print('Grüße 世界')\n", new String(Files.readAllBytes(target), StandardCharsets.UTF_8));
+        assertFalse(((WorkspaceEditorController) get(activity, "editor")).isNewFile());
+        input().setText("second revision\n");
+        saveButton().performClick();
+        drain();
+        assertEquals("second revision\n", new String(Files.readAllBytes(target), StandardCharsets.UTF_8));
+        activity.onBackPressed();
+        drain();
+        de.agentcodi.browser.WorkspaceBrowserPage page =
+            (de.agentcodi.browser.WorkspaceBrowserPage) get(activity, "currentDirectoryPage");
+        assertTrue("new file appears in its folder", page.getEntries().stream()
+            .anyMatch(entry -> entry.getDisplayName().equals("新文件 🚀.py")));
+    }
+
+    @Test public void firstSaveCanCreateAnEmptyFile() throws Exception {
+        newFile("empty.txt");
+        saveButton().performClick();
+        drain();
+        assertEquals(0, Files.size(workspace.resolve("empty.txt")));
+        assertFalse(saveButton().isEnabled());
+        assertFalse(((WorkspaceEditorController) get(activity, "editor")).isNewFile());
+    }
+
+    @Test public void cancelingNameDialogAndPendingPreflightCreatesNothing() throws Exception {
+        AlertDialog dialog = openNewFileDialog();
+        findEditText(dialog.getWindow().getDecorView()).setText("canceled.txt");
+        dialog.getButton(AlertDialog.BUTTON_NEGATIVE).performClick();
+        drain();
+        assertFalse(((WorkspaceEditorController) get(activity, "editor")).isOpen());
+        assertFalse(Files.exists(workspace.resolve("canceled.txt")));
+        dialog = openNewFileDialog();
+        findEditText(dialog.getWindow().getDecorView()).setText("pending.txt");
+        dialog.getButton(AlertDialog.BUTTON_POSITIVE).performClick();
+        dialog.dismiss();
+        drain();
+        assertFalse(((WorkspaceEditorController) get(activity, "editor")).isOpen());
+        assertFalse(Files.exists(workspace.resolve("pending.txt")));
+    }
+
+    @Test public void emptyNewDraftBackCanBeCanceledOrDiscardedWithoutCreatingFile() throws Exception {
+        newFile("discard.txt");
+        activity.onBackPressed();
+        AlertDialog dialog = ShadowAlertDialog.getLatestAlertDialog();
+        assertTrue("empty new drafts also protect unsaved work", dialog.isShowing());
+        dialog.getButton(AlertDialog.BUTTON_NEUTRAL).performClick();
+        Shadows.shadowOf(Looper.getMainLooper()).idle();
+        assertTrue(((WorkspaceEditorController) get(activity, "editor")).isNewFile());
+        assertTrue(saveButton().isEnabled());
+        activity.onBackPressed();
+        ShadowAlertDialog.getLatestAlertDialog().getButton(AlertDialog.BUTTON_NEGATIVE).performClick();
+        drain();
+        assertFalse(Files.exists(workspace.resolve("discard.txt")));
+        assertFalse(((WorkspaceEditorController) get(activity, "editor")).isOpen());
+    }
+
+    @Test public void refreshNewDraftDiscardsToDirectoryOrSavesBeforeReloading() throws Exception {
+        newFile("refresh.txt");
+        input().setText("discard me");
+        ((Button) get(activity, "refreshButton")).performClick();
+        ShadowAlertDialog.getLatestAlertDialog().getButton(AlertDialog.BUTTON_NEGATIVE).performClick();
+        drain();
+        assertFalse(Files.exists(workspace.resolve("refresh.txt")));
+        assertEquals(View.VISIBLE, ((View) get(activity, "directoryPanel")).getVisibility());
+        newFile("refresh.txt");
+        input().setText("save me");
+        ((Button) get(activity, "refreshButton")).performClick();
+        ShadowAlertDialog.getLatestAlertDialog().getButton(AlertDialog.BUTTON_POSITIVE).performClick();
+        drain();
+        assertEquals("save me", new String(Files.readAllBytes(workspace.resolve("refresh.txt")), StandardCharsets.UTF_8));
+        assertFalse(((WorkspaceEditorController) get(activity, "editor")).isNewFile());
+        assertEquals("save me", input().getText().toString());
+    }
+
+    @Test public void invalidAndExistingNamesKeepDialogOpenForCorrection() throws Exception {
+        Files.write(workspace.resolve("existing.txt"), "original".getBytes(StandardCharsets.UTF_8));
+        AlertDialog dialog = openNewFileDialog();
+        EditText filename = findEditText(dialog.getWindow().getDecorView());
+        filename.setText("../escape.txt");
+        dialog.getButton(AlertDialog.BUTTON_POSITIVE).performClick();
+        drain();
+        assertTrue(dialog.isShowing());
+        assertEquals(activity.getString(R.string.editor_invalid_name), filename.getError().toString());
+        filename.setText("existing.txt");
+        dialog.getButton(AlertDialog.BUTTON_POSITIVE).performClick();
+        drain();
+        assertTrue(dialog.isShowing());
+        assertEquals(activity.getString(R.string.editor_file_exists), filename.getError().toString());
+        assertEquals("original", new String(Files.readAllBytes(workspace.resolve("existing.txt")), StandardCharsets.UTF_8));
+        filename.setText("valid.txt");
+        filename.onEditorAction(EditorInfo.IME_ACTION_DONE);
+        drain();
+        assertFalse(dialog.isShowing());
+        assertTrue(((WorkspaceEditorController) get(activity, "editor")).isNewFile());
+        assertFalse(Files.exists(workspace.resolve("valid.txt")));
+    }
+
+    @Test public void lateNameCollisionNeverOverwritesFileOrLosesDraft() throws Exception {
+        newFile("race.txt");
+        input().setText("my draft");
+        Path target = workspace.resolve("race.txt");
+        Files.write(target, "external".getBytes(StandardCharsets.UTF_8));
+        saveButton().performClick();
+        drain();
+        assertEquals("external", new String(Files.readAllBytes(target), StandardCharsets.UTF_8));
+        assertEquals("my draft", input().getText().toString());
+        assertTrue(((WorkspaceEditorController) get(activity, "editor")).isNewFile());
+        assertTrue(saveButton().isEnabled());
+        assertEquals(activity.getString(R.string.editor_file_exists),
+            ((android.widget.TextView) get(editorView(), "statusView")).getText().toString());
+    }
+
+    @Test public void packageAreasDoNotOfferNewFiles() throws Exception {
+        for (WorkspaceBrowserArea area : new WorkspaceBrowserArea[] {
+            WorkspaceBrowserArea.MANAGED_PACKAGES, WorkspaceBrowserArea.USER_PACKAGES
+        }) {
+            set(activity, "repository", browser(area));
+            invoke("loadDirectory", new Class<?>[] {String.class, int.class}, "", 0);
+            drain();
+            assertEquals(View.GONE, ((View) get(activity, "newFileButton")).getVisibility());
+            assertFalse(((View) get(activity, "newFileButton")).isEnabled());
+            invoke("chooseNewFile", new Class<?>[0]);
+            assertNull(get(activity, "newFileDialog"));
+        }
+    }
+
+    @Test @Config(qualifiers = "de-w320dp-h640dp-night-mdpi")
+    public void newFileControlsAndNameInputFitNarrowPhones() throws Exception {
+        layout(320, 640);
+        Button create = (Button) get(activity, "newFileButton");
+        assertTrue(create.getWidth() <= root.getWidth());
+        assertTrue(create.getHeight() >= 48);
+        screenshot("new-file-phone-" + android.os.Build.VERSION.SDK_INT + ".png");
+        AlertDialog dialog = openNewFileDialog();
+        EditText filename = findEditText(dialog.getWindow().getDecorView());
+        assertTrue(filename.getWidth() > 0);
+        assertTrue((filename.getImeOptions() & EditorInfo.IME_FLAG_NO_EXTRACT_UI) != 0);
+        filename.setText("new-file.py");
+        filename.onEditorAction(EditorInfo.IME_ACTION_DONE);
+        drain();
+        layout(320, 370);
+        assertTrue(input().getHeight() >= 200);
+        assertTrue(saveButton().isEnabled());
+        screenshot("new-file-editor-keyboard-" + android.os.Build.VERSION.SDK_INT + ".png");
+    }
+
     private WorkspaceBrowserRepository browser(WorkspaceBrowserArea area) throws Exception {
         Constructor<WorkspaceBrowserRepository> constructor = WorkspaceBrowserRepository.class
             .getDeclaredConstructor(Context.class, File.class, WorkspaceFileBrowser.class,
@@ -274,6 +448,36 @@ public final class WorkspaceEditorUiTest {
         return constructor.newInstance(activity, workspace.toFile(),
             new WorkspaceFileBrowser(workspace.toFile(), WorkspaceDirectoryCatalog.secureNioReader(),
                 WorkspaceFileAccess.secureNioOpener()), WorkspaceFileScope.WORKSPACE, area);
+    }
+
+    private AlertDialog openNewFileDialog() throws Exception {
+        ((Button) get(activity, "newFileButton")).performClick();
+        Shadows.shadowOf(Looper.getMainLooper()).idle();
+        AlertDialog dialog = (AlertDialog) get(activity, "newFileDialog");
+        assertNotNull(dialog);
+        assertTrue(dialog.isShowing());
+        return dialog;
+    }
+
+    private void newFile(String name) throws Exception {
+        AlertDialog dialog = openNewFileDialog();
+        findEditText(dialog.getWindow().getDecorView()).setText(name);
+        dialog.getButton(AlertDialog.BUTTON_POSITIVE).performClick();
+        drain();
+        assertFalse(dialog.isShowing());
+        assertTrue(((WorkspaceEditorController) get(activity, "editor")).isNewFile());
+    }
+
+    private static EditText findEditText(View view) {
+        if (view instanceof EditText) { return (EditText) view; }
+        if (view instanceof ViewGroup) {
+            ViewGroup parent = (ViewGroup) view;
+            for (int index = 0; index < parent.getChildCount(); index++) {
+                EditText input = findEditText(parent.getChildAt(index));
+                if (input != null) { return input; }
+            }
+        }
+        return null;
     }
 
     private void open(String text) throws Exception {

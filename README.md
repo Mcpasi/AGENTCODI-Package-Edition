@@ -166,6 +166,12 @@ The editor wraps long lines on phones and keeps Save accessible above the soft
 keyboard. Unsaved changes are marked, and Back or Refresh offers Save, Discard
 and Cancel. Export becomes available after saving.
 
+Tap **New file** in a workspace folder, enter a filename (including the extension
+you want), and open the draft in the editor. The file is created only on the first
+Save; empty files are supported. Canceling or discarding a new draft leaves no
+file behind. Existing names are rejected, including files that appear after the
+draft was opened.
+
 Saving preserves UTF-8 byte order marks, existing line endings and executable
 permissions. It checks the opened contents before replacing the file atomically.
 If another program has changed the file, the draft stays in the editor; copy any

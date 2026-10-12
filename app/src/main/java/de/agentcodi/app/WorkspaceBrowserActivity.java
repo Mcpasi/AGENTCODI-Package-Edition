@@ -85,6 +85,8 @@ public final class WorkspaceBrowserActivity extends Activity {
     private Button nextDirectoryPageButton;
     private TextView directoryPageView;
     private Button directoryExportButton;
+    private Button newFileButton;
+    private AlertDialog newFileDialog;
     private Button scopeButton;
     private Button importButton;
     private TextView scopeDescriptionView;
@@ -137,6 +139,7 @@ public final class WorkspaceBrowserActivity extends Activity {
         handler.removeCallbacksAndMessages(null);
         operations.shutdownNow();
         if (editor != null) { editor.destroy(); }
+        if (newFileDialog != null) { newFileDialog.dismiss(); }
         clearPreviewVisuals();
         pendingExport = null;
         super.onDestroy();
@@ -389,6 +392,12 @@ public final class WorkspaceBrowserActivity extends Activity {
         paging.addView(nextDirectoryPageButton);
         theme.addWithTopMargin(panel, paging, 8);
 
+        newFileButton = theme.secondaryButton(getString(R.string.editor_new_file));
+        newFileButton.setOnClickListener(new View.OnClickListener() {
+            @Override public void onClick(View view) { chooseNewFile(); }
+        });
+        theme.addWithTopMargin(panel, newFileButton, 8);
+
         directoryExportButton = theme.primaryButton(
             getString(R.string.browser_directory_export)
         );
@@ -629,7 +638,14 @@ public final class WorkspaceBrowserActivity extends Activity {
         }
         if (editor != null && editor.isOpen()) {
             editor.requestLeave(new Runnable() {
-                @Override public void run() { loadPreview(previewRelativePath, 0); }
+                @Override public void run() {
+                    if (editor.isNewFile()) {
+                        showDirectoryPanel();
+                        loadDirectory(currentDirectory, currentDirectoryPageIndex);
+                    } else {
+                        loadPreview(previewRelativePath, 0);
+                    }
+                }
             });
             return;
         }
@@ -638,6 +654,19 @@ public final class WorkspaceBrowserActivity extends Activity {
         } else {
             loadPreview(previewRelativePath, previewPageIndex);
         }
+    }
+
+    private void chooseNewFile() {
+        if (busy || pendingExport != null || pendingImport
+            || repository.getArea() != WorkspaceBrowserArea.WORKSPACE
+            || directoryPanel.getVisibility() != View.VISIBLE || currentDirectoryPage == null
+            || (newFileDialog != null && newFileDialog.isShowing())) {
+            return;
+        }
+        newFileDialog = WorkspaceNewFileDialog.show(this, currentDirectory, editorRepository,
+            operations, handler, new WorkspaceNewFileDialog.Listener() {
+                @Override public void onReady(WorkspaceEditorDocument document) { renderEditor(document); }
+            });
     }
 
     private void openEntry(WorkspaceBrowserEntry entry) {
@@ -1133,6 +1162,10 @@ public final class WorkspaceBrowserActivity extends Activity {
             && directoryPanel.getVisibility() == View.VISIBLE;
         boolean previewVisible = previewPanel != null
             && previewPanel.getVisibility() == View.VISIBLE;
+        boolean writable = repository.getArea() == WorkspaceBrowserArea.WORKSPACE;
+        newFileButton.setVisibility(writable ? View.VISIBLE : View.GONE);
+        theme.setEnabled(newFileButton, writable && directoryVisible && currentDirectoryPage != null
+            && !busy && !saving && pickerIdle);
         boolean hasPreviousDirectory = currentDirectoryPage != null
             && currentDirectoryPage.hasPreviousPage();
         boolean hasNextDirectory = currentDirectoryPage != null
