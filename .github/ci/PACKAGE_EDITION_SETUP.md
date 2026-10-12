@@ -25,6 +25,8 @@ and pull requests, including the Community runtime and package toolchain jobs.
 Package bootstrap and Signed APT repository are reusable workflows called
 locally. Artifact reuse and publication diagnostics query the current
 `GITHUB_REPOSITORY` and validate the producer's repository and branch.
+The temporary debug APK/bootstrap exception for the editor feature branch has
+been removed; manual APK builds also select `main`.
 
 ## Catalog publication and APK build
 
@@ -37,7 +39,9 @@ and physical device validation remain separate from CI.
 [AGENTCODI Package Edition V0.1.4](https://github.com/Mcpasi/AGENTCODI-Package-Edition/releases/tag/v.0.1.4.package.3)
 was published on 2026-10-11 as an experimental prerelease, tagged
 `v.0.1.4.package.3` (Android `versionCode 7`).
-Physical Android device tests for version 0.1.4 passed.
+Physical Android device tests for version 0.1.4 passed. The current source
+version prepared for `main` is 0.1.5 (Android `versionCode 8`), with the modular
+workspace editor. Its publication and physical-device validation are pending.
 
 1. Keep **Settings → Pages → GitHub Actions** as the deployment source. If the
    `github-pages` environment restricts deployment branches, allow `main`.
@@ -85,8 +89,9 @@ from this repository.
 The seven APT/APK signing secrets and the separate build-mirror read token
 use the existing names. The public APT fingerprint remains
 `2768291D12B6C3D22CFBAF9EEC79CBDF7E93DC89`; the application ID remains
-`de.agentcodi.pkg`. Published version 0.1.4/versionCode 7 is newer than
-version 0.1.3/versionCode 6 and version 0.1.2/versionCode 5.
+`de.agentcodi.pkg`. Current source version 0.1.5/versionCode 8 is newer than
+published version 0.1.4/versionCode 7, version 0.1.3/versionCode 6 and version
+0.1.2/versionCode 5.
 
 The private backup mirror remains `Mcpasi/agentcodi-build-inputs`, release
 `0.7.6-preview.1`; it is not redistributed through this public repository.

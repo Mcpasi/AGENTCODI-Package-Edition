@@ -12,7 +12,7 @@ permissions:
 jobs:
   build:
     name: Build ARM64 package bootstrap
-    if: github.ref == 'refs/heads/main' || github.ref == 'refs/heads/feat/modular-file-editor'
+    if: github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
     timeout-minutes: 180
     steps:

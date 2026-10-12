@@ -1,6 +1,10 @@
 # Editor-Bugprüfung
 
-Branch: `feat/modular-file-editor` · Ausgangsstand: `88be555`
+Package Edition 0.1.5 · Zielbranch: `main`
+
+Historische Bugprüfung im Branch `feat/modular-file-editor`:
+Ausgangsstand `88be555`, bestätigte Fixes `43861cf`. Die unten genannten
+Testergebnisse stammen von diesem Stand vor dem Versionsbump auf 0.1.5.
 
 Für jeden der acht Befunde wurde zuerst ein fehlschlagender Reproduktionstest
 ausgeführt. Die Änderungen beheben die bestätigten Ursachen in der Eingabe,

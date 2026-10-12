@@ -16,7 +16,6 @@ on:
   push:
     branches:
       - 'main'
-      - 'feat/modular-file-editor'
     paths:
       - 'app/**'
       - 'modules/**'
@@ -56,7 +55,7 @@ concurrency:
 jobs:
   build-inputs:
     name: Validate archived build-input access
-    if: github.ref == 'refs/heads/main' || github.ref == 'refs/heads/feat/modular-file-editor'
+    if: github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
     timeout-minutes: 5
     steps:
@@ -69,7 +68,7 @@ jobs:
         run: bash .github/ci/check-build-inputs-access.sh
   bootstrap:
     needs: build-inputs
-    if: github.ref == 'refs/heads/main' || github.ref == 'refs/heads/feat/modular-file-editor'
+    if: github.ref == 'refs/heads/main'
     uses: ./.github/workflows/bootstrap.yml
     with:
       # Reuse only this repository's verified builds; old repository runs are not portable.

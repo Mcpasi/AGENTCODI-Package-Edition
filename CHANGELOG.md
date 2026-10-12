@@ -1,6 +1,11 @@
 # Package Edition
 
-## Unreleased
+## 0.1.5 — Package Edition (Android versionCode 8) — prepared 2026-10-12
+
+**Prepared for `main`; not yet published. Physical Android device validation is pending.**
+
+- Bump the application, manifest, APK builder and native identity to `0.1.5`,
+  Android versionCode 8, with the matching identity checks and test fixtures.
 
 - Add automatic JavaScript, HTML, CSS and Python syntax highlighting in an
   independent pure Java syntax module, with dedicated language lexers, embedded
@@ -33,11 +38,30 @@
   read-only previews. Text-file export remains available after saving.
 - Separate editor contracts, pure client, runtime persistence and Android
   view/controller code. Codex integration remains future work.
-- Validation: 436 Java host tests, 126 Android UI tests on API 29/35, architecture
+- Preserve original source text during copy/cut and treat displayed CRLF as a
+  complete line break during IME deletion. Keep composition and Unicode intact.
+- Retain unsaved text, empty new-file drafts, selection, scroll position and
+  pending save revisions across Activity recreation. Draft retention covers
+  configuration changes, not process termination.
+- Correct JavaScript regular-expression context after control conditions and
+  keyword-named properties, Python escaped CRLF strings, HTML raw-text closing
+  tags and CSS selectors inside grouping rules. The eight reproduced fixes and
+  their regression evidence are recorded in the [editor bug report](EDITOR_BUGFIX_REPORT.md).
+- Restore debug APK and reusable bootstrap workflow guards to `main`, matching
+  the signed release and package workflows. Tests still run on all branches
+  and pull requests; bootstrap reuse still requires verified `main` provenance.
+- Editor validation at `43861cf`: 441 Java host tests, 152 Android UI tests on API 29/35, architecture
   checks, Android source/resource compilation, isolated module/DEX compilation
-  and signing checks pass. Native
+  and signing checks pass. The [Tests workflow](https://github.com/Mcpasi/AGENTCODI-Package-Edition/actions/runs/38271484384)
+  and [debug APK build](https://github.com/Mcpasi/AGENTCODI-Package-Edition/actions/runs/38271484746)
+  succeeded before this release-preparation bump. Native
   file-reader/save regressions and a host JNI persistence smoke pass. Physical
-  device testing of this unreleased editor remains outstanding.
+  device testing of version 0.1.5 remains outstanding.
+- Release-preparation checks: 441 Java host tests, native workspace file-reader
+  regressions, architecture/payload contracts, 44 Python signing/build-input/
+  APK/MPL checks and workflow lint pass. Main branch guards, build path filters
+  and PR test triggers are verified; implementation changes are limited to
+  release identity.
 
 ## 0.1.4 — Package Edition (Android versionCode 7) — 2026-10-11
 

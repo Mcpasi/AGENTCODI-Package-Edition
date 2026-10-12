@@ -26,7 +26,7 @@ Ubuntu runner. They are additional entry points only:
 | Android UI | `run-chat-ui-tests.sh` | Exercise native chat, terminal and workspace editor widgets on API 29 and 35, including new-file drafts, save/conflict/navigation behavior and narrow-phone previews with reduced keyboard space. |
 
 Package Edition builds use installation ID `de.agentcodi.pkg`, their own
-version line (published `0.1.4` / Android versionCode 7), and APK names
+version line (current source `0.1.5` / Android versionCode 8), and APK names
 starting with `AGENTCODI-Package-`. The APK workflow in this repository
 uploads `agentcodi-package-debug-apk`. Java classes and resources retain the
 `de.agentcodi.app` namespace via AAPT2's `--custom-package`; manifest components
@@ -36,7 +36,10 @@ installation and parallel-app test on Android hardware.
 [Package Edition 0.1.4](https://github.com/Mcpasi/AGENTCODI-Package-Edition/releases/tag/v.0.1.4.package.3)
 was published on 2026-10-11 as an experimental prerelease, tagged
 `v.0.1.4.package.3`.
-Physical Android device tests for version 0.1.4 passed.
+Physical Android device tests for version 0.1.4 passed. This remains the latest
+published release; 0.1.5 publication and physical-device editor validation are
+pending. Its [changelog](../../CHANGELOG.md) records the editor features and the
+successful pre-bump Tests/APK runs at `43861cf`.
 This result is separate from hosted CI. The published 0.1.0
 (`v0.1.0-package.3`), 0.1.1, 0.1.2 and 0.1.3 releases remain experimental prereleases.
 Their artifacts below are historical evidence for those earlier versions.
@@ -236,9 +239,10 @@ the image is:
   they are bionic binaries. On an arm64 runner all of this runs natively,
   without qemu.
 
-The debug APK workflow builds on this repository's `main` and
-`feat/modular-file-editor` pushes that change app, module, script, test or
-build-input paths. The signed release workflow remains restricted to `main`.
+The debug APK workflow builds on this repository's `main` pushes that change
+app, module, script, test or build-input paths. The signed release workflow and
+reusable bootstrap are also restricted to `main`. Tests run on all branches
+and pull requests.
 Documentation and Community audit-driver changes do not restart an unchanged
 APK build.
 Manual runs default to a preflight-only run.
