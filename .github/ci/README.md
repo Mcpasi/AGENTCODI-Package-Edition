@@ -236,9 +236,11 @@ the image is:
   they are bionic binaries. On an arm64 runner all of this runs natively,
   without qemu.
 
-The APK workflow builds only on this repository's `main` pushes that change
-app, module, script, test or build-input paths. Documentation and Community
-audit-driver changes do not restart an unchanged APK build.
+The debug APK workflow builds on this repository's `main` and
+`feat/modular-file-editor` pushes that change app, module, script, test or
+build-input paths. The signed release workflow remains restricted to `main`.
+Documentation and Community audit-driver changes do not restart an unchanged
+APK build.
 Manual runs default to a preflight-only run.
 `container-preflight.sh` reads the required command list and the pinned
 toolchain version out of the build script — so they cannot drift — and reports
@@ -459,8 +461,8 @@ in the release verification path.
 The public AOSP test material is a build fixture under
 [`scripts/debug-signing`](../../scripts/debug-signing/README.md), not an
 external private release key or packaged app asset. The full APK build checks
-the actual signer again. The APK workflow reuses the successful same-branch
-bootstrap from a selected successful run in this repository only after the
+the actual signer again. The APK workflow reuses a successful `main` bootstrap
+from a selected run in this repository only after the
 existing recipe, job, artifact and checksum provenance gates pass; it still assembles and tests the
 current APK. The fixture proves the signing prerequisite for Android updates.
 It performs no physical device installation, upgrade or data-retention test.

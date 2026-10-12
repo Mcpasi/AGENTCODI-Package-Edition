@@ -3,7 +3,7 @@ on:
   workflow_call:
     inputs:
       source_run_id:
-        description: 'Reuse a verified same-branch source build only if recipe inputs are identical'
+        description: 'Reuse a verified main source build only if recipe inputs are identical'
         type: number
         default: 0
 permissions:
@@ -12,7 +12,7 @@ permissions:
 jobs:
   build:
     name: Build ARM64 package bootstrap
-    if: github.ref == 'refs/heads/main'
+    if: github.ref == 'refs/heads/main' || github.ref == 'refs/heads/feat/modular-file-editor'
     runs-on: ubuntu-latest
     timeout-minutes: 180
     steps:
