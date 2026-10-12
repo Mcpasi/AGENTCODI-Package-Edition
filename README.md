@@ -8,7 +8,7 @@
 
 ![Android](https://img.shields.io/badge/Android-10%2B-3DDC84?logo=android&logoColor=white)
 ![Architecture](https://img.shields.io/badge/Architecture-ARM64-555555)
-![Version](https://img.shields.io/badge/Package%20Edition-0.1.4-blue)
+![Version](https://img.shields.io/badge/Package%20Edition-0.1.5-blue)
 ![Status](https://img.shields.io/badge/Status-experimental%20prerelease-orange)
 ![License](https://img.shields.io/badge/License-Apache%202.0-blue)
 
@@ -18,11 +18,16 @@ AGENTCODI Package Edition brings Codex workflows to Android with an interactive 
 
 The Package Edition has its own application ID, `de.agentcodi.pkg`, so it can be installed alongside the regular AGENTCODI app.
 
-**[Package Edition 0.1.4](https://github.com/Mcpasi/AGENTCODI-Package-Edition/releases/tag/v.0.1.4.package.3) is published as an experimental prerelease.**
+**The current source version is Package Edition 0.1.5 (Android `versionCode 8`),
+prepared for `main`.** It adds the modular workspace editor, new-file drafts,
+syntax highlighting and source line numbers. Publication and physical Android
+device validation for 0.1.5 are pending; see the [changelog](CHANGELOG.md).
+
+**The latest published version is [Package Edition 0.1.4](https://github.com/Mcpasi/AGENTCODI-Package-Edition/releases/tag/v.0.1.4.package.3), an experimental prerelease.**
 Released on 2026-10-11, tagged `v.0.1.4.package.3` (Android `versionCode 7`).
 **Device tests for version 0.1.4: passed on physical Android hardware.**
 
-The terminal, chat and long-running session improvements are recorded in the
+The editor, terminal, chat and long-running session improvements are recorded in the
 [changelog](CHANGELOG.md), with host benchmark measurements and reproduction
 evidence in the [roadmap](ROADMAP-package-edition.md).
 
@@ -40,7 +45,7 @@ No Termux installation, WebView shell, or separate gateway setup is required.
 - Interactive terminal
 - Writable package environment with APT and dpkg
 - Python, Node.js, npm, Git and ripgrep available through the signed package repository
-- Workspace import, preview and export
+- Workspace import, text/code editing and export
 - Read-only browsing and export of installed package files
 - MCP server management with per-request tool approval
 - German, English and Simplified Chinese interface with device-language detection
@@ -61,7 +66,7 @@ Recent Android versions may display a warning during installation because of the
 
 ## Install
 
-Download the Package Edition 0.1.4 APK from [GitHub Releases](https://github.com/Mcpasi/AGENTCODI-Package-Edition/releases/tag/v.0.1.4.package.3) and install it on your Android device. The signed release asset is `AGENTCODI-Package-0.1.4-arm64-v8a-release.apk`.
+Download the latest published Package Edition 0.1.4 APK from [GitHub Releases](https://github.com/Mcpasi/AGENTCODI-Package-Edition/releases/tag/v.0.1.4.package.3) and install it on your Android device. The signed release asset is `AGENTCODI-Package-0.1.4-arm64-v8a-release.apk`. The 0.1.5 editor features described below are available in source/test builds until that version is published.
 
 Release APKs use the package name:
 
@@ -160,6 +165,42 @@ The graphical file browser offers three explicit areas:
 
 Package views are read-only.
 
+Starting with 0.1.5, opening a workspace UTF-8 text or code file up to 1 MiB opens a native editor.
+Edit the complete file and tap **Save**, or use **Ctrl+S** with a hardware keyboard.
+The editor wraps long lines on phones and keeps Save accessible above the soft
+keyboard. Unsaved changes are marked, and Back or Refresh offers Save, Discard
+and Cancel. Export becomes available after saving.
+
+JavaScript (`.js`, `.mjs`, `.cjs`), HTML (`.html`, `.htm`), CSS (`.css`) and Python
+(`.py`, `.pyw`) get syntax highlighting automatically, including new drafts.
+HTML script/style blocks use JavaScript/CSS highlighting. Other extensions stay
+plain text. Colors follow the light/dark theme, update after edits and never alter
+the saved source. Tokenization runs in the background; only the visible area and
+a small buffer receive color spans, including when scrolling through large files.
+
+All editable files show source line numbers. Wrapped continuations share their
+source line's number, and the gutter follows scrolling, font scaling and layout
+changes. Empty lines and the final empty line are numbered. LF, CRLF and CR line
+breaks display correctly while retaining their original characters when saved.
+
+Tap **New file** in a workspace folder, enter a filename (including the extension
+you want), and open the draft in the editor. The file is created only on the first
+Save; empty files are supported. Canceling or discarding a new draft leaves no
+file behind. Existing names are rejected, including files that appear after the
+draft was opened.
+
+Saving preserves UTF-8 byte order marks, existing line endings and executable
+permissions. It checks the opened contents before replacing the file atomically.
+If another program has changed the file, the draft stays in the editor; copy any
+text you need before reloading. Images, binary files, larger text files and all
+package files retain their read-only previews.
+
+The editor has separate pure Java contracts, persistence client and syntax
+modules, an Android runtime repository, and independent view/controller classes.
+Language lexers and the logical line index have no Android dependencies. The
+native editing surface, background color renderer and line-number gutter are
+separate components. Codex integration is reserved for later work.
+
 Files can be imported into the workspace through Android's document picker. Individual files and folders can be exported again. Folder exports are ZIP archives.
 
 Known credential locations such as `auth.json`, `.ssh`, `.npmrc`, `.pypirc`, `.netrc`, `.git-credentials` and APT authentication files are excluded from package exports.
@@ -233,6 +274,10 @@ Local project checks can be started with:
 ./scripts/test.sh
 ./scripts/build-debug-apk.sh
 ```
+
+These local runners require the Termux Android toolchain. Portable host drivers
+are documented in the [CI guide](.github/ci/README.md). APK and package builds
+run on `main`; the Tests workflow also checks feature branches and pull requests.
 
 The CI verifies the application identity, APK payload, ARM64 ABI, alignment, signing requirements, package bootstrap, source availability and supplied license material.
 

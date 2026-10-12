@@ -5,8 +5,10 @@ This contract does not authorize a PR,
 merge, APK release or APT publication. Minimum API is 29, target SDK is 28,
 installation ID is de.agentcodi.pkg, and Full access is the sole runtime mode.
 
-The current release is **Package Edition 0.1.4, Android versionCode 7,
-published** on 2026-10-11 as an experimental prerelease, tagged
+The current source version prepared for `main` is **Package Edition 0.1.5,
+Android versionCode 8**. Publication and physical-device editor validation are
+pending. The latest published release is **Package Edition 0.1.4, Android
+versionCode 7**, released on 2026-10-11 as an experimental prerelease, tagged
 [`v.0.1.4.package.3`](https://github.com/Mcpasi/AGENTCODI-Package-Edition/releases/tag/v.0.1.4.package.3).
 Physical Android device tests for version 0.1.4 passed.
 CI artifacts are test builds; hardware test results are recorded separately.
@@ -32,6 +34,8 @@ identity and native-runtime checks remain required.
 | Java host suite | Full-access identity/protocol, bootstrap interruption/recovery and update preservation; managed and user prefixes; all four user tool names, executable permissions, dpkg state and caches; alias retirement; file-browser/import/export checks, including replaced package roots and same-size ZIP member changes with restored mtime; MCP tool approval allow/decline/cancel, nullable turn IDs, stale/overloaded rejection, invalid elicitation, server resolution and timeout. |
 | Seven portable C++ suites | Supervisor environment, process lifecycle, framing, PNG and file operations; actual Package shell; prefix precedence; inherited retired activation variables stripped. |
 | Android compilation | All sources/resources against API 35, manifest target 28/minimum 29, separate installation identity and compiled component classes; German/English legal UI. |
+| Workspace editor host regressions | Complete UTF-8 files up to 1 MiB, BOM/line-ending/permission preservation, atomic saves, external-change conflicts and concurrent new-file collisions; pure Java editor contracts and JavaScript/HTML/CSS/Python lexers. |
+| Android UI on API 29/35 | Existing chat/terminal regressions and native editor save/Ctrl+S/navigation, new-file drafts, syntax colors, logical line numbers, IME/clipboard source preservation and Activity recreation with pending saves. |
 | Community ARM64/Bionic runtime | Pinned archive/relocation/schemas and actual controller RPCs; real app-server, code-mode JavaScript without external Node/npm, restart and persistent user program; actual Java MCP approval records validated against generated schemas and a real MCP prompt gate with invocation counts for accept/decline/cancel. |
 | Bootstrap ARM64/Bionic smoke | Real ZIP installed through Java; dpkg configuration, shell/APT/gpgv, certificates and local package install/remove. |
 | Complete APK ARM64/Bionic smoke | Full-access sibling access, Codex commands, PTY operations, import context, managed/legacy precedence and identical stdio-MCP environment; no retired activation/version variables. |

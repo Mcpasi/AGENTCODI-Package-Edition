@@ -13,7 +13,7 @@ chat_sources=("$chat_root/MainActivity.java" "$chat_screen" "$chat_composer"
   "$chat_selectors" "$chat_transcript" "$chat_root/ThreadListAdapter.java"
   "$chat_root/ChatUiFormatting.java")
 
-unexpected_source="$(find "$PROJECT_ROOT/app/src/main/java" "$PROJECT_ROOT/modules/core/src/main/java" "$PROJECT_ROOT/modules/review-mode/src/main/java" "$PROJECT_ROOT/modules/compatibility-mode/src/main/java" "$PROJECT_ROOT/modules/storage/src/main/java" "$PROJECT_ROOT/modules/file-browser-contracts/src/main/java" "$PROJECT_ROOT/modules/file-browser-client/src/main/java" "$PROJECT_ROOT/modules/import-contracts/src/main/java" "$PROJECT_ROOT/modules/import-client/src/main/java" "$PROJECT_ROOT/modules/mcp-contracts/src/main/java" "$PROJECT_ROOT/modules/mcp-client/src/main/java" "$PROJECT_ROOT/modules/connector-contracts/src/main/java" "$PROJECT_ROOT/modules/connector-client/src/main/java" "$PROJECT_ROOT/modules/runtime/src/main/java" "$PROJECT_ROOT/modules/native-engine/src/main/cpp" "$PROJECT_ROOT/tests/java" "$PROJECT_ROOT/tests/cpp" -type f ! -name '*.java' ! -name '*.cpp' ! -name '*.h' -print)"
+unexpected_source="$(find "$PROJECT_ROOT/app/src/main/java" "$PROJECT_ROOT/modules/core/src/main/java" "$PROJECT_ROOT/modules/review-mode/src/main/java" "$PROJECT_ROOT/modules/compatibility-mode/src/main/java" "$PROJECT_ROOT/modules/storage/src/main/java" "$PROJECT_ROOT/modules/file-browser-contracts/src/main/java" "$PROJECT_ROOT/modules/file-browser-client/src/main/java" "$PROJECT_ROOT/modules/file-editor-contracts/src/main/java" "$PROJECT_ROOT/modules/file-editor-client/src/main/java" "$PROJECT_ROOT/modules/file-editor-syntax/src/main/java" "$PROJECT_ROOT/modules/import-contracts/src/main/java" "$PROJECT_ROOT/modules/import-client/src/main/java" "$PROJECT_ROOT/modules/mcp-contracts/src/main/java" "$PROJECT_ROOT/modules/mcp-client/src/main/java" "$PROJECT_ROOT/modules/connector-contracts/src/main/java" "$PROJECT_ROOT/modules/connector-client/src/main/java" "$PROJECT_ROOT/modules/runtime/src/main/java" "$PROJECT_ROOT/modules/native-engine/src/main/cpp" "$PROJECT_ROOT/tests/java" "$PROJECT_ROOT/tests/cpp" -type f ! -name '*.java' ! -name '*.cpp' ! -name '*.h' -print)"
 if [ -n "$unexpected_source" ]; then
   echo "Only Java and C++ source files are accepted in source roots." >&2
   printf '%s\n' "$unexpected_source" >&2
@@ -25,7 +25,7 @@ if find "$PROJECT_ROOT/app" "$PROJECT_ROOT/modules" "$PROJECT_ROOT/tests" -type 
   exit 1
 fi
 
-if rg -n '^import android\.' "$PROJECT_ROOT/modules/core/src/main/java" "$PROJECT_ROOT/modules/review-mode/src/main/java" "$PROJECT_ROOT/modules/compatibility-mode/src/main/java" "$PROJECT_ROOT/modules/storage/src/main/java" "$PROJECT_ROOT/modules/file-browser-contracts/src/main/java" "$PROJECT_ROOT/modules/file-browser-client/src/main/java" "$PROJECT_ROOT/modules/import-contracts/src/main/java" "$PROJECT_ROOT/modules/import-client/src/main/java" "$PROJECT_ROOT/modules/mcp-contracts/src/main/java" "$PROJECT_ROOT/modules/mcp-client/src/main/java" "$PROJECT_ROOT/modules/connector-contracts/src/main/java" "$PROJECT_ROOT/modules/connector-client/src/main/java"; then
+if rg -n '^import android\.' "$PROJECT_ROOT/modules/core/src/main/java" "$PROJECT_ROOT/modules/review-mode/src/main/java" "$PROJECT_ROOT/modules/compatibility-mode/src/main/java" "$PROJECT_ROOT/modules/storage/src/main/java" "$PROJECT_ROOT/modules/file-browser-contracts/src/main/java" "$PROJECT_ROOT/modules/file-browser-client/src/main/java" "$PROJECT_ROOT/modules/file-editor-contracts/src/main/java" "$PROJECT_ROOT/modules/file-editor-client/src/main/java" "$PROJECT_ROOT/modules/file-editor-syntax/src/main/java" "$PROJECT_ROOT/modules/import-contracts/src/main/java" "$PROJECT_ROOT/modules/import-client/src/main/java" "$PROJECT_ROOT/modules/mcp-contracts/src/main/java" "$PROJECT_ROOT/modules/mcp-client/src/main/java" "$PROJECT_ROOT/modules/connector-contracts/src/main/java" "$PROJECT_ROOT/modules/connector-client/src/main/java"; then
   echo "Pure Java modules must not import Android APIs." >&2
   exit 1
 fi
@@ -135,6 +135,17 @@ import_contracts="$PROJECT_ROOT/modules/import-contracts/src/main/java"
 import_client="$PROJECT_ROOT/modules/import-client/src/main/java"
 file_browser_contracts="$PROJECT_ROOT/modules/file-browser-contracts/src/main/java"
 file_browser_client="$PROJECT_ROOT/modules/file-browser-client/src/main/java"
+editor_contracts="$PROJECT_ROOT/modules/file-editor-contracts/src/main/java"
+editor_client="$PROJECT_ROOT/modules/file-editor-client/src/main/java"
+editor_syntax="$PROJECT_ROOT/modules/file-editor-syntax/src/main/java"
+if rg -n '^import de\.agentcodi\.' "$editor_contracts" \
+    || rg -n '^import (static )?de\.agentcodi\.(app|core|runtime|storage|browser|editor\.client)\.' "$editor_syntax" \
+    || rg -n '^import de\.agentcodi\.(app|core|runtime|storage|browser)\.' "$editor_client" \
+    || rg -n '^import de\.agentcodi\.editor\.client\.' "$PROJECT_ROOT/app/src/main/java" \
+    || rg -n '^import de\.agentcodi\.editor\.' "$PROJECT_ROOT/modules/storage/src/main/java"; then
+  echo "Editor contracts, pure client, storage and Android UI boundaries are invalid." >&2
+  exit 1
+fi
 manifest="$PROJECT_ROOT/app/src/main/AndroidManifest.xml"
 if rg -n '^import de\.agentcodi\.' "$file_browser_contracts" \
     || rg -n '^import de\.agentcodi\.(app|core|imports|mcp|runtime)\.' \
@@ -954,13 +965,13 @@ if ! rg -q 'command/exec/outputDelta' "$PROJECT_ROOT/tests/cpp/android_app_serve
   exit 1
 fi
 
-if ! rg -q 'VERSION_NAME = "0\.1\.4"' "$core_root/BuildIdentity.java" \
-    || ! rg -q 'VERSION_CODE = 7' "$core_root/BuildIdentity.java" \
+if ! rg -q 'VERSION_NAME = "0\.1\.5"' "$core_root/BuildIdentity.java" \
+    || ! rg -q 'VERSION_CODE = 8' "$core_root/BuildIdentity.java" \
     || ! rg -q 'CODEX_RUNTIME_VERSION = "0\.156\.1-termux\.1"' "$core_root/BuildIdentity.java" \
-    || ! rg -q 'android:versionName="0\.1\.4"' "$manifest" \
-    || ! rg -q 'android:versionCode="7"' "$manifest" \
-    || ! rg -q 'APP_VERSION="0\.1\.4"' "$apk_builder" \
-    || ! rg -q 'VERSION_CODE="7"' "$apk_builder" \
+    || ! rg -q 'android:versionName="0\.1\.5"' "$manifest" \
+    || ! rg -q 'android:versionCode="8"' "$manifest" \
+    || ! rg -q 'APP_VERSION="0\.1\.5"' "$apk_builder" \
+    || ! rg -q 'VERSION_CODE="8"' "$apk_builder" \
     || ! rg -q 'CODEX_ANDROID_VERSION="0\.156\.1-termux\.1"' "$apk_builder" \
     || ! rg -q 'CODEX_TERMUX_SOURCE_TAG="v0\.156\.1-termux\.1"' "$apk_builder" \
     || ! rg -q 'CODEX_TERMUX_SOURCE_COMMIT="ea762071ec4acbf1531fcc7daf47524836f70a09"' "$apk_builder" \
@@ -981,7 +992,7 @@ if ! rg -q 'VERSION_NAME = "0\.1\.4"' "$core_root/BuildIdentity.java" \
     || ! rg -q 'ea762071ec4acbf1531fcc7daf47524836f70a09' "$PROJECT_ROOT/app/src/main/res/raw/third_party_notices.txt" \
     || ! rg -q 'b412ff32c417f855c2b2d1581b77058eed87c84b' "$PROJECT_ROOT/NOTICE.md" \
     || ! rg -q 'b412ff32c417f855c2b2d1581b77058eed87c84b' "$PROJECT_ROOT/app/src/main/res/raw/third_party_notices.txt"; then
-  echo "The 0.1.4 / Codex 0.156.1-termux.1 identity is inconsistent." >&2
+  echo "The 0.1.5 / Codex 0.156.1-termux.1 identity is inconsistent." >&2
   exit 1
 fi
 

@@ -3,7 +3,7 @@ on:
   workflow_call:
     inputs:
       source_run_id:
-        description: 'Reuse a verified same-branch source build only if recipe inputs are identical'
+        description: 'Reuse a verified main source build only if recipe inputs are identical'
         type: number
         default: 0
 permissions:

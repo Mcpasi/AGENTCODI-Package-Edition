@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Exercise the real Android chat widgets without starting the native runtime.
+# Exercise the real Android chat, terminal and file editor widgets without the native runtime.
 set -Eeuo pipefail
 
 SCRIPT_DIR="$(cd -- "$(dirname -- "$0")" && pwd -P)"
@@ -62,4 +62,5 @@ javac -encoding UTF-8 -cp "$classpath" -d "$BUILD_DIR/test-classes" @"$BUILD_DIR
 java -Drobolectric.dependency.repo.url=https://repo.maven.apache.org/maven2 \
   -Dagentcodi.chatUiReport="$REPORT_DIR" -cp "$classpath" \
   org.junit.runner.JUnitCore de.agentcodi.app.ChatConversationUiTest de.agentcodi.app.TerminalUiTest \
+    de.agentcodi.app.WorkspaceEditorUiTest de.agentcodi.app.WorkspaceCodeEditorUiTest \
   | tee "$REPORT_DIR/results.txt"

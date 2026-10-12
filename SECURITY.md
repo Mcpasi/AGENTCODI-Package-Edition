@@ -49,7 +49,9 @@ backported.
 Install released APKs only from the official
 [Package Edition GitHub Releases](https://github.com/Mcpasi/AGENTCODI-Package-Edition/releases) page and
 update to the latest release before reporting an issue that may already be fixed.
-The current Package Edition release is **0.1.4** (Android `versionCode 7`),
+The current source version prepared for `main` is **0.1.5** (Android
+`versionCode 8`); publication and physical-device validation are pending.
+The latest published Package Edition release is **0.1.4** (Android `versionCode 7`),
 published on 2026-10-11 as an experimental prerelease:
 [AGENTCODI Package Edition V0.1.4](https://github.com/Mcpasi/AGENTCODI-Package-Edition/releases/tag/v.0.1.4.package.3).
 Physical Android device tests for version 0.1.4 passed.

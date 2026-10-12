@@ -1,6 +1,7 @@
 package de.agentcodi.runtime;
 
 import de.agentcodi.storage.WorkspaceFileAccess;
+import de.agentcodi.storage.WorkspaceFileEdit;
 
 import java.io.File;
 import java.io.IOException;
@@ -17,6 +18,15 @@ final class NativeWorkspaceFileAccess {
 
     static WorkspaceFileAccess.Opener opener() {
         return OPENER;
+    }
+
+    static WorkspaceFileEdit.Creator creator() {
+        return new WorkspaceFileEdit.Creator() {
+            @Override public void create(File workspace, String relativePath, byte[] contents)
+                throws IOException {
+                NativeEngine.createWorkspaceFile(workspace.getAbsolutePath(), relativePath, contents);
+            }
+        };
     }
 
     private static final class NativeOpener implements WorkspaceFileAccess.Opener {
@@ -132,6 +142,12 @@ final class NativeWorkspaceFileAccess {
         public synchronized void verifyUnchanged() throws IOException {
             requireOpen();
             NativeEngine.verifyWorkspaceFile(handle);
+        }
+
+        @Override
+        public synchronized void replace(byte[] contents) throws IOException {
+            requireOpen();
+            NativeEngine.replaceWorkspaceFile(handle, contents);
         }
 
         @Override

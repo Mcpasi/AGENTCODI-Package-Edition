@@ -1,5 +1,68 @@
 # Package Edition
 
+## 0.1.5 — Package Edition (Android versionCode 8) — prepared 2026-10-12
+
+**Prepared for `main`; not yet published. Physical Android device validation is pending.**
+
+- Bump the application, manifest, APK builder and native identity to `0.1.5`,
+  Android versionCode 8, with the matching identity checks and test fixtures.
+
+- Add automatic JavaScript, HTML, CSS and Python syntax highlighting in an
+  independent pure Java syntax module, with dedicated language lexers, embedded
+  HTML script/style support and light/dark colors. Debounce background scans,
+  reject stale results and render color spans only around the visible viewport.
+- Add a separate scrolling line-number gutter that follows actual text baselines,
+  numbers logical source lines rather than wrapped continuations, and resizes at
+  digit boundaries. Display LF, CRLF and CR without rewriting the editable source.
+- Cover language detection, comments, strings, interpolation, numeric literals,
+  incomplete edits, Unicode offsets, large documents and cancellation with host
+  tests. Add Android tests for live colors, scrolling, gutter geometry, IME spans,
+  cursor retention, lifecycle cleanup and byte-preserving saves on API 29/35.
+
+- Add **New file** for the selected workspace folder, with a translated filename
+  dialog and a new-file draft state. Create the file only on first Save, including
+  empty files; preserve the draft after failures and leave no file after Discard.
+- Reject invalid filenames and existing file/folder names. Publish new Android
+  files atomically without replacement, including concurrent creation of the same
+  filename. Keep package areas read-only and check narrow-phone controls.
+
+- Open workspace UTF-8 text and code files up to 1 MiB in a modular native editor
+  with Save, Ctrl+S, saved/unsaved status and guarded Back/Refresh navigation.
+- Save complete files through a synced temporary sibling and atomic replacement,
+  preserving UTF-8 BOMs, line endings and executable permissions. Detect external
+  content changes and retain the draft after conflicts or write failures.
+- Wrap long lines on narrow phones, resize around the soft keyboard, keep touch
+  controls accessible, and retain drafts and cursor positions across orientation
+  changes. Add German, English and Simplified Chinese editor translations.
+- Keep installed package files, images, binary files and oversized text in their
+  read-only previews. Text-file export remains available after saving.
+- Separate editor contracts, pure client, runtime persistence and Android
+  view/controller code. Codex integration remains future work.
+- Preserve original source text during copy/cut and treat displayed CRLF as a
+  complete line break during IME deletion. Keep composition and Unicode intact.
+- Retain unsaved text, empty new-file drafts, selection, scroll position and
+  pending save revisions across Activity recreation. Draft retention covers
+  configuration changes, not process termination.
+- Correct JavaScript regular-expression context after control conditions and
+  keyword-named properties, Python escaped CRLF strings, HTML raw-text closing
+  tags and CSS selectors inside grouping rules. The eight reproduced fixes and
+  their regression evidence are recorded in the [editor bug report](EDITOR_BUGFIX_REPORT.md).
+- Restore debug APK and reusable bootstrap workflow guards to `main`, matching
+  the signed release and package workflows. Tests still run on all branches
+  and pull requests; bootstrap reuse still requires verified `main` provenance.
+- Editor validation at `43861cf`: 441 Java host tests, 152 Android UI tests on API 29/35, architecture
+  checks, Android source/resource compilation, isolated module/DEX compilation
+  and signing checks pass. The [Tests workflow](https://github.com/Mcpasi/AGENTCODI-Package-Edition/actions/runs/38271484384)
+  and [debug APK build](https://github.com/Mcpasi/AGENTCODI-Package-Edition/actions/runs/38271484746)
+  succeeded before this release-preparation bump. Native
+  file-reader/save regressions and a host JNI persistence smoke pass. Physical
+  device testing of version 0.1.5 remains outstanding.
+- Release-preparation checks: 441 Java host tests, native workspace file-reader
+  regressions, architecture/payload contracts, 44 Python signing/build-input/
+  APK/MPL checks and workflow lint pass. Main branch guards, build path filters
+  and PR test triggers are verified; implementation changes are limited to
+  release identity.
+
 ## 0.1.4 — Package Edition (Android versionCode 7) — 2026-10-11
 
 **Experimental prerelease (published). Device tests: passed on physical Android hardware.**

@@ -5,6 +5,7 @@ import java.io.File;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.channels.SeekableByteChannel;
+import java.nio.channels.FileChannel;
 import java.nio.file.DirectoryStream;
 import java.nio.file.Files;
 import java.nio.file.LinkOption;
@@ -15,9 +16,12 @@ import java.nio.file.StandardOpenOption;
 import java.nio.file.attribute.BasicFileAttributeView;
 import java.nio.file.attribute.BasicFileAttributes;
 import java.nio.file.attribute.FileTime;
+import java.nio.file.attribute.PosixFileAttributeView;
+import java.nio.file.attribute.PosixFilePermission;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.Set;
+import java.util.UUID;
 
 /**
  * Race-resistant access to regular files below an already validated workspace.
@@ -65,6 +69,11 @@ public final class WorkspaceFileAccess {
         }
 
         void verifyUnchanged() throws IOException;
+
+        /** Atomically replace this revision; a successful replacement consumes the snapshot. */
+        default void replace(byte[] contents) throws IOException {
+            throw new IOException("Workspace source does not support editing");
+        }
     }
 
     private static final class SecureNioOpener implements Opener {
@@ -204,6 +213,80 @@ public final class WorkspaceFileAccess {
                 }
             } finally {
                 current.channel.close();
+            }
+        }
+
+        @Override
+        public void replace(byte[] contents) throws IOException {
+            if (contents == null || contents.length > maximumBytes) {
+                throw new IOException("Workspace replacement is outside the edit limit");
+            }
+            verifyUnchanged();
+            SecureDirectoryStream<Path> parent = root;
+            Path temporary = relative.getFileSystem().getPath(
+                ".agentcodi-edit-" + UUID.randomUUID().toString()
+            );
+            boolean created = false;
+            try {
+                for (int index = 0; index < relative.getNameCount() - 1; index++) {
+                    SecureDirectoryStream<Path> child = parent.newDirectoryStream(
+                        relative.getName(index), LinkOption.NOFOLLOW_LINKS
+                    );
+                    if (parent != root) {
+                        parent.close();
+                    }
+                    parent = child;
+                }
+                Path name = relative.getFileName();
+                PosixFileAttributeView original = parent.getFileAttributeView(
+                    name, PosixFileAttributeView.class, LinkOption.NOFOLLOW_LINKS
+                );
+                if (original == null) {
+                    throw new IOException("Filesystem cannot preserve workspace permissions");
+                }
+                Set<PosixFilePermission> permissions = original.readAttributes().permissions();
+                Set<OpenOption> options = new HashSet<OpenOption>();
+                options.add(StandardOpenOption.WRITE);
+                options.add(StandardOpenOption.CREATE_NEW);
+                options.add(LinkOption.NOFOLLOW_LINKS);
+                try (SeekableByteChannel target = parent.newByteChannel(
+                    temporary, options, java.nio.file.attribute.PosixFilePermissions.asFileAttribute(
+                        java.nio.file.attribute.PosixFilePermissions.fromString("rw-------")
+                    )
+                )) {
+                    created = true;
+                    ByteBuffer bytes = ByteBuffer.wrap(contents);
+                    while (bytes.hasRemaining()) {
+                        if (target.write(bytes) <= 0) {
+                            throw new IOException("Workspace replacement made no progress");
+                        }
+                    }
+                    parent.getFileAttributeView(
+                        temporary, PosixFileAttributeView.class, LinkOption.NOFOLLOW_LINKS
+                    ).setPermissions(permissions);
+                    if (!(target instanceof FileChannel)) {
+                        throw new IOException("Filesystem cannot sync workspace edits");
+                    }
+                    ((FileChannel) target).force(true);
+                }
+                verifyUnchanged();
+                // Also validate the destination in the exact parent used by the rename.
+                BasicFileAttributes destination = readRegularAttributes(parent, name, maximumBytes);
+                if (!sameSnapshot(attributes, destination)) {
+                    throw new IOException("Workspace file changed before saving");
+                }
+                parent.move(temporary, parent, name);
+                created = false;
+            } finally {
+                try {
+                    if (created) {
+                        parent.deleteFile(temporary);
+                    }
+                } finally {
+                    if (parent != root) {
+                        parent.close();
+                    }
+                }
             }
         }
 

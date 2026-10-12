@@ -1,15 +1,53 @@
 # Roadmap: AGENTCODI Package Edition
 
-Status: 2026-10-11. Development and releases use `main` in
+Status: 2026-10-12. Development and releases use `main` in
 `Mcpasi/AGENTCODI-Package-Edition`. Repository operation and workflow inputs
 are documented in the [setup guide](.github/ci/PACKAGE_EDITION_SETUP.md).
 
 The dated records below retain historical CI links and branch names from the
 original AGENTCODI repository.
 
+### Package Edition 0.1.5: modular workspace editor (prepared for main)
+
+Current source identity: `0.1.5`, Android `versionCode 8`, application ID
+`de.agentcodi.pkg`. Publication and physical Android device validation are
+pending. The latest published experimental prerelease remains 0.1.4.
+
+- Edit workspace UTF-8 text/code files up to 1 MiB, save with the toolbar or
+  Ctrl+S, and guard Back/Refresh when a draft has unsaved changes. Create new
+  files in the selected workspace folder; drafts become files only on Save.
+- Preserve UTF-8 BOMs, original line endings and executable permissions during
+  atomic saves. Detect external edits and concurrent filename collisions while
+  retaining the draft. Package areas, binary files and oversized text retain
+  their read-only previews.
+- Highlight JavaScript, HTML, CSS and Python with independent language lexers,
+  background tokenization and viewport color spans. A separate scrolling gutter
+  numbers logical source lines, including wrapped and empty lines.
+- Preserve source bytes in clipboard/IME operations and retain drafts,
+  selection, scroll position and pending save revisions across Activity
+  recreation. Lexer context regressions are covered by dedicated tests.
+- Keep editor contracts, client, syntax, runtime persistence and Android
+  view/controller components modular. Codex editor integration remains future
+  work.
+
+The final editor implementation at `43861cf` passed 441 Java host tests,
+152 Android UI tests on API 29/35, architecture checks, Android compilation and
+signing checks. Both the [Tests workflow](https://github.com/Mcpasi/AGENTCODI-Package-Edition/actions/runs/38271484384)
+and [debug APK build](https://github.com/Mcpasi/AGENTCODI-Package-Edition/actions/runs/38271484746)
+succeeded before the version bump. The [editor bug report](EDITOR_BUGFIX_REPORT.md)
+records reproduced failures and verified fixes. These hosted results do not
+complete physical-device validation for 0.1.5.
+
+The release-preparation changes bump identity and fixtures, update documentation
+and restore APK/bootstrap workflows to `main`; editor functionality is retained.
+Tests continue to run on all branches and pull requests. Package recipes,
+signing identities, runtime pins and verified `main` artifact reuse are retained.
+See the [0.1.5 changelog](CHANGELOG.md) and
+[test contract](scripts/package-edition/TEST_CONTRACT.md).
+
 ### Package Edition 0.1.4: performance fixes (published)
 
-Current release identity: `0.1.4`, Android `versionCode 7`, application ID
+Release identity at this milestone: `0.1.4`, Android `versionCode 7`, application ID
 `de.agentcodi.pkg`. **Experimental prerelease (published). Device tests: passed
 on physical Android hardware.**
 
@@ -1073,9 +1111,10 @@ Bootstrap, starter catalog, signed package channel and shared package environmen
 - [x] Align architecture checks and Java/C++/Android smokes with the final package contract.
 - [x] Reconcile notices, README, SECURITY and build documentation with the actual delivered package base. Reconciliation and subsequent license supplementation are implemented; Community Rust/V8 materials and package-local bootstrap assignments are source/artifact-bound. The release license gate rejects any new gap.
 - [x] Supplement Community Rust/V8 dependency texts and missing bootstrap license assignments for pinned artifacts; check source/version/hash evidence, app license view and final APK license gate.
-- [x] Test the current Package Edition 0.1.4 APK on physical Android hardware. Device tests passed; the version is published as an experimental prerelease.
+- [x] Test the published Package Edition 0.1.4 APK on physical Android hardware. Device tests passed; the version is published as an experimental prerelease.
+- [ ] Test Package Edition 0.1.5 on physical Android hardware, including editor saves, new files, syntax highlighting, line numbers and draft retention, then publish its signed APK.
 - [ ] Perform installation/update tests including low target SDK, foreground service, notifications, login, file selection and backups. Completion of the full matrix is not separately documented.
-- [x] Test the release APK on a device and publish it as Package Edition. Release APK device tests passed; `v0.1.0-package.3`, Package Edition 0.1.1, 0.1.2, 0.1.3 and the current 0.1.4 are published experimental prereleases. The detailed hardware/version/update matrix is tracked separately.
+- [x] Test the release APK on a device and publish it as Package Edition. Release APK device tests passed; `v0.1.0-package.3`, Package Edition 0.1.1, 0.1.2, 0.1.3 and 0.1.4 are published experimental prereleases. The detailed hardware/version/update matrix is tracked separately.
 
 <a id="historische-verifikation-des-grundlagenabschnitts"></a>
 
