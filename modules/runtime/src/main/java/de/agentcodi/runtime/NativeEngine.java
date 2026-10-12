@@ -100,6 +100,10 @@ public final class NativeEngine {
         nativeVerifyWorkspaceFile(handle);
     }
 
+    static void replaceWorkspaceFile(long handle, byte[] contents) throws IOException {
+        nativeReplaceWorkspaceFile(handle, contents);
+    }
+
     static void closeWorkspaceFile(long handle) {
         nativeCloseWorkspaceFile(handle);
     }
@@ -189,6 +193,9 @@ public final class NativeEngine {
     ) throws IOException;
 
     private static native void nativeVerifyWorkspaceFile(long handle)
+        throws IOException;
+
+    private static native void nativeReplaceWorkspaceFile(long handle, byte[] contents)
         throws IOException;
 
     private static native void nativeCloseWorkspaceFile(long handle);

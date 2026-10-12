@@ -1,6 +1,7 @@
 #include "workspace_file_reader.h"
 
 #include <cerrno>
+#include <atomic>
 #include <climits>
 #include <cstdint>
 #include <limits>
@@ -369,6 +370,88 @@ bool WorkspaceFileReader::VerifyUnchanged(std::string* error) const {
       || !same_snapshot(current_attributes, metadata_)) {
     return fail("Workspace file changed during export", error);
   }
+  return true;
+}
+
+bool WorkspaceFileReader::Replace(
+    const unsigned char* bytes, std::size_t length, std::string* error) {
+  if ((bytes == nullptr && length != 0U)
+      || length > static_cast<std::uint64_t>(maximum_bytes_)) {
+    return fail("Workspace replacement is outside the edit limit", error);
+  }
+  if (!VerifyUnchanged(error)) {
+    return false;
+  }
+  ScopedDescriptor parent(duplicate_descriptor(root_descriptor_));
+  if (parent.get() < 0) {
+    return fail("Workspace edit parent could not be opened", error);
+  }
+  for (std::size_t index = 0; index + 1U < components_.size(); ++index) {
+    int child;
+    do {
+      child = openat(parent.get(), components_[index].c_str(),
+          O_RDONLY | O_DIRECTORY | O_CLOEXEC | O_NOFOLLOW);
+    } while (child < 0 && errno == EINTR);
+    if (child < 0) {
+      return fail("Workspace edit parent could not be opened without links", error);
+    }
+    parent.reset(child);
+  }
+  struct stat original {};
+  if (!read_attributes(file_descriptor_, &original, error)) {
+    return false;
+  }
+  static std::atomic<std::uint64_t> sequence{0};
+  std::string temporary;
+  ScopedDescriptor target;
+  for (int attempt = 0; attempt < 32; ++attempt) {
+    temporary = ".agentcodi-edit-" + std::to_string(getpid()) + "-"
+        + std::to_string(sequence.fetch_add(1));
+    target.reset(openat(parent.get(), temporary.c_str(),
+        O_WRONLY | O_CREAT | O_EXCL | O_CLOEXEC | O_NOFOLLOW, 0600));
+    if (target.get() >= 0 || errno != EEXIST) {
+      break;
+    }
+  }
+  if (target.get() < 0) {
+    return fail("Workspace edit temporary file could not be created", error);
+  }
+  // Cleanup is descriptor-relative even if a parent is moved while writing.
+  struct TemporaryFile {
+    int parent;
+    const std::string& name;
+    bool committed = false;
+    ~TemporaryFile() { if (!committed) { unlinkat(parent, name.c_str(), 0); } }
+  } cleanup{parent.get(), temporary};
+  std::size_t offset = 0;
+  while (offset < length) {
+    const ssize_t count = write(target.get(), bytes + offset, length - offset);
+    if (count < 0 && errno == EINTR) {
+      continue;
+    }
+    if (count <= 0) {
+      return fail("Workspace replacement could not be written", error);
+    }
+    offset += static_cast<std::size_t>(count);
+  }
+  if (fchmod(target.get(), original.st_mode & 0777) != 0 || fsync(target.get()) != 0) {
+    return fail("Workspace replacement could not be synced", error);
+  }
+  struct stat destination {};
+  if (!VerifyUnchanged(error)
+      || fstatat(parent.get(), components_.back().c_str(), &destination,
+          AT_SYMLINK_NOFOLLOW) != 0
+      || !same_snapshot(destination, metadata_)) {
+    return fail("Workspace file changed before saving", error);
+  }
+  if (renameat(parent.get(), temporary.c_str(), parent.get(),
+          components_.back().c_str()) != 0) {
+    return fail("Workspace replacement could not be installed", error);
+  }
+  cleanup.committed = true;
+  // The file is already committed. A directory-sync error must not imply that
+  // retrying the old snapshot could safely overwrite the new revision.
+  fsync(parent.get());
   return true;
 }
 

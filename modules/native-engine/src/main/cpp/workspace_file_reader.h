@@ -43,6 +43,10 @@ class WorkspaceFileReader final {
 
   bool VerifyUnchanged(std::string* error) const;
 
+  // Save a complete revision through a synced sibling and atomic rename.
+  // The reader's original snapshot is consumed by a successful replacement.
+  bool Replace(const unsigned char* bytes, std::size_t length, std::string* error);
+
  private:
   WorkspaceFileReader(
       int root_descriptor,

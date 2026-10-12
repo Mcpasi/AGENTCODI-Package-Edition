@@ -135,6 +135,12 @@ final class NativeWorkspaceFileAccess {
         }
 
         @Override
+        public synchronized void replace(byte[] contents) throws IOException {
+            requireOpen();
+            NativeEngine.replaceWorkspaceFile(handle, contents);
+        }
+
+        @Override
         public synchronized void close() {
             if (handle == 0L) {
                 return;

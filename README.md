@@ -40,7 +40,7 @@ No Termux installation, WebView shell, or separate gateway setup is required.
 - Interactive terminal
 - Writable package environment with APT and dpkg
 - Python, Node.js, npm, Git and ripgrep available through the signed package repository
-- Workspace import, preview and export
+- Workspace import, text/code editing and export
 - Read-only browsing and export of installed package files
 - MCP server management with per-request tool approval
 - German, English and Simplified Chinese interface with device-language detection
@@ -159,6 +159,22 @@ The graphical file browser offers three explicit areas:
 - **User packages** from `$HOME/.local`
 
 Package views are read-only.
+
+Opening a workspace UTF-8 text or code file up to 1 MiB now opens a native editor.
+Edit the complete file and tap **Save**, or use **Ctrl+S** with a hardware keyboard.
+The editor wraps long lines on phones and keeps Save accessible above the soft
+keyboard. Unsaved changes are marked, and Back or Refresh offers Save, Discard
+and Cancel. Export becomes available after saving.
+
+Saving preserves UTF-8 byte order marks, existing line endings and executable
+permissions. It checks the opened contents before replacing the file atomically.
+If another program has changed the file, the draft stays in the editor; copy any
+text you need before reloading. Images, binary files, larger text files and all
+package files retain their read-only previews.
+
+The editor has separate pure Java contracts and client modules, an Android
+runtime repository, and independent view/controller classes. Syntax highlighting
+and Codex integration are reserved for later work.
 
 Files can be imported into the workspace through Android's document picker. Individual files and folders can be exported again. Folder exports are ZIP archives.
 

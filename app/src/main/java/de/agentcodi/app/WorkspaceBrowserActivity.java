@@ -17,6 +17,8 @@ import android.os.Looper;
 import android.view.Gravity;
 import android.view.View;
 import android.view.ViewGroup;
+import android.view.WindowInsets;
+import android.view.inputmethod.InputMethodManager;
 import android.widget.AdapterView;
 import android.widget.BaseAdapter;
 import android.widget.Button;
@@ -35,6 +37,10 @@ import de.agentcodi.browser.WorkspaceBrowserLimits;
 import de.agentcodi.browser.WorkspaceBrowserPage;
 import de.agentcodi.browser.WorkspaceFilePreview;
 import de.agentcodi.runtime.WorkspaceBrowserRepository;
+import de.agentcodi.runtime.WorkspaceEditorRepository;
+import de.agentcodi.editor.WorkspaceEditorDocument;
+import de.agentcodi.editor.WorkspaceEditorException;
+import de.agentcodi.editor.WorkspaceEditorLimits;
 import de.agentcodi.runtime.WorkspaceFileExporter;
 import de.agentcodi.runtime.WorkspaceFileImporter;
 import de.agentcodi.browser.WorkspaceBrowserArea;
@@ -63,6 +69,12 @@ public final class WorkspaceBrowserActivity extends Activity {
 
     private UiTheme theme;
     private WorkspaceBrowserRepository repository;
+    private WorkspaceEditorRepository editorRepository;
+    private WorkspaceEditorController editor;
+    private WorkspaceEditorView editorView;
+    private LinearLayout fileActions;
+    private TextView titleView;
+    private Button refreshButton;
     private LinearLayout breadcrumbRow;
     private HorizontalScrollView breadcrumbScroll;
     private TextView statusView;
@@ -110,6 +122,7 @@ public final class WorkspaceBrowserActivity extends Activity {
         try {
             theme = new UiTheme(this);
             repository = WorkspaceBrowserRepository.create(this);
+            editorRepository = WorkspaceEditorRepository.create(this);
             setContentView(buildContent());
             loadDirectory("", 0);
         } catch (Throwable error) {
@@ -123,6 +136,7 @@ public final class WorkspaceBrowserActivity extends Activity {
         operationGeneration++;
         handler.removeCallbacksAndMessages(null);
         operations.shutdownNow();
+        if (editor != null) { editor.destroy(); }
         clearPreviewVisuals();
         pendingExport = null;
         super.onDestroy();
@@ -130,6 +144,15 @@ public final class WorkspaceBrowserActivity extends Activity {
 
     @Override
     public void onBackPressed() {
+        if (editor != null && editor.isOpen()) {
+            editor.requestLeave(new Runnable() {
+                @Override public void run() {
+                    showDirectoryPanel();
+                    loadDirectory(currentDirectory, currentDirectoryPageIndex);
+                }
+            });
+            return;
+        }
         if (!previewRelativePath.isEmpty()) {
             operationGeneration++;
             setBusy(false, 0);
@@ -185,6 +208,16 @@ public final class WorkspaceBrowserActivity extends Activity {
         root.setOrientation(LinearLayout.VERTICAL);
         root.setFitsSystemWindows(true);
         root.setPadding(theme.dp(14), theme.dp(18), theme.dp(14), theme.dp(12));
+        root.setOnApplyWindowInsetsListener(new View.OnApplyWindowInsetsListener() {
+            @Override public WindowInsets onApplyWindowInsets(View view, WindowInsets insets) {
+                view.setPadding(theme.dp(14) + insets.getSystemWindowInsetLeft(),
+                    theme.dp(18) + insets.getSystemWindowInsetTop(),
+                    theme.dp(14) + insets.getSystemWindowInsetRight(),
+                    theme.dp(12) + insets.getSystemWindowInsetBottom());
+                return insets.consumeSystemWindowInsets();
+            }
+        });
+        root.setFocusableInTouchMode(true);
         root.setBackgroundColor(theme.page);
 
         LinearLayout topBar = new LinearLayout(this);
@@ -198,6 +231,7 @@ public final class WorkspaceBrowserActivity extends Activity {
         });
         topBar.addView(back);
         TextView title = theme.text(getString(R.string.browser_title), 24, theme.primary);
+        titleView = title;
         title.setTypeface(Typeface.DEFAULT_BOLD);
         title.setSingleLine(true);
         LinearLayout.LayoutParams titleParameters = new LinearLayout.LayoutParams(
@@ -209,6 +243,7 @@ public final class WorkspaceBrowserActivity extends Activity {
         titleParameters.rightMargin = theme.dp(8);
         topBar.addView(title, titleParameters);
         Button refresh = theme.compactButton(getString(R.string.browser_refresh));
+        refreshButton = refresh;
         refresh.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
@@ -218,7 +253,7 @@ public final class WorkspaceBrowserActivity extends Activity {
         topBar.addView(refresh);
         root.addView(topBar);
 
-        LinearLayout fileActions = new LinearLayout(this);
+        fileActions = new LinearLayout(this);
         fileActions.setGravity(Gravity.CENTER_VERTICAL);
         scopeButton = theme.compactButton(scopeLabel(repository.getArea()));
         scopeButton.setOnClickListener(new View.OnClickListener() {
@@ -271,6 +306,25 @@ public final class WorkspaceBrowserActivity extends Activity {
         );
         previewParameters.topMargin = theme.dp(8);
         root.addView(previewPanel, previewParameters);
+
+        editorView = new WorkspaceEditorView(this, theme);
+        editorView.setVisibility(View.GONE);
+        editor = new WorkspaceEditorController(this, editorView, operations, handler,
+            new WorkspaceEditorController.Saver() {
+                @Override public WorkspaceEditorDocument save(WorkspaceEditorDocument document, String text)
+                    throws IOException {
+                    return editorRepository.save(document, text);
+                }
+            }, new Runnable() {
+                @Override public void run() { updateControls(); }
+            }, new Runnable() {
+                @Override public void run() { prepareExport(); }
+            });
+        LinearLayout.LayoutParams editorParameters = new LinearLayout.LayoutParams(
+            ViewGroup.LayoutParams.MATCH_PARENT, 0, 1.0f
+        );
+        editorParameters.topMargin = theme.dp(8);
+        root.addView(editorView, editorParameters);
         return root;
     }
 
@@ -570,6 +624,15 @@ public final class WorkspaceBrowserActivity extends Activity {
     }
 
     private void refreshVisibleContent() {
+        if (busy || (editor != null && editor.isSaving()) || pendingExport != null || pendingImport) {
+            return;
+        }
+        if (editor != null && editor.isOpen()) {
+            editor.requestLeave(new Runnable() {
+                @Override public void run() { loadPreview(previewRelativePath, 0); }
+            });
+            return;
+        }
         if (previewRelativePath.isEmpty()) {
             loadDirectory(currentDirectory, currentDirectoryPageIndex);
         } else {
@@ -638,6 +701,23 @@ public final class WorkspaceBrowserActivity extends Activity {
                 PreviewResult result = null;
                 try {
                     WorkspaceFilePreview preview = repository.preview(relativePath, pageIndex);
+                    if (repository.getArea() == WorkspaceBrowserArea.WORKSPACE
+                        && preview.getKind() == WorkspaceFilePreview.Kind.TEXT
+                        && preview.getByteCount() <= WorkspaceEditorLimits.MAXIMUM_FILE_BYTES) {
+                        try {
+                            final WorkspaceEditorDocument document = editorRepository.open(relativePath);
+                            postResult(generation, new Runnable() {
+                                @Override public void run() { renderEditor(document); }
+                            });
+                            return;
+                        } catch (WorkspaceEditorException unsupported) {
+                            // Valid previews can contain controls that a plain-text editor cannot save.
+                            if (unsupported.getReason() != WorkspaceEditorException.Reason.UNSUPPORTED_TEXT
+                                && unsupported.getReason() != WorkspaceEditorException.Reason.TOO_LARGE) {
+                                throw unsupported;
+                            }
+                        }
+                    }
                     result = new PreviewResult(preview, decodeImage(preview));
                     final PreviewResult completed = result;
                     result = null;
@@ -684,6 +764,7 @@ public final class WorkspaceBrowserActivity extends Activity {
     }
 
     private void renderPreview(PreviewResult result) {
+        closeEditor();
         WorkspaceFilePreview preview = result.preview;
         clearPreviewVisuals();
         previewRelativePath = preview.getRelativePath();
@@ -724,11 +805,17 @@ public final class WorkspaceBrowserActivity extends Activity {
         directoryPanel.setVisibility(View.GONE);
         previewPanel.setVisibility(View.VISIBLE);
         statusView.setText(R.string.browser_preview_ready);
+        if (repository.getArea() == WorkspaceBrowserArea.WORKSPACE
+            && preview.getKind() == WorkspaceFilePreview.Kind.TEXT
+            && preview.getByteCount() > WorkspaceEditorLimits.MAXIMUM_FILE_BYTES) {
+            statusView.setText(R.string.editor_large_file_preview);
+        }
         result.recycle();
         setBusy(false, 0);
     }
 
     private void showDirectoryPanel() {
+        closeEditor();
         previewRelativePath = "";
         previewPanel.setVisibility(View.GONE);
         directoryPanel.setVisibility(View.VISIBLE);
@@ -746,6 +833,38 @@ public final class WorkspaceBrowserActivity extends Activity {
                 ));
         }
         updateControls();
+    }
+
+    private void renderEditor(WorkspaceEditorDocument document) {
+        clearPreviewVisuals();
+        previewRelativePath = document.getRelativePath();
+        editor.open(document);
+        directoryPanel.setVisibility(View.GONE);
+        previewPanel.setVisibility(View.GONE);
+        editorView.setVisibility(View.VISIBLE);
+        setEditorChrome(true);
+        setBusy(false, 0);
+    }
+
+    private void closeEditor() {
+        if (editor != null && editor.isOpen()) {
+            InputMethodManager keyboard = (InputMethodManager) getSystemService(INPUT_METHOD_SERVICE);
+            if (keyboard != null) { keyboard.hideSoftInputFromWindow(editorView.getWindowToken(), 0); }
+            editor.close();
+        }
+        if (editorView != null) { editorView.setVisibility(View.GONE); }
+        setEditorChrome(false);
+    }
+
+    private void setEditorChrome(boolean editing) {
+        if (fileActions == null) { return; }
+        int visibility = editing ? View.GONE : View.VISIBLE;
+        fileActions.setVisibility(visibility);
+        scopeDescriptionView.setVisibility(visibility);
+        breadcrumbScroll.setVisibility(visibility);
+        statusView.setVisibility(visibility);
+        titleView.setText(editing ? R.string.editor_title : R.string.browser_title);
+        titleView.setTextSize(editing ? 20 : 24);
     }
 
     private void renderBreadcrumbs(List<WorkspaceBreadcrumb> breadcrumbs) {
@@ -1005,6 +1124,9 @@ public final class WorkspaceBrowserActivity extends Activity {
             return;
         }
         boolean pickerIdle = pendingExport == null && !pendingImport;
+        boolean saving = editor != null && editor.isSaving();
+        theme.setEnabled(refreshButton, !busy && !saving && pickerIdle);
+        if (editor != null) { editor.setExternalBusy(busy || !pickerIdle); }
         theme.setEnabled(scopeButton, !busy && pickerIdle);
         theme.setEnabled(importButton, !busy && pickerIdle);
         boolean directoryVisible = directoryPanel != null
@@ -1030,7 +1152,7 @@ public final class WorkspaceBrowserActivity extends Activity {
             nextPreviewPageButton,
             !busy && previewVisible && previewPageIndex + 1 < previewPageCount
         );
-        theme.setEnabled(exportButton, !busy && previewVisible && !previewRelativePath.isEmpty());
+        theme.setEnabled(exportButton, !busy && pickerIdle && previewVisible && !previewRelativePath.isEmpty());
     }
 
     private boolean submit(Runnable operation) {

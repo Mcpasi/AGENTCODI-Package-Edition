@@ -30,6 +30,8 @@ find \
   "$PROJECT_ROOT/modules/storage/src/main/java" \
   "$PROJECT_ROOT/modules/file-browser-contracts/src/main/java" \
   "$PROJECT_ROOT/modules/file-browser-client/src/main/java" \
+  "$PROJECT_ROOT/modules/file-editor-contracts/src/main/java" \
+  "$PROJECT_ROOT/modules/file-editor-client/src/main/java" \
   "$PROJECT_ROOT/modules/import-contracts/src/main/java" \
   "$PROJECT_ROOT/modules/import-client/src/main/java" \
   "$PROJECT_ROOT/modules/mcp-contracts/src/main/java" \

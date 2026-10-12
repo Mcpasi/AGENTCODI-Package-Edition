@@ -525,6 +525,39 @@ Java_de_agentcodi_runtime_NativeEngine_nativeCloseWorkspaceFile(
   workspace_file_registry.erase(handle);
 }
 
+extern "C" JNIEXPORT void JNICALL
+Java_de_agentcodi_runtime_NativeEngine_nativeReplaceWorkspaceFile(
+    JNIEnv* environment, jclass, jlong handle, jbyteArray contents) {
+  if (contents == nullptr || environment->GetArrayLength(contents) > 1024 * 1024) {
+    throw_io_exception(environment, "Workspace edit contents are outside the limit");
+    return;
+  }
+  std::shared_ptr<agentcodi::WorkspaceFileReader> source = find_workspace_file(handle);
+  if (source == nullptr) {
+    throw_io_exception(environment, "Workspace file handle is not open");
+    return;
+  }
+  const jsize length = environment->GetArrayLength(contents);
+  std::vector<unsigned char> bytes(static_cast<std::size_t>(length));
+  if (length > 0) {
+    environment->GetByteArrayRegion(contents, 0, length,
+        reinterpret_cast<jbyte*>(bytes.data()));
+  }
+  if (environment->ExceptionCheck()) {
+    return;
+  }
+  std::string error;
+  const bool saved = source->Replace(bytes.data(), bytes.size(), &error);
+  volatile unsigned char* cursor = bytes.data();
+  for (std::size_t index = 0; index < bytes.size(); ++index) {
+    cursor[index] = 0U;
+  }
+  if (!saved) {
+    throw_io_exception(environment,
+        error.empty() ? "Workspace file save failed" : error);
+  }
+}
+
 extern "C" JNIEXPORT jobjectArray JNICALL
 Java_de_agentcodi_runtime_NativeEngine_nativeListWorkspaceDirectory(
     JNIEnv* environment,

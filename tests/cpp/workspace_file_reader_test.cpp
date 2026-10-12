@@ -222,6 +222,89 @@ void keeps_open_descriptor_inside_original_workspace_tree() {
   expect(
       !reader->VerifyUnchanged(&error),
       "reader did not report the replaced workspace path");
+  const std::string draft = "draft";
+  expect(!reader->Replace(reinterpret_cast<const unsigned char*>(draft.data()),
+      draft.size(), &error), "save followed a replaced symbolic parent");
+  auto outside = agentcodi::WorkspaceFileReader::Open(
+      private_directory.string(), "payload.bin", 1024, &error);
+  expect(outside != nullptr && read_all(outside.get()) == "outside",
+      "failed save changed the outside file");
+}
+
+void saves_complete_revisions_atomically_with_permissions() {
+  TemporaryDirectory temporary;
+  const auto workspace = temporary.path() / "workspace";
+  make_directory(workspace);
+  make_directory(workspace / "nested");
+  const auto file = workspace / "nested" / "script.sh";
+  write_file(file, "original");
+  expect(chmod(file.c_str(), 0750) == 0, "could not set script permissions");
+  std::string error;
+  auto reader = agentcodi::WorkspaceFileReader::Open(
+      workspace.string(), "nested/script.sh", 1024, &error);
+  expect(reader != nullptr, error);
+  const std::string replacement = "#!/system/bin/sh\necho changed\n";
+  expect(reader->Replace(reinterpret_cast<const unsigned char*>(replacement.data()),
+      replacement.size(), &error), error);
+  expect(read_all(reader.get()) == "original", "save truncated the original inode in place");
+  auto saved = agentcodi::WorkspaceFileReader::Open(
+      workspace.string(), "nested/script.sh", 1024, &error);
+  expect(saved != nullptr && read_all(saved.get()) == replacement,
+      "save did not install the complete replacement");
+  struct stat attributes {};
+  expect(stat(file.c_str(), &attributes) == 0 && (attributes.st_mode & 0777) == 0750,
+      "save did not preserve executable permissions");
+  expect(saved->Replace(nullptr, 0, &error), error);
+  expect(std::filesystem::file_size(file) == 0U, "save could not empty the file");
+  for (const auto& entry : std::filesystem::directory_iterator(workspace / "nested")) {
+    expect(entry.path().filename() == "script.sh", "save left a temporary file behind");
+  }
+}
+
+void rejects_changed_revision_and_oversized_save() {
+  TemporaryDirectory temporary;
+  const auto workspace = temporary.path() / "workspace";
+  make_directory(workspace);
+  write_file(workspace / "code.txt", "original");
+  std::string error;
+  auto reader = agentcodi::WorkspaceFileReader::Open(
+      workspace.string(), "code.txt", 8, &error);
+  expect(reader != nullptr, error);
+  const std::string too_large = "oversized";
+  expect(!reader->Replace(reinterpret_cast<const unsigned char*>(too_large.data()),
+      too_large.size(), &error), "save ignored its byte limit");
+  expect(reader->VerifyUnchanged(&error), "rejected save changed the original");
+  expect(rename((workspace / "code.txt").c_str(), (workspace / "old.txt").c_str()) == 0,
+      "could not replace external revision");
+  write_file(workspace / "code.txt", "external");
+  const std::string draft = "draft";
+  expect(!reader->Replace(reinterpret_cast<const unsigned char*>(draft.data()),
+      draft.size(), &error), "save overwrote an external replacement");
+  auto external = agentcodi::WorkspaceFileReader::Open(
+      workspace.string(), "code.txt", 8, &error);
+  expect(external != nullptr && read_all(external.get()) == "external",
+      "failed save altered the external revision");
+}
+
+void failed_save_keeps_original_when_parent_is_unwritable() {
+  TemporaryDirectory temporary;
+  const auto workspace = temporary.path() / "workspace";
+  make_directory(workspace);
+  write_file(workspace / "code.txt", "original");
+  std::string error;
+  auto reader = agentcodi::WorkspaceFileReader::Open(
+      workspace.string(), "code.txt", 1024, &error);
+  expect(reader != nullptr, error);
+  expect(chmod(workspace.c_str(), 0500) == 0, "could not make parent unwritable");
+  const std::string draft = "draft";
+  const bool saved = reader->Replace(reinterpret_cast<const unsigned char*>(draft.data()),
+      draft.size(), &error);
+  expect(chmod(workspace.c_str(), 0700) == 0, "could not restore parent permissions");
+  expect(!saved, "save succeeded in an unwritable directory");
+  expect(reader->VerifyUnchanged(&error), "failed save changed the original revision");
+  for (const auto& entry : std::filesystem::directory_iterator(workspace)) {
+    expect(entry.path().filename() == "code.txt", "failed save left a temporary file");
+  }
 }
 
 }  // namespace
@@ -233,6 +316,9 @@ int main() {
     rejects_symbolic_parent();
     rejects_hard_link();
     keeps_open_descriptor_inside_original_workspace_tree();
+    saves_complete_revisions_atomically_with_permissions();
+    rejects_changed_revision_and_oversized_save();
+    failed_save_keeps_original_when_parent_is_unwritable();
     std::cout << "Workspace file reader tests passed." << std::endl;
     return 0;
   } catch (const std::exception& error) {

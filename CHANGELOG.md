@@ -1,5 +1,25 @@
 # Package Edition
 
+## Unreleased
+
+- Open workspace UTF-8 text and code files up to 1 MiB in a modular native editor
+  with Save, Ctrl+S, saved/unsaved status and guarded Back/Refresh navigation.
+- Save complete files through a synced temporary sibling and atomic replacement,
+  preserving UTF-8 BOMs, line endings and executable permissions. Detect external
+  content changes and retain the draft after conflicts or write failures.
+- Wrap long lines on narrow phones, resize around the soft keyboard, keep touch
+  controls accessible, and retain drafts and cursor positions across orientation
+  changes. Add German, English and Simplified Chinese editor translations.
+- Keep installed package files, images, binary files and oversized text in their
+  read-only previews. Text-file export remains available after saving.
+- Separate editor contracts, pure client, runtime persistence and Android
+  view/controller code. Syntax highlighting and Codex integration remain future
+  work.
+- Validation: 412 Java host tests, 82 Android UI tests on API 29/35, architecture
+  checks, Android source/resource compilation and signing checks pass. Native
+  file-reader/save regressions and a host JNI persistence smoke pass. Physical
+  device testing of this unreleased editor remains outstanding.
+
 ## 0.1.4 — Package Edition (Android versionCode 7) — 2026-10-11
 
 **Experimental prerelease (published). Device tests: passed on physical Android hardware.**

@@ -23,6 +23,7 @@ Ubuntu runner. They are additional entry points only:
 | Community release inspection | `inspect-community-codex.py` | Verify release, tag, archive, native dependencies and notices. |
 | Community ARM64 Bionic runtime | `community-runtime-pins.py`, `verify-community-protocol.py` | Verify binary relocation and generated schemas, validate actual Java fixture RPCs, and run the real Android app-server. |
 | Android sources and resources | `compile-android-sources.sh` | Compile against API 35, check SDK pins and Package Edition identity, and resolve every manifest component against its compiled Java class. |
+| Android UI | `run-chat-ui-tests.sh` | Exercise native chat, terminal and workspace editor widgets on API 29 and 35, including editor save/conflict/navigation behavior and narrow-phone previews with reduced keyboard space. |
 
 Package Edition builds use installation ID `de.agentcodi.pkg`, their own
 version line (published `0.1.4` / Android versionCode 7), and APK names
