@@ -2,6 +2,8 @@ package de.agentcodi.app;
 
 import android.app.Activity;
 import android.app.Application;
+import android.content.ClipboardManager;
+import android.content.Context;
 import android.graphics.Bitmap;
 import android.graphics.Canvas;
 import android.graphics.Paint;
@@ -12,6 +14,7 @@ import android.text.style.ForegroundColorSpan;
 import android.text.style.UnderlineSpan;
 import android.view.View;
 import android.view.ViewGroup;
+import android.view.KeyEvent;
 import android.view.inputmethod.EditorInfo;
 import android.view.inputmethod.InputConnection;
 
@@ -199,6 +202,93 @@ public final class WorkspaceCodeEditorUiTest {
         layout(390, 500);
         assertEquals(small, numbers().getWidth());
         assertEquals(java.util.Collections.singletonList("1"), drawNumbers().labels);
+    }
+
+    @Test public void imeBackspaceRemovesDisplayedCrLfAsOneLineBreak() throws Exception {
+        setCode("code.txt", "first\r\nsecond");
+        surface.input.setSelection(7);
+        InputConnection connection = surface.input.onCreateInputConnection(new EditorInfo());
+        assertNotNull(connection);
+        assertTrue(connection.deleteSurroundingText(1, 0));
+        layout(390, 500);
+        assertEquals("firstsecond", surface.input.getText().toString());
+        assertEquals(5, surface.input.getSelectionStart());
+        assertEquals(java.util.Collections.singletonList("1"), drawNumbers().labels);
+    }
+
+    @Test public void imeForwardDeleteRemovesDisplayedCrLfAsOneLineBreak() throws Exception {
+        setCode("code.txt", "first\r\nsecond");
+        surface.input.setSelection(5);
+        InputConnection connection = surface.input.onCreateInputConnection(new EditorInfo());
+        assertNotNull(connection);
+        assertTrue(connection.deleteSurroundingText(0, 1));
+        layout(390, 500);
+        assertEquals("firstsecond", surface.input.getText().toString());
+        assertEquals(5, surface.input.getSelectionStart());
+        assertEquals(java.util.Collections.singletonList("1"), drawNumbers().labels);
+    }
+
+    @Test public void hardwareDeleteTreatsCrLfAsOneLineBreak() throws Exception {
+        for (int key : new int[] {KeyEvent.KEYCODE_DEL, KeyEvent.KEYCODE_FORWARD_DEL}) {
+            setCode("code.txt", "first\r\nsecond");
+            surface.input.setSelection(key == KeyEvent.KEYCODE_DEL ? 7 : 5);
+            surface.input.dispatchKeyEvent(new KeyEvent(KeyEvent.ACTION_DOWN, key));
+            surface.input.dispatchKeyEvent(new KeyEvent(KeyEvent.ACTION_UP, key));
+            assertEquals("firstsecond", surface.input.getText().toString());
+            assertEquals(5, surface.input.getSelectionStart());
+        }
+    }
+
+    @Test public void imeCodePointDeletionJoinsLinesAndPreservesAdjacentEmoji() throws Exception {
+        for (boolean backwards : new boolean[] {true, false}) {
+            setCode("code.txt", "🐱\r\n世界");
+            surface.input.setSelection(backwards ? 4 : 2);
+            InputConnection connection = surface.input.onCreateInputConnection(new EditorInfo());
+            assertTrue(connection.deleteSurroundingTextInCodePoints(backwards ? 1 : 0, backwards ? 0 : 1));
+            assertEquals("🐱世界", surface.input.getText().toString());
+            assertEquals(2, surface.input.getSelectionStart());
+        }
+    }
+
+    @Test public void copyingMixedLineEndingsUsesOriginalSource() throws Exception {
+        String text = "first\r\nsecond\rthird\n";
+        setCode("code.txt", text);
+        surface.input.setSelection(0, text.length());
+        assertTrue(surface.input.onTextContextMenuItem(android.R.id.copy));
+        ClipboardManager clipboard = (ClipboardManager) activity.getSystemService(Context.CLIPBOARD_SERVICE);
+        assertEquals(text, clipboard.getPrimaryClip().getItemAt(0).coerceToText(activity).toString());
+        assertEquals(text, surface.input.getText().toString());
+    }
+
+    @Test public void cuttingAndPastingRestoresOriginalLineEndingsWithoutColorSpans() throws Exception {
+        String text = "const x = 1;\r\n// keep\rreturn x;\n";
+        setCode("code.js", text);
+        awaitSyntax(surface);
+        surface.input.setSelection(0, text.length());
+        assertTrue(surface.input.onTextContextMenuItem(android.R.id.cut));
+        assertEquals("", surface.input.getText().toString());
+        ClipboardManager clipboard = (ClipboardManager) activity.getSystemService(Context.CLIPBOARD_SERVICE);
+        CharSequence copied = clipboard.getPrimaryClip().getItemAt(0).getText();
+        assertEquals(text, copied.toString());
+        assertFalse("syntax decorations do not enter the clipboard", copied instanceof Spanned);
+        assertTrue(surface.input.onTextContextMenuItem(android.R.id.paste));
+        assertEquals(text, surface.input.getText().toString());
+        awaitSyntax(surface);
+        assertColor("const", highlighter().color(SyntaxToken.Kind.KEYWORD));
+    }
+
+    @Test public void imeDeletionKeepsLoneLineEndingsAndComposingTextIntact() throws Exception {
+        for (String ending : new String[] {"\n", "\r", "\r\n"}) {
+            setCode("code.txt", "first" + ending + "second");
+            InputConnection connection = surface.input.onCreateInputConnection(new EditorInfo());
+            connection.setComposingRegion(5 + ending.length(), surface.input.length());
+            surface.input.setSelection(surface.input.length());
+            assertTrue(connection.deleteSurroundingText(1, 0));
+            assertEquals("firstsecond", surface.input.getText().toString());
+            assertEquals(5, android.view.inputmethod.BaseInputConnection.getComposingSpanStart(surface.input.getText()));
+            assertEquals(11, android.view.inputmethod.BaseInputConnection.getComposingSpanEnd(surface.input.getText()));
+            connection.finishComposingText();
+        }
     }
 
     @Test public void largeFilesKeepSpansBoundedAndHighlightAfterScrolling() throws Exception {

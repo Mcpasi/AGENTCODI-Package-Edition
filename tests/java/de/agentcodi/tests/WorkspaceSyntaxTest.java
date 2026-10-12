@@ -19,13 +19,18 @@ public final class WorkspaceSyntaxTest {
         detectsOnlySupportedFileNames();
         javascriptCommentsAndQuotesTakePrecedence();
         javascriptNumbersRegexAndDivision();
+        javascriptRegexAfterControlConditions();
+        javascriptKeywordPropertiesKeepDivisionOperators();
         javascriptNestedTemplateExpressions();
         pythonStringsPrefixesAndComments();
+        pythonEscapedCrLfStaysInsideStrings();
         pythonFormattedExpressionsAndDecorators();
         pythonKeywordsFunctionsAndNumbers();
         htmlAttributesEntitiesAndComments();
         htmlEmbeddedLanguagesAndRawText();
+        htmlRawTextClosesBeforeTrailingSlash();
         cssSelectorsPropertiesValuesAndComments();
+        cssGroupingRulesKeepSelectorsSeparateFromDeclarations();
         toleratesIncompleteEditsAndRetokenizes();
         retainsUnicodeUtf16Offsets();
         rangesStaySortedAndBoundedForArbitraryEdits();
@@ -33,7 +38,7 @@ public final class WorkspaceSyntaxTest {
         cancelsSupersededWork();
         countsLogicalLinesAndCursorOffsets();
         indexesManyLinesAndRejectsInvalidOffsets();
-        return 17;
+        return 22;
     }
 
     private static void detectsOnlySupportedFileNames() {
@@ -80,6 +85,58 @@ public final class WorkspaceSyntaxTest {
         token(JAVASCRIPT, text, "2", NUMBER);
         token(JAVASCRIPT, text, " tail`", STRING);
         token(JAVASCRIPT, "`escaped \\${text}`", "`escaped \\${text}`", STRING);
+    }
+
+    private static void javascriptRegexAfterControlConditions() {
+        for (String condition : new String[] {
+            "if (ready)", "while (ready)", "for (; ready;)", "with (object)",
+            "if (check(value / 2))", "for (const item of items)"
+        }) {
+            String text = condition + " /a[\\/]+/giu.test(value);";
+            token(JAVASCRIPT, text, "/a[\\/]+/giu", STRING);
+            token(JAVASCRIPT, text, "test", FUNCTION);
+            ranges(JAVASCRIPT, text);
+        }
+        String division = "check(value) / 2 / 3; (value + 1) / 2 / 3;";
+        for (int index = 0; index < division.length(); index++) {
+            if (division.charAt(index) == '/') {
+                tokenAt(JAVASCRIPT, division, index, index + 1, OPERATOR);
+            }
+        }
+    }
+
+    private static void javascriptKeywordPropertiesKeepDivisionOperators() {
+        for (String property : new String[] {"return", "if", "for", "throw", "delete", "await"}) {
+            for (String access : new String[] {".", "?."}) {
+                String text = "const result = object" + access + property + " / 2 / 3;";
+                int first = text.indexOf('/');
+                int second = text.lastIndexOf('/');
+                tokenAt(JAVASCRIPT, text, first, first + 1, OPERATOR);
+                tokenAt(JAVASCRIPT, text, second, second + 1, OPERATOR);
+                token(JAVASCRIPT, text, "2", NUMBER);
+                token(JAVASCRIPT, text, "3", NUMBER);
+            }
+        }
+    }
+
+    private static void pythonEscapedCrLfStaysInsideStrings() {
+        for (String prefix : new String[] {"", "r", "R", "b", "br", "f", "fr", "rf"}) {
+            String literal = prefix + "\"first\\\r\nsecond\"";
+            String text = "value = " + literal + "\r\nprint(value)";
+            token(PYTHON, text, literal, STRING);
+            token(PYTHON, text, "print", BUILTIN);
+            ranges(PYTHON, text);
+        }
+    }
+
+    private static void htmlRawTextClosesBeforeTrailingSlash() {
+        for (String tag : new String[] {"script", "style", "textarea", "title"}) {
+            String text = "<" + tag + ">plain</" + tag.toUpperCase(java.util.Locale.ROOT)
+                + "/><main>after</main>";
+            token(HTML, text, "main", TAG);
+            token(HTML, text, tag.toUpperCase(java.util.Locale.ROOT), TAG);
+            ranges(HTML, text);
+        }
     }
 
     private static void pythonStringsPrefixesAndComments() {
@@ -168,6 +225,35 @@ public final class WorkspaceSyntaxTest {
         token(PYTHON, "def f():\nreturn 1", "def", KEYWORD);
         TestSupport.expectThrows(UnsupportedOperationException.class,
             () -> SyntaxHighlighter.highlight(JAVASCRIPT, "const x = 1").clear(), "immutable results");
+    }
+
+    private static void cssGroupingRulesKeepSelectorsSeparateFromDeclarations() {
+        for (String rule : new String[] {"@media screen", "@supports (display: grid)", "@layer theme",
+            "@container (width > 100px)", "@scope (.page)"}) {
+            String text = rule + " { .card:hover { color: #abc; } #abc { width: 10px; } }"
+                + " @font-face { font-family: 'Demo'; } a { margin: 0; }";
+            token(CSS, text, ".card", TAG);
+            int selector = text.indexOf("#abc {");
+            tokenAt(CSS, text, selector, selector + 4, TAG);
+            int color = text.indexOf("#abc;");
+            tokenAt(CSS, text, color, color + 4, NUMBER);
+            for (String property : new String[] {"color", "width", "font-family", "margin"}) {
+                token(CSS, text, property, ATTRIBUTE);
+            }
+            ranges(CSS, text);
+        }
+        String nested = "@media screen { @supports (display: grid) { .card:hover { color: #abc; } } }";
+        token(CSS, nested, ".card", TAG);
+        token(CSS, nested, "color", ATTRIBUTE);
+        token(CSS, nested, "#abc", NUMBER);
+        String conditionalDeclaration = "a { @media (width > 10px) { color: #abc; } margin: 0; }";
+        token(CSS, conditionalDeclaration, "color", ATTRIBUTE);
+        token(CSS, conditionalDeclaration, "#abc", NUMBER);
+        token(CSS, conditionalDeclaration, "margin", ATTRIBUTE);
+        String animation = "@keyframes fade { from { opacity: 0; } 100% { opacity: 1; } }";
+        token(CSS, animation, "from", TAG);
+        token(CSS, animation, "opacity", ATTRIBUTE);
+        token(CSS, animation, "100%", NUMBER);
     }
 
     private static void retainsUnicodeUtf16Offsets() {

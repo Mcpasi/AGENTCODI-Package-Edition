@@ -14,6 +14,7 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.view.WindowInsets;
 import android.view.inputmethod.EditorInfo;
+import android.view.inputmethod.InputConnection;
 import android.widget.Button;
 import android.widget.EditText;
 
@@ -54,6 +55,7 @@ import java.nio.file.Files;
 import java.nio.file.FileAlreadyExistsException;
 import java.nio.file.Path;
 import java.util.Arrays;
+import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.TimeUnit;
 
@@ -75,6 +77,15 @@ public final class WorkspaceEditorUiTest {
         activity = lifecycle.get();
         assertNotNull("browser UI initialized", get(activity, "editor"));
         workspace = WorkspaceLayout.create(activity.getFilesDir()).getWorkspace().toPath();
+        installHostRepositories();
+        invoke("loadDirectory", new Class<?>[] {String.class, int.class}, "", 0);
+        drain();
+        root = ((ViewGroup) activity.findViewById(android.R.id.content)).getChildAt(0);
+        lifecycle.visible();
+        layout(390, 844);
+    }
+
+    private void installHostRepositories() throws Exception {
         operations = (ExecutorService) get(activity, "operations");
         set(activity, "repository", browser(WorkspaceBrowserArea.WORKSPACE));
         Constructor<WorkspaceEditorRepository> constructor = WorkspaceEditorRepository.class
@@ -109,11 +120,6 @@ public final class WorkspaceEditorUiTest {
                 }
             }
         }));
-        invoke("loadDirectory", new Class<?>[] {String.class, int.class}, "", 0);
-        drain();
-        root = ((ViewGroup) activity.findViewById(android.R.id.content)).getChildAt(0);
-        lifecycle.visible();
-        layout(390, 844);
     }
 
     @After public void close() {
@@ -256,6 +262,20 @@ public final class WorkspaceEditorUiTest {
         assertFalse(saveButton().isEnabled());
     }
 
+    @Test public void imeLineJoinSavesSourceWithoutOrphanedCarriageReturn() throws Exception {
+        open("\ufefffirst\r\nsecond\r\nthird\n");
+        input().setSelection(7);
+        InputConnection connection = input().onCreateInputConnection(new EditorInfo());
+        assertNotNull(connection);
+        assertTrue(connection.deleteSurroundingText(1, 0));
+        assertEquals("firstsecond\r\nthird\n", input().getText().toString());
+        assertTrue(saveButton().isEnabled());
+        saveButton().performClick();
+        drain();
+        assertEquals("\ufefffirstsecond\r\nthird\n", diskText());
+        assertFalse(saveButton().isEnabled());
+    }
+
     @Test public void orientationChangesKeepUnsavedTextAndCursor() throws Exception {
         open("saved");
         input().setText("draft while rotating");
@@ -266,6 +286,142 @@ public final class WorkspaceEditorUiTest {
         assertEquals("draft while rotating", input().getText().toString());
         assertEquals(7, input().getSelectionStart());
         assertTrue(saveButton().isEnabled());
+    }
+
+    @Test public void activityRecreationKeepsUnsavedDraftAndSelection() throws Exception {
+        open("saved\r\nsource");
+        input().setText("draft\r\nwhile recreating");
+        input().setSelection(2, 9);
+        lifecycle.recreate();
+        activity = lifecycle.get();
+        assertTrue("editor survives a configuration that recreates its activity",
+            ((WorkspaceEditorController) get(activity, "editor")).isOpen());
+        assertEquals("draft\r\nwhile recreating", input().getText().toString());
+        assertEquals(2, input().getSelectionStart());
+        assertEquals(9, input().getSelectionEnd());
+        assertTrue(saveButton().isEnabled());
+        assertEquals("saved\r\nsource", diskText());
+        installHostRepositories();
+        saveButton().performClick();
+        drain();
+        assertEquals("draft\r\nwhile recreating", diskText());
+        assertFalse(saveButton().isEnabled());
+    }
+
+    @Test public void activityRecreationKeepsAnEmptyNewFileDraft() throws Exception {
+        newFile("retained.py");
+        lifecycle.recreate();
+        activity = lifecycle.get();
+        assertTrue(((WorkspaceEditorController) get(activity, "editor")).isOpen());
+        assertTrue(((WorkspaceEditorController) get(activity, "editor")).isNewFile());
+        assertEquals("", input().getText().toString());
+        assertTrue(saveButton().isEnabled());
+        assertFalse(Files.exists(workspace.resolve("retained.py")));
+        installHostRepositories();
+        saveButton().performClick();
+        drain();
+        assertEquals(0, Files.size(workspace.resolve("retained.py")));
+        assertFalse(((WorkspaceEditorController) get(activity, "editor")).isNewFile());
+    }
+
+    @Test public void activityRecreationWaitsForThePendingSaveAndKeepsItsRevision() throws Exception {
+        open("before");
+        input().setText("saved during recreation");
+        final CountDownLatch entered = new CountDownLatch(1);
+        final CountDownLatch release = new CountDownLatch(1);
+        WorkspaceEditorController controller = (WorkspaceEditorController) get(activity, "editor");
+        holdNextSave(entered, release);
+        saveButton().performClick();
+        assertTrue(entered.await(10, TimeUnit.SECONDS));
+        ExecutorService previousOperations = operations;
+        try {
+            for (int recreation = 0; recreation < 2; recreation++) {
+                lifecycle.recreate();
+                activity = lifecycle.get();
+                controller = (WorkspaceEditorController) get(activity, "editor");
+                assertTrue(controller.isOpen());
+                assertTrue(controller.isSaving());
+                assertEquals("saved during recreation", input().getText().toString());
+                assertFalse(input().isEnabled());
+            }
+            release.countDown();
+            assertTrue(previousOperations.awaitTermination(10, TimeUnit.SECONDS));
+            Shadows.shadowOf(Looper.getMainLooper()).idle();
+            assertEquals("saved during recreation", diskText());
+            assertFalse(controller.isSaving());
+            assertTrue(input().isEnabled());
+            assertFalse(saveButton().isEnabled());
+            installHostRepositories();
+            input().append("\nnext revision");
+            saveButton().performClick();
+            drain();
+            assertEquals("saved during recreation\nnext revision", diskText());
+        } finally { release.countDown(); }
+    }
+
+    @Test public void activityRecreationDuringSaveAndBackStillCompletesNavigation() throws Exception {
+        open("before");
+        input().setText("saved before leaving");
+        CountDownLatch entered = new CountDownLatch(1);
+        CountDownLatch release = new CountDownLatch(1);
+        holdNextSave(entered, release);
+        activity.onBackPressed();
+        ShadowAlertDialog.getLatestAlertDialog().getButton(AlertDialog.BUTTON_POSITIVE).performClick();
+        Shadows.shadowOf(Looper.getMainLooper()).idle();
+        assertTrue(entered.await(10, TimeUnit.SECONDS));
+        ExecutorService previousOperations = operations;
+        try {
+            lifecycle.recreate();
+            activity = lifecycle.get();
+            installHostRepositories();
+            release.countDown();
+            assertTrue(previousOperations.awaitTermination(10, TimeUnit.SECONDS));
+            drain();
+            assertEquals("saved before leaving", diskText());
+            assertFalse(((WorkspaceEditorController) get(activity, "editor")).isOpen());
+            assertEquals(View.VISIBLE, ((View) get(activity, "directoryPanel")).getVisibility());
+        } finally { release.countDown(); }
+    }
+
+    @Test public void activityRecreationDuringSaveConflictKeepsDraftAndFailure() throws Exception {
+        open("before");
+        input().setText("keep this draft");
+        Files.write(workspace.resolve("code.txt"), "external revision".getBytes(StandardCharsets.UTF_8));
+        CountDownLatch entered = new CountDownLatch(1);
+        CountDownLatch release = new CountDownLatch(1);
+        holdNextSave(entered, release);
+        saveButton().performClick();
+        assertTrue(entered.await(10, TimeUnit.SECONDS));
+        ExecutorService previousOperations = operations;
+        try {
+            lifecycle.recreate();
+            activity = lifecycle.get();
+            release.countDown();
+            assertTrue(previousOperations.awaitTermination(10, TimeUnit.SECONDS));
+            Shadows.shadowOf(Looper.getMainLooper()).idle();
+            assertEquals("keep this draft", input().getText().toString());
+            assertEquals("external revision", diskText());
+            assertFalse(((WorkspaceEditorController) get(activity, "editor")).isSaving());
+            assertTrue(input().isEnabled());
+            assertTrue(saveButton().isEnabled());
+            assertEquals(activity.getString(R.string.editor_conflict),
+                ((android.widget.TextView) get(editorView(), "statusView")).getText().toString());
+        } finally { release.countDown(); }
+    }
+
+    private void holdNextSave(final CountDownLatch entered, final CountDownLatch release) throws Exception {
+        WorkspaceEditorController controller = (WorkspaceEditorController) get(activity, "editor");
+        WorkspaceEditorRepository repository = (WorkspaceEditorRepository) get(activity, "editorRepository");
+        set(controller, "saver", (WorkspaceEditorController.Saver) (document, text) -> {
+            entered.countDown();
+            try {
+                if (!release.await(10, TimeUnit.SECONDS)) { throw new IOException("Save did not resume"); }
+            } catch (InterruptedException interrupted) {
+                Thread.currentThread().interrupt();
+                throw new IOException("Pending save was interrupted by recreation", interrupted);
+            }
+            return repository.save(document, text);
+        });
     }
 
     @Test @Config(qualifiers = "de-w320dp-h640dp-night-mdpi")
