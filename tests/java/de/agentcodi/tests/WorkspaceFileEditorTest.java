@@ -205,12 +205,14 @@ public final class WorkspaceFileEditorTest {
         try (Fixture fixture = new Fixture()) {
             Files.write(fixture.file, utf8("original"));
             WorkspaceEditorDocument opened = fixture.editor.open("code.txt");
-            Files.setPosixFilePermissions(fixture.root, PosixFilePermissions.fromString("r-x------"));
+            // A missing workspace fails for ordinary users and root APK builders alike.
+            Path moved = fixture.root.resolveSibling(fixture.root.getFileName() + "-moved");
+            Files.move(fixture.root, moved);
             try {
                 TestSupport.expectThrows(IOException.class,
-                    () -> fixture.editor.save(opened, "replacement"), "unwritable directory rejects saving");
+                    () -> fixture.editor.save(opened, "replacement"), "unavailable workspace rejects saving");
             } finally {
-                Files.setPosixFilePermissions(fixture.root, PosixFilePermissions.fromString("rwx------"));
+                Files.move(moved, fixture.root);
             }
             TestSupport.assertEquals("original", new String(Files.readAllBytes(fixture.file),
                 StandardCharsets.UTF_8), "failed save does not truncate the original");
@@ -341,11 +343,12 @@ public final class WorkspaceFileEditorTest {
         try (Fixture fixture = new Fixture()) {
             WorkspaceEditorSession session = new WorkspaceEditorSession(fixture.editor.newDocument("", "new.txt"));
             session.setText("keep me");
-            Files.setPosixFilePermissions(fixture.root, PosixFilePermissions.fromString("r-x------"));
+            Path moved = fixture.root.resolveSibling(fixture.root.getFileName() + "-moved");
+            Files.move(fixture.root, moved);
             try {
                 TestSupport.expectThrows(IOException.class,
                     () -> fixture.editor.save(session.getDocument(), session.getText()), "failed first save propagates");
-            } finally { Files.setPosixFilePermissions(fixture.root, PosixFilePermissions.fromString("rwx------")); }
+            } finally { Files.move(moved, fixture.root); }
             TestSupport.assertFalse(Files.exists(fixture.root.resolve("new.txt")), "failed first save leaves no file");
             TestSupport.assertTrue(session.isDirty() && session.getDocument().isNewFile(), "new draft remains unsaved");
             TestSupport.assertEquals("keep me", session.getText(), "failed first save retains text");

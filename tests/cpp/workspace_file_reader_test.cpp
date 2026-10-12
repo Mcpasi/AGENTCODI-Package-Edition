@@ -3,6 +3,7 @@
 #include <cerrno>
 #include <atomic>
 #include <cstdlib>
+#include <csignal>
 #include <filesystem>
 #include <functional>
 #include <iostream>
@@ -14,6 +15,7 @@
 
 #include <fcntl.h>
 #include <sys/stat.h>
+#include <sys/resource.h>
 #include <unistd.h>
 
 namespace {
@@ -47,6 +49,38 @@ class TemporaryDirectory final {
 
  private:
   std::filesystem::path path_;
+};
+
+// A real write error that root cannot bypass. Both state changes are restored
+// before subsequent tests, including the concurrent-creation regression.
+class ScopedWriteFailure final {
+ public:
+  ScopedWriteFailure() {
+    if (getrlimit(RLIMIT_FSIZE, &previous_limit_) != 0) {
+      throw std::runtime_error("could not read file size limit");
+    }
+    struct sigaction ignored {};
+    ignored.sa_handler = SIG_IGN;
+    sigemptyset(&ignored.sa_mask);
+    if (sigaction(SIGXFSZ, &ignored, &previous_signal_) != 0) {
+      throw std::runtime_error("could not configure file size signal");
+    }
+    struct rlimit limited = previous_limit_;
+    limited.rlim_cur = 0;
+    if (setrlimit(RLIMIT_FSIZE, &limited) != 0) {
+      sigaction(SIGXFSZ, &previous_signal_, nullptr);
+      throw std::runtime_error("could not configure file size limit");
+    }
+  }
+  ~ScopedWriteFailure() {
+    setrlimit(RLIMIT_FSIZE, &previous_limit_);
+    sigaction(SIGXFSZ, &previous_signal_, nullptr);
+  }
+  ScopedWriteFailure(const ScopedWriteFailure&) = delete;
+  ScopedWriteFailure& operator=(const ScopedWriteFailure&) = delete;
+ private:
+  struct rlimit previous_limit_ {};
+  struct sigaction previous_signal_ {};
 };
 
 void make_directory(const std::filesystem::path& path) {
@@ -289,7 +323,7 @@ void rejects_changed_revision_and_oversized_save() {
       "failed save altered the external revision");
 }
 
-void failed_save_keeps_original_when_parent_is_unwritable() {
+void failed_write_keeps_original_and_cleans_temporary_file() {
   TemporaryDirectory temporary;
   const auto workspace = temporary.path() / "workspace";
   make_directory(workspace);
@@ -298,12 +332,14 @@ void failed_save_keeps_original_when_parent_is_unwritable() {
   auto reader = agentcodi::WorkspaceFileReader::Open(
       workspace.string(), "code.txt", 1024, &error);
   expect(reader != nullptr, error);
-  expect(chmod(workspace.c_str(), 0500) == 0, "could not make parent unwritable");
   const std::string draft = "draft";
-  const bool saved = reader->Replace(reinterpret_cast<const unsigned char*>(draft.data()),
-      draft.size(), &error);
-  expect(chmod(workspace.c_str(), 0700) == 0, "could not restore parent permissions");
-  expect(!saved, "save succeeded in an unwritable directory");
+  bool saved;
+  {
+    ScopedWriteFailure failure;
+    saved = reader->Replace(reinterpret_cast<const unsigned char*>(draft.data()),
+        draft.size(), &error);
+  }
+  expect(!saved, "save ignored a real write failure");
   expect(reader->VerifyUnchanged(&error), "failed save changed the original revision");
   for (const auto& entry : std::filesystem::directory_iterator(workspace)) {
     expect(entry.path().filename() == "code.txt", "failed save left a temporary file");
@@ -404,11 +440,13 @@ void failed_creation_keeps_folder_clean_and_enforces_limits() {
   expect(agentcodi::WorkspaceFileReader::Create(workspace.string(), "new.txt",
       reinterpret_cast<const unsigned char*>(text.data()), text.size(), 8, &error)
       == agentcodi::WorkspaceFileCreationResult::Failed, "creation ignored its byte limit");
-  expect(chmod(workspace.c_str(), 0500) == 0, "could not make creation directory unwritable");
-  const auto result = agentcodi::WorkspaceFileReader::Create(workspace.string(), "new.txt",
-      reinterpret_cast<const unsigned char*>(text.data()), text.size(), 1024, &error);
-  expect(chmod(workspace.c_str(), 0700) == 0, "could not restore creation directory permissions");
-  expect(result == agentcodi::WorkspaceFileCreationResult::Failed, "creation wrote into an unwritable directory");
+  agentcodi::WorkspaceFileCreationResult result;
+  {
+    ScopedWriteFailure failure;
+    result = agentcodi::WorkspaceFileReader::Create(workspace.string(), "new.txt",
+        reinterpret_cast<const unsigned char*>(text.data()), text.size(), 1024, &error);
+  }
+  expect(result == agentcodi::WorkspaceFileCreationResult::Failed, "creation ignored a real write failure");
   expect(!std::filesystem::exists(workspace / "new.txt"), "failed creation left a partial destination");
   expect_no_pending_files(workspace);
 }
@@ -462,7 +500,7 @@ int main() {
     keeps_open_descriptor_inside_original_workspace_tree();
     saves_complete_revisions_atomically_with_permissions();
     rejects_changed_revision_and_oversized_save();
-    failed_save_keeps_original_when_parent_is_unwritable();
+    failed_write_keeps_original_and_cleans_temporary_file();
     creates_complete_unicode_and_empty_files_in_selected_directory();
     creation_never_replaces_existing_entries_or_follows_links();
     failed_creation_keeps_folder_clean_and_enforces_limits();
