@@ -780,4 +780,18 @@
   <string name="license_mpl_save_sources">MPL-Quellen speichern</string>
   <string name="license_mpl_sources_saved">MPL-Quellen gespeichert.</string>
   <string name="license_mpl_sources_save_failed">Die MPL-Quellen konnten nicht gespeichert werden. Wählen Sie ein Ziel und versuchen Sie es erneut.</string>
+  <string name="android_freedom_settings_section">ANDROID-FREIHEIT</string>
+  <string name="android_freedom_settings_description">AGENTCODI unterstützt ein offenes Android-Ökosystem und die Freiheit, Apps zu entwickeln, zu teilen und zu installieren.</string>
+  <string name="android_freedom_settings_open">Über Android-Freiheit</string>
+  <string name="android_freedom_title">Über Android-Freiheit</string>
+  <string name="android_freedom_back">Zurück zu den Einstellungen</string>
+  <string name="android_freedom_name" translatable="false">Keep Android Open</string>
+  <string name="android_freedom_tagline">Freiheit beim Entwickeln. Freiheit beim Teilen. Freiheit bei der Wahl.</string>
+  <string name="android_freedom_statement">AGENTCODI unterstützt Keep Android Open. Android soll eine Plattform bleiben, auf der unabhängige Entwickler Software ohne unnötige Hürden erstellen und verbreiten können.</string>
+  <string name="android_freedom_initiative">Keep Android Open steht für freie Nutzerentscheidungen, unabhängige App-Stores und die Freiheit, Software außerhalb von Google Play zu installieren.</string>
+  <string name="android_freedom_why_title">Warum das wichtig ist</string>
+  <string name="android_freedom_why_body">Googles Anforderungen an die Entwicklerverifizierung betreffen auch Apps, die außerhalb von Google Play verbreitet werden. Keep Android Open lehnt eine verpflichtende zentrale Registrierung und die damit verbundenen Hürden für unabhängige Entwickler und Nutzer ab.</string>
+  <string name="android_freedom_learn_more">Mehr erfahren</string>
+  <string name="android_freedom_disclaimer">Eigenständige Unterstützungserklärung. AGENTCODI ist nicht offiziell mit Keep Android Open verbunden.</string>
+  <string name="android_freedom_website_unavailable">Es ist kein Browser zum Öffnen der Website verfügbar.</string>
 </resources>

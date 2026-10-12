@@ -514,6 +514,7 @@ env LD_LIBRARY_PATH="$AAPT2_LIBRARY_PATH" "$AAPT2_BIN" link -o "$UNSIGNED_APK" -
 
 echo "Compiling isolated Java modules..."
 CORE_CLASSES="$CLASSES_ROOT/core"
+ANDROID_FREEDOM_CLASSES="$CLASSES_ROOT/android-freedom"
 REVIEW_MODE_CLASSES="$CLASSES_ROOT/review-mode"
 COMPATIBILITY_MODE_CLASSES="$CLASSES_ROOT/compatibility-mode"
 STORAGE_CLASSES="$CLASSES_ROOT/storage"
@@ -532,6 +533,7 @@ RUNTIME_CLASSES="$CLASSES_ROOT/runtime"
 APP_CLASSES="$CLASSES_ROOT/app"
 mkdir -p \
   "$CORE_CLASSES" \
+  "$ANDROID_FREEDOM_CLASSES" \
   "$REVIEW_MODE_CLASSES" \
   "$COMPATIBILITY_MODE_CLASSES" \
   "$STORAGE_CLASSES" \
@@ -553,6 +555,11 @@ find "$PROJECT_ROOT/modules/core/src/main/java" -type f -name '*.java' -print | 
 "$JAVAC" -encoding UTF-8 -source 8 -target 8 -Xlint:-options -bootclasspath "$ANDROID_JAR" -d "$CORE_CLASSES" @"$WORK_DIR/core-sources.txt"
 CORE_JAR="$JARS_ROOT/core.jar"
 "$JAR" cf "$CORE_JAR" -C "$CORE_CLASSES" .
+
+find "$PROJECT_ROOT/modules/android-freedom/src/main/java" -type f -name '*.java' -print | sort > "$WORK_DIR/android-freedom-sources.txt"
+"$JAVAC" -encoding UTF-8 -source 8 -target 8 -Xlint:-options -bootclasspath "$ANDROID_JAR" -classpath "$CORE_JAR" -d "$ANDROID_FREEDOM_CLASSES" @"$WORK_DIR/android-freedom-sources.txt"
+ANDROID_FREEDOM_JAR="$JARS_ROOT/android-freedom.jar"
+"$JAR" cf "$ANDROID_FREEDOM_JAR" -C "$ANDROID_FREEDOM_CLASSES" .
 
 find "$PROJECT_ROOT/modules/review-mode/src/main/java" -type f -name '*.java' -print | sort > "$WORK_DIR/review-mode-sources.txt"
 "$JAVAC" -encoding UTF-8 -source 8 -target 8 -Xlint:-options -bootclasspath "$ANDROID_JAR" -classpath "$CORE_JAR" -d "$REVIEW_MODE_CLASSES" @"$WORK_DIR/review-mode-sources.txt"
@@ -631,7 +638,7 @@ RUNTIME_JAR="$JARS_ROOT/runtime.jar"
 "$JAR" cf "$RUNTIME_JAR" -C "$RUNTIME_CLASSES" .
 
 find "$PROJECT_ROOT/app/src/main/java" "$GENERATED_JAVA" -type f -name '*.java' -print | sort > "$WORK_DIR/app-sources.txt"
-"$JAVAC" -encoding UTF-8 -source 8 -target 8 -Xlint:-options -bootclasspath "$ANDROID_JAR" -classpath "$CORE_JAR:$REVIEW_MODE_JAR:$COMPATIBILITY_MODE_JAR:$STORAGE_JAR:$FILE_BROWSER_CONTRACTS_JAR:$FILE_EDITOR_CONTRACTS_JAR:$FILE_EDITOR_SYNTAX_JAR:$IMPORT_CONTRACTS_JAR:$MCP_CONTRACTS_JAR:$MCP_CLIENT_JAR:$CONNECTOR_CONTRACTS_JAR:$CONNECTOR_CLIENT_JAR:$RUNTIME_JAR" -d "$APP_CLASSES" @"$WORK_DIR/app-sources.txt"
+"$JAVAC" -encoding UTF-8 -source 8 -target 8 -Xlint:-options -bootclasspath "$ANDROID_JAR" -classpath "$CORE_JAR:$ANDROID_FREEDOM_JAR:$REVIEW_MODE_JAR:$COMPATIBILITY_MODE_JAR:$STORAGE_JAR:$FILE_BROWSER_CONTRACTS_JAR:$FILE_EDITOR_CONTRACTS_JAR:$FILE_EDITOR_SYNTAX_JAR:$IMPORT_CONTRACTS_JAR:$MCP_CONTRACTS_JAR:$MCP_CLIENT_JAR:$CONNECTOR_CONTRACTS_JAR:$CONNECTOR_CLIENT_JAR:$RUNTIME_JAR" -d "$APP_CLASSES" @"$WORK_DIR/app-sources.txt"
 APP_JAR="$JARS_ROOT/app.jar"
 "$JAR" cf "$APP_JAR" -C "$APP_CLASSES" .
 
@@ -952,7 +959,7 @@ DEX_MODE="--debug"
 if [ "$BUILD_VARIANT" = "release" ]; then
   DEX_MODE="--release"
 fi
-"$JAVA" -cp "$R8_JAR" com.android.tools.r8.D8 "$DEX_MODE" --min-api "$MIN_SDK" --lib "$ANDROID_JAR" --output "$DEX_DIR" "$CORE_JAR" "$REVIEW_MODE_JAR" "$COMPATIBILITY_MODE_JAR" "$STORAGE_JAR" "$FILE_BROWSER_CONTRACTS_JAR" "$FILE_BROWSER_CLIENT_JAR" "$FILE_EDITOR_CONTRACTS_JAR" "$FILE_EDITOR_CLIENT_JAR" "$FILE_EDITOR_SYNTAX_JAR" "$IMPORT_CONTRACTS_JAR" "$IMPORT_CLIENT_JAR" "$MCP_CONTRACTS_JAR" "$MCP_CLIENT_JAR" "$CONNECTOR_CONTRACTS_JAR" "$CONNECTOR_CLIENT_JAR" "$RUNTIME_JAR" "$APP_JAR"
+"$JAVA" -cp "$R8_JAR" com.android.tools.r8.D8 "$DEX_MODE" --min-api "$MIN_SDK" --lib "$ANDROID_JAR" --output "$DEX_DIR" "$CORE_JAR" "$ANDROID_FREEDOM_JAR" "$REVIEW_MODE_JAR" "$COMPATIBILITY_MODE_JAR" "$STORAGE_JAR" "$FILE_BROWSER_CONTRACTS_JAR" "$FILE_BROWSER_CLIENT_JAR" "$FILE_EDITOR_CONTRACTS_JAR" "$FILE_EDITOR_CLIENT_JAR" "$FILE_EDITOR_SYNTAX_JAR" "$IMPORT_CONTRACTS_JAR" "$IMPORT_CLIENT_JAR" "$MCP_CONTRACTS_JAR" "$MCP_CLIENT_JAR" "$CONNECTOR_CONTRACTS_JAR" "$CONNECTOR_CLIENT_JAR" "$RUNTIME_JAR" "$APP_JAR"
 cp "$DEX_DIR/classes.dex" "$ADDITIONS/classes.dex"
 
 UNALIGNED_APK="$WORK_DIR/unaligned.apk"

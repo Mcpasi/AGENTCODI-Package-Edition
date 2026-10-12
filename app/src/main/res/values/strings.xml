@@ -780,4 +780,18 @@
   <string name="license_mpl_save_sources">Save MPL sources</string>
   <string name="license_mpl_sources_saved">MPL sources saved.</string>
   <string name="license_mpl_sources_save_failed">Could not save the MPL sources. Select a destination and try again.</string>
+  <string name="android_freedom_settings_section">ANDROID FREEDOM</string>
+  <string name="android_freedom_settings_description">AGENTCODI supports an open Android ecosystem and the freedom to create, share, and install apps.</string>
+  <string name="android_freedom_settings_open">About Android freedom</string>
+  <string name="android_freedom_title">About Android freedom</string>
+  <string name="android_freedom_back">Back to settings</string>
+  <string name="android_freedom_name" translatable="false">Keep Android Open</string>
+  <string name="android_freedom_tagline">Freedom to build. Freedom to share. Freedom to choose.</string>
+  <string name="android_freedom_statement">AGENTCODI supports Keep Android Open. Android should remain a platform where independent developers can create and distribute software without unnecessary barriers.</string>
+  <string name="android_freedom_initiative">Keep Android Open stands for user choice, independent app stores, and the freedom to install software from outside Google Play.</string>
+  <string name="android_freedom_why_title">Why this matters</string>
+  <string name="android_freedom_why_body">Google\'s developer verification requirements extend to apps distributed outside Google Play. Keep Android Open opposes mandatory central registration and the barriers it creates for independent developers and users.</string>
+  <string name="android_freedom_learn_more">Learn more</string>
+  <string name="android_freedom_disclaimer">Independent statement of support. AGENTCODI is not officially affiliated with Keep Android Open.</string>
+  <string name="android_freedom_website_unavailable">No browser is available to open the website.</string>
 </resources>

@@ -4,6 +4,12 @@
 
 **Prepared for `main`; not yet published. Physical Android device validation is pending.**
 
+- Add an Android freedom module and a native Settings page expressing AGENTCODI's
+  support for Keep Android Open, with the campaign's goals, developer-verification
+  context, an independent-support disclaimer and a link to its official website.
+  Include English, German and Simplified Chinese translations, localized website
+  destinations, light/dark styling and scrollable content.
+
 - Bump the application, manifest, APK builder and native identity to `0.1.5`,
   Android versionCode 8, with the matching identity checks and test fixtures.
 

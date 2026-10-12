@@ -770,4 +770,18 @@
   <string name="license_mpl_save_sources">保存 MPL 源码</string>
   <string name="license_mpl_sources_saved">MPL 源码已保存。</string>
   <string name="license_mpl_sources_save_failed">无法保存 MPL 源码。请选择目标位置后重试。</string>
+  <string name="android_freedom_settings_section">ANDROID 自由</string>
+  <string name="android_freedom_settings_description">AGENTCODI 支持开放的 Android 生态系统，以及开发、分享和安装应用的自由。</string>
+  <string name="android_freedom_settings_open">关于 Android 自由</string>
+  <string name="android_freedom_title">关于 Android 自由</string>
+  <string name="android_freedom_back">返回设置</string>
+  <string name="android_freedom_name" translatable="false">Keep Android Open</string>
+  <string name="android_freedom_tagline">自由开发。自由分享。自由选择。</string>
+  <string name="android_freedom_statement">AGENTCODI 支持 Keep Android Open。Android 应继续保持开放，让独立开发者能够在没有不必要障碍的情况下开发和分发软件。</string>
+  <string name="android_freedom_initiative">Keep Android Open 倡导用户的选择权、独立的应用商店，以及安装 Google Play 之外软件的自由。</string>
+  <string name="android_freedom_why_title">为什么这很重要</string>
+  <string name="android_freedom_why_body">Google 的开发者验证要求也涉及在 Google Play 之外分发的应用。Keep Android Open 反对强制集中注册，以及由此给独立开发者和用户带来的障碍。</string>
+  <string name="android_freedom_learn_more">了解更多</string>
+  <string name="android_freedom_disclaimer">这是独立的支持声明。AGENTCODI 与 Keep Android Open 没有官方关联。</string>
+  <string name="android_freedom_website_unavailable">没有可用于打开此网站的浏览器。</string>
 </resources>

@@ -497,6 +497,8 @@ public final class SettingsActivity extends Activity {
         theme.addWithTopMargin(licensesCard, licensesButton, 14);
         theme.addWithTopMargin(page, licensesCard, 10);
 
+        addAndroidFreedomCard(page);
+
         theme.addWithTopMargin(
             page,
             theme.sectionLabel(getString(R.string.security_section)),
@@ -512,6 +514,22 @@ public final class SettingsActivity extends Activity {
         ));
         theme.addWithTopMargin(page, securityCard, 10);
         return scroll;
+    }
+
+    private void addAndroidFreedomCard(LinearLayout page) {
+        theme.addWithTopMargin(page,
+            theme.sectionLabel(getString(R.string.android_freedom_settings_section)), 28);
+        LinearLayout card = theme.card();
+        card.addView(theme.body(getString(R.string.android_freedom_settings_description)));
+        Button open = theme.secondaryButton(getString(R.string.android_freedom_settings_open));
+        open.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                startActivity(new Intent(SettingsActivity.this, AndroidFreedomActivity.class));
+            }
+        });
+        theme.addWithTopMargin(card, open, 14);
+        theme.addWithTopMargin(page, card, 10);
     }
 
     private void addLanguageCard(LinearLayout page) {

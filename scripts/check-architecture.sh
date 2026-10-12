@@ -30,6 +30,12 @@ if rg -n '^import android\.' "$PROJECT_ROOT/modules/core/src/main/java" "$PROJEC
   exit 1
 fi
 
+android_freedom="$PROJECT_ROOT/modules/android-freedom/src/main/java"
+if rg -n '^import (android\.|de\.agentcodi\.(app|runtime|storage)\.)' "$android_freedom"; then
+  echo "Android freedom support must remain independent of Android UI and runtime state." >&2
+  exit 1
+fi
+
 compatibility_mode="$PROJECT_ROOT/modules/compatibility-mode/src/main/java"
 execution_mode_contract="$PROJECT_ROOT/modules/core/src/main/java/de/agentcodi/core/CodexExecutionMode.java"
 execution_mode_card="$PROJECT_ROOT/app/src/main/java/de/agentcodi/app/ExecutionModeSettingsCard.java"

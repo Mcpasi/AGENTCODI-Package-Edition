@@ -63,4 +63,5 @@ java -Drobolectric.dependency.repo.url=https://repo.maven.apache.org/maven2 \
   -Dagentcodi.chatUiReport="$REPORT_DIR" -cp "$classpath" \
   org.junit.runner.JUnitCore de.agentcodi.app.ChatConversationUiTest de.agentcodi.app.TerminalUiTest \
     de.agentcodi.app.WorkspaceEditorUiTest de.agentcodi.app.WorkspaceCodeEditorUiTest \
+    de.agentcodi.app.AndroidFreedomUiTest \
   | tee "$REPORT_DIR/results.txt"
