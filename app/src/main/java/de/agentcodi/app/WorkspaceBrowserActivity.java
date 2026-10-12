@@ -112,6 +112,25 @@ public final class WorkspaceBrowserActivity extends Activity {
     private long operationGeneration;
     private boolean busy;
     private boolean destroyed;
+    private boolean retainingEditor;
+    private EditorLeaveAction pendingEditorLeave;
+
+    private enum EditorLeaveAction { BACK, REFRESH }
+
+    private static final class RetainedEditor {
+        final WorkspaceEditorController.RetainedState state;
+        final String directory;
+        final int page;
+        final EditorLeaveAction leaveAction;
+
+        RetainedEditor(WorkspaceEditorController.RetainedState state, String directory, int page,
+            EditorLeaveAction leaveAction) {
+            this.state = state;
+            this.directory = directory;
+            this.page = page;
+            this.leaveAction = leaveAction;
+        }
+    }
 
     @Override
     protected void attachBaseContext(Context base) {
@@ -126,10 +145,28 @@ public final class WorkspaceBrowserActivity extends Activity {
             repository = WorkspaceBrowserRepository.create(this);
             editorRepository = WorkspaceEditorRepository.create(this);
             setContentView(buildContent());
-            loadDirectory("", 0);
+            Object retained = getLastNonConfigurationInstance();
+            if (retained instanceof RetainedEditor) {
+                RetainedEditor restored = (RetainedEditor) retained;
+                currentDirectory = restored.directory;
+                currentDirectoryPageIndex = restored.page;
+                pendingEditorLeave = restored.leaveAction;
+                editor.restore(restored.state, editorContinuation(pendingEditorLeave));
+                showEditor(restored.state.session.getDocument().getRelativePath());
+            } else {
+                loadDirectory("", 0);
+            }
         } catch (Throwable error) {
             showEmergencyScreen();
         }
+    }
+
+    @Override public Object onRetainNonConfigurationInstance() {
+        WorkspaceEditorController.RetainedState retained = editor == null ? null : editor.retain();
+        retainingEditor = retained != null;
+        return retained == null ? null : new RetainedEditor(
+            retained, currentDirectory, currentDirectoryPageIndex, pendingEditorLeave
+        );
     }
 
     @Override
@@ -137,7 +174,8 @@ public final class WorkspaceBrowserActivity extends Activity {
         destroyed = true;
         operationGeneration++;
         handler.removeCallbacksAndMessages(null);
-        operations.shutdownNow();
+        if (retainingEditor) { operations.shutdown(); }
+        else { operations.shutdownNow(); }
         if (editor != null) { editor.destroy(); }
         if (newFileDialog != null) { newFileDialog.dismiss(); }
         clearPreviewVisuals();
@@ -148,12 +186,9 @@ public final class WorkspaceBrowserActivity extends Activity {
     @Override
     public void onBackPressed() {
         if (editor != null && editor.isOpen()) {
-            editor.requestLeave(new Runnable() {
-                @Override public void run() {
-                    showDirectoryPanel();
-                    loadDirectory(currentDirectory, currentDirectoryPageIndex);
-                }
-            });
+            if (editor.isSaving()) { return; }
+            pendingEditorLeave = EditorLeaveAction.BACK;
+            editor.requestLeave(editorContinuation(pendingEditorLeave));
             return;
         }
         if (!previewRelativePath.isEmpty()) {
@@ -637,16 +672,8 @@ public final class WorkspaceBrowserActivity extends Activity {
             return;
         }
         if (editor != null && editor.isOpen()) {
-            editor.requestLeave(new Runnable() {
-                @Override public void run() {
-                    if (editor.isNewFile()) {
-                        showDirectoryPanel();
-                        loadDirectory(currentDirectory, currentDirectoryPageIndex);
-                    } else {
-                        loadPreview(previewRelativePath, 0);
-                    }
-                }
-            });
+            pendingEditorLeave = EditorLeaveAction.REFRESH;
+            editor.requestLeave(editorContinuation(pendingEditorLeave));
             return;
         }
         if (previewRelativePath.isEmpty()) {
@@ -654,6 +681,20 @@ public final class WorkspaceBrowserActivity extends Activity {
         } else {
             loadPreview(previewRelativePath, previewPageIndex);
         }
+    }
+
+    private Runnable editorContinuation(final EditorLeaveAction action) {
+        if (action == null) { return null; }
+        return new Runnable() {
+            @Override public void run() {
+                if (action == EditorLeaveAction.BACK || editor.isNewFile()) {
+                    showDirectoryPanel();
+                    loadDirectory(currentDirectory, currentDirectoryPageIndex);
+                } else {
+                    loadPreview(previewRelativePath, 0);
+                }
+            }
+        };
     }
 
     private void chooseNewFile() {
@@ -865,9 +906,13 @@ public final class WorkspaceBrowserActivity extends Activity {
     }
 
     private void renderEditor(WorkspaceEditorDocument document) {
-        clearPreviewVisuals();
-        previewRelativePath = document.getRelativePath();
         editor.open(document);
+        showEditor(document.getRelativePath());
+    }
+
+    private void showEditor(String relativePath) {
+        clearPreviewVisuals();
+        previewRelativePath = relativePath;
         directoryPanel.setVisibility(View.GONE);
         previewPanel.setVisibility(View.GONE);
         editorView.setVisibility(View.VISIBLE);

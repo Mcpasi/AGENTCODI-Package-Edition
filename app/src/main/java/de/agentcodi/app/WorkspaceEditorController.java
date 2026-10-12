@@ -20,6 +20,42 @@ final class WorkspaceEditorController {
         WorkspaceEditorDocument save(WorkspaceEditorDocument document, String text) throws IOException;
     }
 
+    /** Retains source and save progress across configuration changes without a view or Activity. */
+    static final class RetainedState {
+        final WorkspaceEditorSession session;
+        final SaveOperation pendingSave;
+        final int failure;
+        final WorkspaceEditorView.Position position;
+
+        RetainedState(WorkspaceEditorSession session, SaveOperation pendingSave, int failure,
+            WorkspaceEditorView.Position position) {
+            this.session = session;
+            this.pendingSave = pendingSave;
+            this.failure = failure;
+            this.position = position;
+        }
+    }
+
+    private static final class SaveOperation {
+        final WorkspaceEditorSession session;
+        final boolean continueAfterSave;
+        boolean complete;
+        int failure;
+        Runnable completion;
+
+        SaveOperation(WorkspaceEditorSession session, boolean continueAfterSave) {
+            this.session = session;
+            this.continueAfterSave = continueAfterSave;
+        }
+
+        void finish(WorkspaceEditorDocument saved, int failure) {
+            if (saved != null) { session.acceptSaved(saved); }
+            this.failure = failure;
+            complete = true;
+            if (completion != null) { completion.run(); }
+        }
+    }
+
     private final Activity activity;
     private final WorkspaceEditorView view;
     private final Executor operations;
@@ -27,6 +63,7 @@ final class WorkspaceEditorController {
     private final Saver saver;
     private final Runnable stateChanged;
     private WorkspaceEditorSession session;
+    private SaveOperation pendingSave;
     private AlertDialog leaveDialog;
     private boolean saving;
     private boolean externalBusy;
@@ -71,12 +108,36 @@ final class WorkspaceEditorController {
 
     void close() {
         if (leaveDialog != null) { leaveDialog.dismiss(); leaveDialog = null; }
+        if (pendingSave != null) { pendingSave.completion = null; pendingSave = null; }
+        saving = false;
         session = null;
         failure = 0;
         view.clear();
     }
 
     void destroy() { destroyed = true; close(); view.dispose(); }
+
+    RetainedState retain() {
+        return session == null ? null : new RetainedState(session, pendingSave, failure, view.capturePosition());
+    }
+
+    void restore(RetainedState retained, Runnable continuation) {
+        close();
+        session = retained.session;
+        failure = retained.failure;
+        pendingSave = retained.pendingSave;
+        view.bind(session.getDocument());
+        view.restoreDraft(session.getText(), retained.position);
+        if (pendingSave != null) {
+            saving = true;
+            observeSave(pendingSave, pendingSave.continueAfterSave ? continuation : null);
+            if (pendingSave.complete) {
+                // Finish after the Activity has restored its editor panel and controls.
+                handler.post(pendingSave.completion);
+            }
+        }
+        renderState();
+    }
 
     void setExternalBusy(boolean busy) { externalBusy = busy; renderState(); }
 
@@ -103,7 +164,14 @@ final class WorkspaceEditorController {
     private void save(final Runnable afterSave) {
         if (session == null || saving || externalBusy || !session.isDirty() || destroyed) { return; }
         final WorkspaceEditorSession selected = session;
+        final WorkspaceEditorDocument document = selected.getDocument();
         final String text = selected.getText();
+        final Saver selectedSaver = saver;
+        final SaveOperation operation = new SaveOperation(selected, afterSave != null);
+        pendingSave = operation;
+        observeSave(operation, afterSave);
+        // Browser callbacks are cleared on destruction; persistence must still update its retained revision.
+        final Handler resultHandler = new Handler(handler.getLooper());
         saving = true;
         failure = 0;
         renderState();
@@ -112,32 +180,42 @@ final class WorkspaceEditorController {
             operations.execute(new Runnable() {
                 @Override public void run() {
                     try {
-                        final WorkspaceEditorDocument saved = saver.save(selected.getDocument(), text);
-                        handler.post(new Runnable() {
+                        final WorkspaceEditorDocument saved = selectedSaver.save(document, text);
+                        resultHandler.post(new Runnable() {
                             @Override public void run() {
-                                if (destroyed || selected != session) { return; }
-                                selected.acceptSaved(saved);
-                                saving = false;
-                                renderState();
-                                stateChanged.run();
-                                Toast.makeText(activity, R.string.editor_saved, Toast.LENGTH_SHORT).show();
-                                if (afterSave != null && !selected.isDirty()) { afterSave.run(); }
+                                operation.finish(saved, 0);
                             }
                         });
                     } catch (IOException | RuntimeException error) {
                         final int message = errorMessage(error);
-                        handler.post(new Runnable() {
+                        resultHandler.post(new Runnable() {
                             @Override public void run() {
-                                if (destroyed || selected != session) { return; }
-                                saveFailed(message);
+                                operation.finish(null, message);
                             }
                         });
                     }
                 }
             });
         } catch (RejectedExecutionException error) {
-            saveFailed(R.string.editor_save_failed);
+            operation.finish(null, R.string.editor_save_failed);
         }
+    }
+
+    private void observeSave(final SaveOperation operation, final Runnable afterSave) {
+        operation.completion = new Runnable() {
+            @Override public void run() {
+                if (destroyed || pendingSave != operation || session != operation.session) { return; }
+                pendingSave = null;
+                operation.completion = null;
+                if (operation.failure != 0) { saveFailed(operation.failure); return; }
+                saving = false;
+                failure = 0;
+                renderState();
+                stateChanged.run();
+                Toast.makeText(activity, R.string.editor_saved, Toast.LENGTH_SHORT).show();
+                if (afterSave != null && !operation.session.isDirty()) { afterSave.run(); }
+            }
+        };
     }
 
     private void saveFailed(int message) {

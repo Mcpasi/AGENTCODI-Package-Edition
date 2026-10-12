@@ -1,5 +1,6 @@
 package de.agentcodi.editor.syntax;
 
+import java.util.ArrayDeque;
 import java.util.Set;
 
 import static de.agentcodi.editor.syntax.SyntaxToken.Kind.*;
@@ -12,11 +13,15 @@ final class JavaScriptLexer {
     private static final Set<String> BUILTINS = SyntaxScanner.words(
         "Array BigInt Boolean Date Error Infinity JSON Map Math NaN Number Object Promise RegExp Set "
         + "String Symbol WeakMap WeakSet console document globalThis undefined window");
+    private static final Set<String> CONTROL_CONDITIONS = SyntaxScanner.words("if while for with switch catch");
 
     static void scan(SyntaxScanner source, int start, int end) { code(source, start, end, false, 0); }
 
     private static int code(SyntaxScanner source, int start, int end, boolean interpolation, int depth) {
         boolean expression = true;
+        boolean member = false;
+        boolean controlCondition = false;
+        ArrayDeque<Boolean> parentheses = new ArrayDeque<>();
         int braces = 0;
         int cursor = start;
         while (cursor < end) {
@@ -34,41 +39,59 @@ final class JavaScriptLexer {
                 next = source.quoted(cursor, end, 1, false, false);
                 source.add(cursor, next, STRING);
                 expression = false;
+                member = controlCondition = false;
             } else if (value == '`') {
                 next = template(source, cursor, end, depth);
                 expression = false;
+                member = controlCondition = false;
             } else if (value == '/' && expression && (next = regexEnd(source, cursor, end)) > cursor + 1) {
                 source.add(cursor, next, STRING);
                 expression = false;
+                member = controlCondition = false;
             } else if (Character.isDigit(value) || (value == '.' && next < end
                 && Character.isDigit(source.text.charAt(next)))) {
                 next = source.number(cursor, end);
                 if (next < end && source.text.charAt(next) == 'n') { next++; }
                 source.add(cursor, next, NUMBER);
                 expression = false;
+                member = controlCondition = false;
             } else if (SyntaxScanner.isIdentifierStart(value)) {
                 next = source.identifier(next, end);
                 String word = source.text.substring(cursor, next);
-                if (KEYWORDS.contains(word)) {
+                if (!member && KEYWORDS.contains(word)) {
                     source.add(cursor, next, KEYWORD);
                     expression = !(word.equals("true") || word.equals("false") || word.equals("null")
                         || word.equals("this") || word.equals("super"));
+                    controlCondition = CONTROL_CONDITIONS.contains(word)
+                        || (controlCondition && word.equals("await"));
                 } else {
                     int following = source.space(next, end);
-                    if (BUILTINS.contains(word)) { source.add(cursor, next, BUILTIN); }
+                    if (!member && BUILTINS.contains(word)) { source.add(cursor, next, BUILTIN); }
                     else if (following < end && source.text.charAt(following) == '(') {
                         source.add(cursor, next, FUNCTION);
                     }
                     expression = false;
+                    controlCondition = false;
                 }
+                member = false;
             } else {
                 if (value == '}' && interpolation && braces == 0) { return cursor; }
                 if (value == '{') { braces++; }
                 if (value == '}') { braces--; }
                 source.add(cursor, cursor + 1, OPERATOR);
                 expression = value != ')' && value != ']' && value != '}';
+                // A control condition ends before a statement, where / can start a regex.
+                // Calls and grouped values still end an expression and permit division.
+                if (value == '(') { parentheses.addLast(controlCondition); }
+                if (value == ')' && !parentheses.isEmpty()) { expression = parentheses.removeLast(); }
+                member = value == '.';
+                controlCondition = false;
                 // Postfix ++/-- must not turn a following division into a regex.
-                if ((value == '+' || value == '-') && source.at(cursor, end, "" + value + value)) {
+                if (source.at(cursor, end, "...")) {
+                    source.add(cursor + 1, cursor + 3, OPERATOR);
+                    next = cursor + 3;
+                    member = false;
+                } else if ((value == '+' || value == '-') && source.at(cursor, end, "" + value + value)) {
                     source.add(cursor + 1, cursor + 2, OPERATOR);
                     next = cursor + 2;
                     expression = false;

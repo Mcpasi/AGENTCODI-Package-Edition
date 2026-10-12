@@ -96,6 +96,8 @@ final class PythonLexer {
             if (delimiter == 1 && (value == '\n' || value == '\r')) { break; }
             if (value == '\\' && cursor + 1 < end && source.text.charAt(cursor + 1) != '{') {
                 cursor += 2;
+                if (cursor < end && source.text.charAt(cursor - 1) == '\r'
+                    && source.text.charAt(cursor) == '\n') { cursor++; }
             } else if (source.at(cursor, end, "{{") || source.at(cursor, end, "}}")) {
                 cursor += 2;
             } else if (value == '{') {

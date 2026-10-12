@@ -22,6 +22,19 @@ import de.agentcodi.editor.WorkspaceEditorLimits;
 
 /** Native, wrapping text surface. Storage and editing state are owned by the controller. */
 final class WorkspaceEditorView extends LinearLayout {
+    static final class Position {
+        final int start, end, scrollX, scrollY;
+        final boolean focused;
+
+        Position(EditText input) {
+            start = input.getSelectionStart();
+            end = input.getSelectionEnd();
+            scrollX = input.getScrollX();
+            scrollY = input.getScrollY();
+            focused = input.isFocused();
+        }
+    }
+
     interface Actions {
         void onTextChanged(String text);
         void onSave();
@@ -142,6 +155,20 @@ final class WorkspaceEditorView extends LinearLayout {
         input.clearFocus();
         pathView.setText("");
         binding = false;
+    }
+
+    Position capturePosition() { return new Position(input); }
+
+    void restoreDraft(String text, final Position position) {
+        binding = true;
+        input.setText(text);
+        input.setSelection(Math.max(0, Math.min(position.start, text.length())),
+            Math.max(0, Math.min(position.end, text.length())));
+        if (position.focused) { input.requestFocus(); }
+        binding = false;
+        input.post(new Runnable() {
+            @Override public void run() { input.scrollTo(position.scrollX, position.scrollY); }
+        });
     }
 
     void dispose() { codeEditor.dispose(); }

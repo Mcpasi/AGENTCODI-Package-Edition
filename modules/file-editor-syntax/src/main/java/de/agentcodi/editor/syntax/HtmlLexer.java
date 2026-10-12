@@ -103,7 +103,7 @@ final class HtmlLexer {
             if (source.text.regionMatches(true, cursor, closing, 0, closing.length())) {
                 int after = cursor + closing.length();
                 if (after == end || Character.isWhitespace(source.text.charAt(after))
-                    || source.text.charAt(after) == '>') { return cursor; }
+                    || source.text.charAt(after) == '>' || source.text.charAt(after) == '/') { return cursor; }
             }
         }
         return end;

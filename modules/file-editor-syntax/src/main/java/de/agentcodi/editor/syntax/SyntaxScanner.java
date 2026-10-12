@@ -68,7 +68,7 @@ final class SyntaxScanner {
             // Even raw Python strings escape their closing quote lexically.
             if (value == '\\' && cursor + 1 < end) {
                 cursor += 2;
-                if (!raw && cursor < end && text.charAt(cursor - 1) == '\r'
+                if (cursor < end && text.charAt(cursor - 1) == '\r'
                     && text.charAt(cursor) == '\n') { cursor++; }
                 continue;
             }

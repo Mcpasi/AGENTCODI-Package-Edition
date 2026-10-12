@@ -1,10 +1,19 @@
 package de.agentcodi.editor.syntax;
 
+import java.util.ArrayDeque;
+import java.util.Set;
+
 import static de.agentcodi.editor.syntax.SyntaxToken.Kind.*;
 
 final class CssLexer {
+    private static final Set<String> GROUPING_RULES = SyntaxScanner.words(
+        "@media @supports @layer @container @scope @document @-moz-document @starting-style "
+        + "@keyframes @-webkit-keyframes @-moz-keyframes");
+
     static void scan(SyntaxScanner source, int start, int end) {
-        int braces = 0;
+        boolean declarations = false;
+        boolean groupingRule = false;
+        ArrayDeque<Boolean> contexts = new ArrayDeque<>();
         for (int cursor = start; cursor < end;) {
             source.checkCancelled(cursor);
             char value = source.text.charAt(cursor);
@@ -18,8 +27,10 @@ final class CssLexer {
                 source.add(cursor, next, STRING);
             } else if (value == '@') {
                 next = name(source, next, end);
+                groupingRule = GROUPING_RULES.contains(source.text.substring(cursor, next)
+                    .toLowerCase(java.util.Locale.ROOT));
                 source.add(cursor, next, KEYWORD);
-            } else if (value == '#' && braces > 0 && next < end
+            } else if (value == '#' && declarations && next < end
                 && Character.digit(source.text.charAt(next), 16) >= 0) {
                 while (next < end && Character.digit(source.text.charAt(next), 16) >= 0) { next++; }
                 source.add(cursor, next, NUMBER);
@@ -33,13 +44,22 @@ final class CssLexer {
             } else if (SyntaxScanner.isIdentifierStart(value) || value == '-' || value == '#' || value == '.') {
                 next = name(source, next, end);
                 int following = source.space(next, end);
-                SyntaxToken.Kind kind = braces == 0 ? TAG : BUILTIN;
-                if (braces > 0 && following < end && source.text.charAt(following) == ':') { kind = ATTRIBUTE; }
+                SyntaxToken.Kind kind = declarations ? BUILTIN : TAG;
+                if (declarations && following < end && source.text.charAt(following) == ':') { kind = ATTRIBUTE; }
                 else if (following < end && source.text.charAt(following) == '(') { kind = FUNCTION; }
                 source.add(cursor, next, kind);
             } else {
-                if (value == '{') { braces++; }
-                if (value == '}') { braces = Math.max(0, braces - 1); }
+                if (value == '{') {
+                    contexts.addLast(declarations);
+                    // Grouping rules inherit their parent's grammar; selector blocks contain declarations.
+                    if (!groupingRule) { declarations = true; }
+                    groupingRule = false;
+                }
+                if (value == '}') {
+                    declarations = !contexts.isEmpty() && contexts.removeLast();
+                    groupingRule = false;
+                }
+                if (value == ';') { groupingRule = false; }
                 source.add(cursor, next, OPERATOR);
             }
             cursor = next;
