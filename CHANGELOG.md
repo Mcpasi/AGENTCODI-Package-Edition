@@ -4,6 +4,12 @@
 
 **Prepared for `main`; not yet published. Physical Android device validation is pending.**
 
+- Give Package Edition its own launcher icon using the supplied AC package
+  artwork, with density-specific fallback images and adaptive launcher masking.
+  Remove the previous shared launcher vector.
+
+<img src="app/src/main/res/drawable-nodpi/ic_package_edition.png" alt="AGENTCODI Package Edition launcher icon" width="192" />
+
 - Add an Android freedom module and a native Settings page expressing AGENTCODI's
   support for Keep Android Open, with the campaign's goals, developer-verification
   context, an independent-support disclaimer and a link to its official website.
