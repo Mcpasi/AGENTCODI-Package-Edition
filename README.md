@@ -2,315 +2,236 @@
 
 <div align="center">
 
-### Codex workflows on Android with a real local toolchain
+### Work with Codex and development tools on your Android device
 
-[Downloads](https://github.com/Mcpasi/AGENTCODI-Package-Edition/releases) · [Website](https://devsblog.com/) · [Issues](https://github.com/Mcpasi/AGENTCODI-Package-Edition/issues) · [Roadmap](ROADMAP-package-edition.md) · [Standard Edition](https://github.com/Mcpasi/AGENTCODI)
+[Download](https://github.com/Mcpasi/AGENTCODI-Package-Edition/releases) · [Website](https://devsblog.com/) · [Report a bug](https://github.com/Mcpasi/AGENTCODI-Package-Edition/issues) · [Changelog](CHANGELOG.md) · [Standard Edition](https://github.com/Mcpasi/AGENTCODI)
 
 ![Android](https://img.shields.io/badge/Android-10%2B-3DDC84?logo=android&logoColor=white)
 ![Architecture](https://img.shields.io/badge/Architecture-ARM64-555555)
-![Version](https://img.shields.io/badge/Package%20Edition-0.1.5-blue)
+![Release](https://img.shields.io/badge/Published-0.1.4-blue)
 ![Status](https://img.shields.io/badge/Status-experimental%20prerelease-orange)
 ![License](https://img.shields.io/badge/License-Apache%202.0-blue)
 
 </div>
 
-AGENTCODI Package Edition brings Codex workflows to Android with an interactive terminal, installable development tools, workspace management, MCP support, and a native local app-server.
+AGENTCODI Package Edition lets you work on code from your phone or tablet. Ask Codex to explain a project, change files or run commands, then follow its progress in the chat. You can also use the built-in terminal and install tools such as Python, Node.js and Git.
 
-The Package Edition has its own application ID, `de.agentcodi.pkg`, so it can be installed alongside the regular AGENTCODI app.
+The terminal, project files and development tools run on your device. Codex model requests use an online service and require an internet connection and sign-in. You can use the app without installing Termux or setting up a separate gateway.
 
-**The current source version is Package Edition 0.1.5 (Android `versionCode 8`),
-prepared for `main`.** It adds the modular workspace editor, new-file drafts,
-syntax highlighting and source line numbers. Publication and physical Android
-device validation for 0.1.5 are pending; see the [changelog](CHANGELOG.md).
+Package Edition installs alongside [regular AGENTCODI](https://github.com/Mcpasi/AGENTCODI), with its own files, settings and sign-in.
 
-**The latest published version is [Package Edition 0.1.4](https://github.com/Mcpasi/AGENTCODI-Package-Edition/releases/tag/v.0.1.4.package.3), an experimental prerelease.**
-Released on 2026-10-11, tagged `v.0.1.4.package.3` (Android `versionCode 7`).
-**Device tests for version 0.1.4: passed on physical Android hardware.**
+## What you can do
 
-The editor, terminal, chat and long-running session improvements are recorded in the
-[changelog](CHANGELOG.md), with host benchmark measurements and reproduction
-evidence in the [roadmap](ROADMAP-package-edition.md).
+- **Work with Codex:** start chats and follow responses, plans, commands and file changes as they arrive.
+- **Use a terminal:** run commands yourself, install packages and work with the same tools Codex uses.
+- **Bring in your files:** import files through Android's file picker, browse your workspace and export files or folders. A workspace is the app's folder for your project files.
+- **Browse installed tools:** inspect and export package files in separate, read-only views.
+- **Connect extra tools:** manage MCP servers, which give Codex access to additional tools. Each managed MCP tool request asks for your approval.
+- **Choose your language:** the interface supports English, German and Simplified Chinese, with automatic device-language detection.
 
-No Termux installation, WebView shell, or separate gateway setup is required.
+## Before you install
+
+You need **Android 10 or newer**, an **ARM64 (arm64-v8a) device**, and an internet connection for Codex and package downloads.
 
 > [!IMPORTANT]
-> **Package Edition is intended for experienced users.**
+> **Package Edition is for experienced users and always runs with Full access.**
 >
-> It runs in **Full access** mode. Codex and programs you install can read, modify, or delete files that are reachable inside the app's private storage, including Codex account data. Android still isolates AGENTCODI from other apps, but there is no workspace sandbox inside Package Edition.
+> Codex and installed programs can read, change or delete files accessible to AGENTCODI, including its account data. Command approvals can ask you before an action, but they do not restrict programs to the project folder. Android still separates AGENTCODI from other apps. See [SECURITY.md](SECURITY.md) for details.
 
-## What you get
+## Get started
 
-- Native Codex chats on Android
-- Local Codex app-server
-- Interactive terminal
-- Writable package environment with APT and dpkg
-- Python, Node.js, npm, Git and ripgrep available through the signed package repository
-- Workspace import, text/code editing and export
-- Read-only browsing and export of installed package files
-- MCP server management with per-request tool approval
-- German, English and Simplified Chinese interface with device-language detection
-- Package diagnostics for paths, installed packages and command resolution
-- Separate installation from the regular AGENTCODI edition
+1. Download the APK from the [latest published release, 0.1.4](https://github.com/Mcpasi/AGENTCODI-Package-Edition/releases/tag/v.0.1.4.package.3). Under **Assets**, choose `AGENTCODI-Package-0.1.4-arm64-v8a-release.apk`.
+2. Open the APK on your device and install it. If Android asks, allow installation from the app you used to download or open it.
+3. Open AGENTCODI, go to **Settings** and tap **Start Codex runtime**. This starts the local service used by the chat and terminal.
+4. In **Settings**, use **Sign in with ChatGPT** and finish in your browser, or enter an OpenAI API key using the dedicated account controls.
+5. Tap **New chat**. You can ask Codex to create something, or use **Import files** to bring existing files into the workspace.
 
-Model requests still require an internet connection and OpenAI authentication.
+To run commands yourself, open **Terminal**. Install any development tools you need using the commands below.
 
-## Requirements
+Android may show an installation warning because the app targets an older Android API. This allows installed development tools to run from the app's writable storage; the app still requires Android 10 or newer.
 
-- Android 10 or newer
-- ARM64-v8a device
-- Internet connection for Codex and package downloads
+## Versions
 
-Package Edition deliberately uses `targetSdk 28` so Android permits execution from the app's writable private package directory. The minimum Android version remains Android 10 / API 29.
+- **Available to download: 0.1.4.** Published on October 11, 2026 as an experimental prerelease. This version passed tests on physical Android hardware.
+- **Current source: 0.1.5.** Adds the workspace editor described below, a separate Package Edition icon and an Android freedom page in Settings. It has not been published yet, and physical-device validation is pending.
 
-Recent Android versions may display a warning during installation because of the lower target SDK.
-
-## Install
-
-Download the latest published Package Edition 0.1.4 APK from [GitHub Releases](https://github.com/Mcpasi/AGENTCODI-Package-Edition/releases/tag/v.0.1.4.package.3) and install it on your Android device. The signed release asset is `AGENTCODI-Package-0.1.4-arm64-v8a-release.apk`. The 0.1.5 editor features described below are available in source/test builds until that version is published.
-
-Release APKs use the package name:
-
-```text
-de.agentcodi.pkg
-```
-
-The Package Edition and regular AGENTCODI use separate private storage, settings and sign-ins.
-
-APK filenames follow this format:
-
-```text
-AGENTCODI-Package-<Version>-arm64-v8a-release.apk
-```
+The [changelog](CHANGELOG.md) has the full release notes. The [roadmap](ROADMAP-package-edition.md) tracks ongoing work and benchmark results.
 
 ## Install development tools
 
-Package Edition initializes a minimal APT/dpkg environment on first start. The package prefix is normally:
-
-```text
-/data/data/de.agentcodi.pkg/files/usr
-```
-
-The initial signed catalog includes Python, Node.js LTS, npm, Git and ripgrep.
-
-Start with:
+The app sets up its package manager on first start. Open **Terminal** and run:
 
 ```sh
 apt update
 apt install python nodejs-lts npm git ripgrep
 ```
 
-Examples:
+This installs Python, Node.js, npm, Git and ripgrep, a tool for searching text in files. You can install just the packages you need.
 
-```sh
-npm install -g <npm-package>
-
-python -m ensurepip --user
-python -m pip install --user <python-package>
-
-python -m venv .venv
-.venv/bin/python -m pip install <python-package>
-```
-
-Installed APT packages live under `$PREFIX`. Global npm tools and Python user packages use `$HOME/.local`.
-
-Useful package commands:
+To update installed APT packages:
 
 ```sh
 apt update
 apt upgrade
-apt install <package>
-apt remove <package>
-dpkg-query -W
 ```
 
-The dedicated signed repository is:
+To remove one:
+
+```sh
+apt remove <package>
+```
+
+Replace `<package>` with its name. Install APT packages from the app's signed repository; packages built for Termux may contain paths that do not work in AGENTCODI.
+
+<details>
+<summary>npm, Python and package paths</summary>
+
+Install an npm tool:
+
+```sh
+npm install -g <npm-package>
+```
+
+Install a Python package for your user:
+
+```sh
+python -m ensurepip --user
+python -m pip install --user <python-package>
+```
+
+Or create a Python environment for a project:
+
+```sh
+python -m venv .venv
+.venv/bin/python -m pip install <python-package>
+```
+
+Replace the names in angle brackets with the package you want.
+
+APT packages live under `$PREFIX`, normally `/data/data/de.agentcodi.pkg/files/usr`. Global npm tools and Python user packages use `$HOME/.local`. Use `dpkg-query -W` to list installed APT packages.
+
+If a command is missing or resolves to an unexpected location, open **Terminal > Package diagnostics**. It shows installed APT packages, command locations and environment paths without changing anything.
+
+</details>
+
+## Work with files
+
+The file browser has three areas: **Workspace** for your project files, **APT packages** for installed system tools, and **User packages** for tools installed under `$HOME/.local`. Both package areas are read-only.
+
+Imported files go into `workspace/imports`. Importing an archive or DEB file only copies it into the workspace; use the terminal to unpack or install it.
+
+You can export individual files or folders through Android's file picker. Folders are exported as ZIP archives. Known credential paths, such as `auth.json` and `.ssh`, are excluded from package previews and exports. Review files before sharing them, especially if you have saved credentials under other names.
+
+ZIP exports are useful for moving files. They do not preserve executable permissions, links or empty directories, so they are not a complete backup of installed packages.
+
+### Workspace editor (coming in 0.1.5)
+
+The editor is available in source/test builds of 0.1.5. It is **not included in the published 0.1.4 APK**.
+
+Open a text or code file in **Workspace** to edit it, or tap **New file** in a folder to start a file. Tap **Save** when you are done; a hardware keyboard also supports **Ctrl+S**. New files are created on their first save.
+
+- JavaScript, HTML, CSS and Python have syntax highlighting.
+- Editable files show line numbers and wrap long lines to fit the screen.
+- Unsaved changes are marked. Leaving or refreshing offers **Save**, **Discard** or **Cancel**.
+- If another program changes a file while you are editing, saving reports the conflict and keeps your draft.
+
+The editor supports UTF-8 text files up to 1 MiB. Images, binary files, larger text files and installed package files open in read-only previews. Saving keeps the file's existing line endings, UTF-8 byte order mark and executable permissions. Save before exporting an edited file.
+
+## Approvals and extra tools
+
+In **Settings**, enable **Confirm file changes and commands** if you want Codex to ask before file changes and commands beyond recognized safe reads. Full access remains active.
+
+Managed MCP servers ask before each tool call. The dialog shows the server, request and redacted parameters. **Allow** runs that call once; **Decline** or **Cancel** closes it without running it. MCP forms that need extra fields or URL-based input are currently unsupported.
+
+## Updating the app
+
+Install a newer release APK over the existing app to keep your files, settings and installed packages. Use `apt update` and `apt upgrade` separately to update APT packages.
+
+If Android refuses an update because the signing certificate differs, you may have an older development build. Export the files you need before uninstalling it: uninstalling deletes the app's private data.
+
+For a bug report, include the app version, Android version, device model and steps to reproduce it. Use [Issues](https://github.com/Mcpasi/AGENTCODI-Package-Edition/issues) for bugs and the reporting instructions in [SECURITY.md](SECURITY.md) for security concerns.
+
+## Technical details
+
+<details>
+<summary>App identity and Android compatibility</summary>
+
+Package Edition uses the application ID `de.agentcodi.pkg` and separate private storage from regular AGENTCODI.
+
+It uses `targetSdk 28` to allow execution from its writable package directory. The minimum supported version is Android 10 / API 29.
+
+The published 0.1.4 APK has Android `versionCode 7`; the current 0.1.5 source uses `versionCode 8`.
+
+</details>
+
+<details>
+<summary>Package repository and compatibility</summary>
+
+The signed APT repository is:
 
 ```text
 https://mcpasi.github.io/AGENTCODI-Package-Edition/apt/package-edition
 ```
 
-Signing fingerprint:
+Pinned signing-key fingerprint:
 
 ```text
 2768291D12B6C3D22CFBAF9EEC79CBDF7E93DC89
 ```
 
-The repository is scoped specifically to Package Edition and is verified using its pinned signing key.
+Packages are built for Android ARM64/Bionic and AGENTCODI's own installation prefix. Existing Termux DEBs can contain hard-coded paths such as `/data/data/com.termux/files/usr`, so compatibility is not automatic.
 
-### About Termux packages
+Version 0.1.2 uses the original APT endpoint. Published APKs from 0.1.3 onward migrate the original managed source to the dedicated repository on update, retaining installed packages and custom sources.
 
-Package Edition uses Android ARM64/Bionic packages rebuilt for its own installation prefix.
+See the [package build contract](scripts/package-edition/README.md) for recipes, provenance and reconstruction instructions.
 
-Existing Termux DEBs may contain hard-coded Termux paths such as `/data/data/com.termux/files/usr`. Those packages are not automatically compatible with AGENTCODI simply because both environments run on Android.
+</details>
 
-For build details, package provenance and source reconstruction, see the [Package Edition build contract](scripts/package-edition/README.md).
+<details>
+<summary>Codex runtime and access model</summary>
 
-## Full access and approvals
+The app pins the Community Android ARM64 runtime from [DioNanos/codex-termux](https://github.com/DioNanos/codex-termux), release [v0.156.1-termux.1](https://github.com/DioNanos/codex-termux/releases/tag/v0.156.1-termux.1), based on OpenAI Codex `rust-v0.156.1`. Runtime archives, source revisions, native binaries, schema files and integration hashes are pinned and verified in CI.
 
-Full access is the only runtime mode in Package Edition.
+Full access is the only runtime mode. Optional command/file confirmation uses Codex's `untrusted` policy. Programs installed through APT, npm, pip or other tools run with AGENTCODI's app permissions. The workspace, `HOME`, `CODEX_HOME` and package prefix are separate directories, but that separation does not isolate programs from account files.
 
-Optional Codex command and file approvals can still be enabled through the `untrusted` policy. These approvals control individual actions. They do not create filesystem isolation.
+</details>
 
-Managed MCP servers use per-request tool approval. The approval dialog shows the server, request and redacted tool parameters. **Allow** applies once. **Decline** and **Cancel** close the request without running it.
+<details>
+<summary>Build and verification</summary>
 
-MCP forms that require additional fields or URL elicitation are currently unsupported and are rejected safely.
-
-## Workspace and package files
-
-The graphical file browser offers three explicit areas:
-
-- **Workspace**
-- **APT packages** from `$PREFIX`
-- **User packages** from `$HOME/.local`
-
-Package views are read-only.
-
-Starting with 0.1.5, opening a workspace UTF-8 text or code file up to 1 MiB opens a native editor.
-Edit the complete file and tap **Save**, or use **Ctrl+S** with a hardware keyboard.
-The editor wraps long lines on phones and keeps Save accessible above the soft
-keyboard. Unsaved changes are marked, and Back or Refresh offers Save, Discard
-and Cancel. Export becomes available after saving.
-
-JavaScript (`.js`, `.mjs`, `.cjs`), HTML (`.html`, `.htm`), CSS (`.css`) and Python
-(`.py`, `.pyw`) get syntax highlighting automatically, including new drafts.
-HTML script/style blocks use JavaScript/CSS highlighting. Other extensions stay
-plain text. Colors follow the light/dark theme, update after edits and never alter
-the saved source. Tokenization runs in the background; only the visible area and
-a small buffer receive color spans, including when scrolling through large files.
-
-All editable files show source line numbers. Wrapped continuations share their
-source line's number, and the gutter follows scrolling, font scaling and layout
-changes. Empty lines and the final empty line are numbered. LF, CRLF and CR line
-breaks display correctly while retaining their original characters when saved.
-
-Tap **New file** in a workspace folder, enter a filename (including the extension
-you want), and open the draft in the editor. The file is created only on the first
-Save; empty files are supported. Canceling or discarding a new draft leaves no
-file behind. Existing names are rejected, including files that appear after the
-draft was opened.
-
-Saving preserves UTF-8 byte order marks, existing line endings and executable
-permissions. It checks the opened contents before replacing the file atomically.
-If another program has changed the file, the draft stays in the editor; copy any
-text you need before reloading. Images, binary files, larger text files and all
-package files retain their read-only previews.
-
-The editor has separate pure Java contracts, persistence client and syntax
-modules, an Android runtime repository, and independent view/controller classes.
-Language lexers and the logical line index have no Android dependencies. The
-native editing surface, background color renderer and line-number gutter are
-separate components. Codex integration is reserved for later work.
-
-Files can be imported into the workspace through Android's document picker. Individual files and folders can be exported again. Folder exports are ZIP archives.
-
-Known credential locations such as `auth.json`, `.ssh`, `.npmrc`, `.pypirc`, `.netrc`, `.git-credentials` and APT authentication files are excluded from package exports.
-
-ZIP exports are intended for file transfer and inspection. They do not preserve every package-management property such as executable permissions, links or empty directories.
-
-## Package diagnostics
-
-Open the terminal and use **Package diagnostics** to inspect the active environment.
-
-The report shows information such as:
-
-- `PREFIX`, `HOME`, `TMPDIR`
-- command search paths
-- library search paths
-- npm prefix
-- resolved locations of common tools
-- installed APT package names, versions and dpkg status
-
-The diagnostics view is read-only and does not install, update or remove packages.
-
-## Runtime
-
-Package Edition currently pins the Community Android ARM64 Codex runtime from [DioNanos/codex-termux](https://github.com/DioNanos/codex-termux), release [v0.156.1-termux.1](https://github.com/DioNanos/codex-termux/releases/tag/v0.156.1-termux.1), based on OpenAI Codex `rust-v0.156.1`.
-
-The runtime archive, source revision, native binaries, schema files and Android integration hashes are pinned and verified in CI.
-
-AGENTCODI is an independent open-source project. It is not affiliated with or endorsed by OpenAI.
-
-## Security model
-
-Package Edition gives installed programs the same app-level filesystem permissions as the local Codex runtime.
-
-Keep these points in mind:
-
-- Programs installed through APT, npm, pip or another tool execute with AGENTCODI's app permissions.
-- `HOME`, the workspace, `CODEX_HOME` and the managed package prefix are separate directories for organization.
-- That directory separation is not a security boundary between programs running inside the app.
-- Android's normal application sandbox still separates AGENTCODI from other apps.
-- Review third-party packages and scripts before executing them.
-
-Security issues can be reported through the repository's normal security/contact channels.
-
-## Updates and existing installations
-
-Package Edition preserves the managed package prefix across normal app restarts and APK updates.
-
-Packages, caches and existing user-installed files are retained. APT remains responsible for package updates and removals.
-
-Version 0.1.2 uses the original APT endpoint. Published APKs from 0.1.3 onward use the dedicated repository listed above and migrate the original managed source on APK update while retaining installed packages and custom sources.
-
-Older development APKs may have used a different signing identity. Android cannot update an installation when the signing certificate changes. In that case, export any data you need before uninstalling the older APK, because uninstalling removes the app's private data.
-
-## Build and verification
-
-The public repository contains the Package Edition build scripts, package recipes, CI checks and verification contracts.
-
-Useful entry points:
+The repository includes application sources, package recipes, build scripts and CI checks.
 
 - [Package Edition roadmap](ROADMAP-package-edition.md)
 - [Package build contract](scripts/package-edition/README.md)
 - [Test contract](scripts/package-edition/TEST_CONTRACT.md)
-- [CI documentation](.github/ci/README.md)
+- [CI guide and portable host drivers](.github/ci/README.md)
 - [Repository setup and workflow inputs](.github/ci/PACKAGE_EDITION_SETUP.md)
-- [Release signing documentation](.github/ci/RELEASE_SIGNING.md)
-- [Third-party notices](NOTICE.md)
+- [Release signing](.github/ci/RELEASE_SIGNING.md)
 
-Local project checks can be started with:
+Local runners require the Termux Android toolchain:
 
 ```sh
 ./scripts/test.sh
 ./scripts/build-debug-apk.sh
 ```
 
-These local runners require the Termux Android toolchain. Portable host drivers
-are documented in the [CI guide](.github/ci/README.md). APK and package builds
-run on `main`; the Tests workflow also checks feature branches and pull requests.
+APK and package builds run on `main`. The Tests workflow also checks feature branches and pull requests. CI checks app identity, APK contents, ARM64 compatibility, alignment, signing, package bootstrap, source availability and license material.
 
-The CI verifies the application identity, APK payload, ARM64 ABI, alignment, signing requirements, package bootstrap, source availability and supplied license material.
+</details>
 
 ## Source code and licenses
 
-AGENTCODI's original Java/C++ application code, tests, resources, build automation and documentation are:
+AGENTCODI is an independent open-source project, with no affiliation with or endorsement by OpenAI.
 
-Copyright 2026 Pascal (Mc Pasi)
+Original application code, tests, resources, build automation and documentation are copyright 2026 Pascal (Mc Pasi), licensed under [Apache 2.0](LICENSE). Third-party components retain their own licenses and copyright notices. See [NOTICE.md](NOTICE.md) and the notices in the app.
 
-Licensed under the [Apache License 2.0](LICENSE).
+Complete original sources for the Codex runtime's MPL-2.0 components are included in the APK. Export them without an account or internet connection:
 
-Third-party components keep their own licenses and copyright notices. See [NOTICE.md](NOTICE.md) and the legal notices included in the app.
+**Settings > Licenses and notices > Codex dependency notices > Save MPL sources**
 
-### Community Codex dependency sources
+Source and license documentation:
 
-The original `LICENSE` and `NOTICE` files from the pinned Community Codex runtime are preserved.
-
-Dependency license texts and provenance are documented under [third_party/community-codex](third_party/community-codex/README.md).
-
-Complete original sources for the runtime's MPL-2.0 components are shipped with the APK. They can be exported directly from:
-
-**Settings -> Licenses and notices -> Codex dependency notices -> Save MPL sources**
-
-The export works without an account or network connection.
-
-The exact source archive, component index, hashes and upstream locations are documented in the [MPL source offer](third_party/community-codex/MPL-SOURCE-OFFER.txt).
-
-### Package sources
-
-The APT bootstrap and catalog are built from pinned source inputs. Source provenance, source archives and reconstruction instructions are retained in the repository and build artifacts.
-
-See:
-
-- [Package source documentation](third_party/package-source-archives/README.md)
+- [Community Codex dependency licenses and provenance](third_party/community-codex/README.md)
+- [MPL source offer, archive hashes and upstream locations](third_party/community-codex/MPL-SOURCE-OFFER.txt)
+- [APT package sources and reconstruction instructions](third_party/package-source-archives/README.md)
 - [Package build contract](scripts/package-edition/README.md)
-- [Third-party notices](NOTICE.md)
