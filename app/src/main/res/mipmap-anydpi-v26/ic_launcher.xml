@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<adaptive-icon xmlns:android="http://schemas.android.com/apk/res/android">
+    <background>
+        <shape android:shape="rectangle">
+            <solid android:color="#111418" />
+        </shape>
+    </background>
+    <foreground>
+        <!-- 18/108 padding scales with the launcher size and keeps the lettering visible. -->
+        <inset
+            android:drawable="@drawable/ic_package_edition"
+            android:inset="16.666667%" />
+    </foreground>
+</adaptive-icon>
