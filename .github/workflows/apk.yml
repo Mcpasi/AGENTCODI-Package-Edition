@@ -14,8 +14,10 @@ name: APK
 
 on:
   push:
+    # TODO(0.1.6): Before merging, restore this branch and both job guards below
+    # to main, then remove the APK-only feature-branch exception in bootstrap.yml.
     branches:
-      - 'main'
+      - 'feat/chat-markdown-0.1.6'
     paths:
       - 'app/**'
       - 'modules/**'
@@ -55,7 +57,7 @@ concurrency:
 jobs:
   build-inputs:
     name: Validate archived build-input access
-    if: github.ref == 'refs/heads/main'
+    if: github.ref == 'refs/heads/feat/chat-markdown-0.1.6'
     runs-on: ubuntu-latest
     timeout-minutes: 5
     steps:
@@ -68,7 +70,7 @@ jobs:
         run: bash .github/ci/check-build-inputs-access.sh
   bootstrap:
     needs: build-inputs
-    if: github.ref == 'refs/heads/main'
+    if: github.ref == 'refs/heads/feat/chat-markdown-0.1.6'
     uses: ./.github/workflows/bootstrap.yml
     with:
       # Reuse only this repository's verified builds; old repository runs are not portable.

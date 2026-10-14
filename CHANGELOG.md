@@ -21,6 +21,10 @@
   narrow-phone layout and light/dark colors.
 - Bump the application, manifest, APK builder and native identity to `0.1.6`,
   Android versionCode 9, with matching architecture checks and test fixtures.
+- Temporarily enable debug APK builds exclusively on `feat/chat-markdown-0.1.6`.
+  Scope the reusable bootstrap exception to the `APK` caller on that branch.
+  Add TODO comments at both workflow gates to restore debug builds to `main`
+  before merging; release and package workflows retain their existing gates.
 
 - Validation: 455 Java host tests and 176 Robolectric Android UI tests on API 29/35 pass.
   Architecture contracts, Android source/resource compilation, installation
