@@ -4,9 +4,21 @@ import android.app.AlertDialog;
 import android.app.Activity;
 import android.app.Application;
 import android.content.Intent;
+import android.content.ClipboardManager;
+import android.content.Context;
+import android.content.res.Configuration;
 import android.net.Uri;
 import android.graphics.Bitmap;
 import android.graphics.Canvas;
+import android.graphics.Typeface;
+import android.text.Selection;
+import android.text.Spannable;
+import android.text.Spanned;
+import android.text.TextPaint;
+import android.text.style.BackgroundColorSpan;
+import android.text.style.StyleSpan;
+import android.text.style.TypefaceSpan;
+import android.text.style.URLSpan;
 import android.view.View;
 import android.view.ViewGroup;
 import android.view.MotionEvent;
@@ -456,6 +468,149 @@ public final class ChatConversationUiTest {
         assertTrue(list(composer, "pendingConnectors").isEmpty());
         assertFalse((Boolean) field(composer, "sendPreparationActive").get(composer));
         assertEquals("Keep this draft too", ((EditText) view("composerInput")).getText().toString());
+    }
+
+    @Test
+    public void codexMarkdownRendersInTheExistingMessageRowWithoutChangingSource() throws Exception {
+        String source = "# Ergebnis\n\n**Fertig** und *geprüft* mit `code` [Doku](https://example.com)";
+        CodexTranscriptItem item = transcriptMessage("markdown", source, false);
+        transcript().renderTranscript("thread", Collections.singletonList(item));
+        LinearLayout messages = view("messagesContainer");
+        TextView body = markdownBody(messages, "Ergebnis\n\nFertig und geprüft mit code Doku");
+        assertTrue(body.isTextSelectable());
+        Spanned styled = (Spanned) body.getText();
+        assertTrue(styled.getSpans(0, styled.length(), StyleSpan.class).length >= 3);
+        assertEquals(1, styled.getSpans(0, styled.length(), TypefaceSpan.class).length);
+        assertEquals("https://example.com", styled.getSpans(0, styled.length(), URLSpan.class)[0].getURL());
+        assertEquals(source, item.getMessage().getText());
+        View row = messages.getChildAt(0);
+        CharSequence rendered = body.getText();
+        transcript().renderTranscript("thread", Collections.singletonList(transcriptMessage("markdown", source, true)));
+        assertSame(row, messages.getChildAt(0));
+        assertSame("changing streaming status does not reparse identical Markdown", rendered, body.getText());
+        layout(320, 640);
+        assertTrue(body.getWidth() <= row.getWidth());
+        assertTrue(body.getLayout().getLineCount() > 1);
+        screenshot("markdown-narrow");
+    }
+
+    @Test
+    public void markdownStreamingReplacesOpenMarkupAndKeepsComposerFocus() throws Exception {
+        LinearLayout messages = view("messagesContainer");
+        EditText composerInput = view("composerInput");
+        composerInput.requestFocus();
+        transcript().renderTranscript("thread", Collections.singletonList(transcriptMessage("stream-markdown", "**par", true)));
+        View row = messages.getChildAt(0);
+        markdownBody(row, "**par");
+        transcript().renderTranscript("thread", Collections.singletonList(
+            transcriptMessage("stream-markdown", "**part**\n```java\n  x();", true)));
+        TextView body = markdownBody(row, "part\n  x();");
+        assertSame(row, messages.getChildAt(0));
+        assertTrue(composerInput.hasFocus());
+        assertEquals(1, ((Spanned) body.getText()).getSpans(0, body.length(), StyleSpan.class).length);
+        transcript().renderTranscript("thread", Collections.singletonList(
+            transcriptMessage("stream-markdown", "**complete**\n```java\n  x();\n```", false)));
+        markdownBody(row, "complete\n  x();\n");
+        assertSame(row, messages.getChildAt(0));
+        assertTrue(composerInput.hasFocus());
+    }
+
+    @Test
+    public void userMessagesAndTechnicalToolOutputKeepTheirLiteralText() throws Exception {
+        String literal = "**literal** `code` [link](https://example.com)";
+        transcript().renderTranscript("thread", Arrays.asList(
+            CodexTranscriptItem.message(new ChatMessage("user-markdown", ChatMessage.Role.USER, literal, false)),
+            CodexTranscriptItem.message(new ChatMessage("system-markdown", ChatMessage.Role.SYSTEM, literal, false)),
+            transcriptTool("raw-tool", literal, false)));
+        LinearLayout messages = view("messagesContainer");
+        TextView user = markdownBody(messages.getChildAt(0), literal);
+        assertEquals(0, ((Spanned) user.getText()).getSpans(0, user.length(), StyleSpan.class).length);
+        assertEquals(0, ((Spanned) user.getText()).getSpans(0, user.length(), URLSpan.class).length);
+        markdownBody(messages.getChildAt(1), literal);
+        markdownBody(messages.getChildAt(2), literal);
+    }
+
+    @Test
+    public void reasoningAndPlanCardsRenderMarkdownAndReuseUnchangedSpans() throws Exception {
+        for (CodexTranscriptItem.Kind kind : new CodexTranscriptItem.Kind[] {
+            CodexTranscriptItem.Kind.REASONING, CodexTranscriptItem.Kind.PLAN
+        }) {
+            CodexTranscriptItem item = CodexTranscriptItem.card("markdown-card", kind,
+                kind == CodexTranscriptItem.Kind.PLAN ? "plan" : "reasoning", "Title",
+                "**Summary**", "*Detail*", "inProgress", true);
+            transcript().renderTranscript("thread", Collections.singletonList(item));
+            LinearLayout messages = view("messagesContainer");
+            TextView summary = markdownBody(messages, "Summary");
+            TextView detail = markdownBody(messages, "Detail");
+            assertTrue(((Spanned) summary.getText()).getSpans(0, summary.length(), StyleSpan.class).length > 0);
+            assertEquals(Typeface.ITALIC, ((Spanned) detail.getText()).getSpans(0, detail.length(), StyleSpan.class)[0].getStyle());
+            CharSequence previous = summary.getText();
+            transcript().renderTranscript("thread", Collections.singletonList(CodexTranscriptItem.card(
+                "markdown-card", kind, item.getProtocolType(), "Title", "**Summary**", "*Detail*", "completed", false)));
+            assertSame(previous, summary.getText());
+        }
+    }
+
+    @Test
+    public void markdownLinksOpenTheirDestinationAndFormattedTextCanBeCopied() throws Exception {
+        transcript().renderTranscript("thread", Collections.singletonList(
+            transcriptMessage("copy-markdown", "[**Doku**](https://example.com/path) `code`", false)));
+        TextView body = markdownBody(view("messagesContainer"), "Doku code");
+        Spanned text = (Spanned) body.getText();
+        URLSpan link = text.getSpans(0, body.length(), URLSpan.class)[0];
+        link.onClick(body);
+        Intent opened = Shadows.shadowOf(activity).getNextStartedActivity();
+        assertEquals(Intent.ACTION_VIEW, opened.getAction());
+        assertEquals("https://example.com/path", opened.getData().toString());
+        Selection.setSelection((Spannable) body.getText(), 0, body.length());
+        assertTrue(body.onTextContextMenuItem(android.R.id.copy));
+        ClipboardManager clipboard = (ClipboardManager) activity.getSystemService(Context.CLIPBOARD_SERVICE);
+        assertEquals("Doku code", clipboard.getPrimaryClip().getItemAt(0).getText().toString());
+    }
+
+    @Test
+    public void markdownCodeAndLinksUseTheCurrentLightAndDarkTheme() {
+        for (int mode : new int[] {Configuration.UI_MODE_NIGHT_NO, Configuration.UI_MODE_NIGHT_YES}) {
+            Configuration configuration = new Configuration(activity.getResources().getConfiguration());
+            configuration.uiMode = (configuration.uiMode & ~Configuration.UI_MODE_NIGHT_MASK) | mode;
+            Context context = activity.createConfigurationContext(configuration);
+            UiTheme theme = new UiTheme(context);
+            TextView body = theme.text("", 14, theme.primary);
+            body.setTextIsSelectable(true);
+            ChatMarkdownText markdown = new ChatMarkdownText(body, theme);
+            assertTrue(markdown.bind("`code` [link](https://example.com)", true));
+            Spanned text = (Spanned) body.getText();
+            assertEquals(theme.code, text.getSpans(0, text.length(), BackgroundColorSpan.class)[0].getBackgroundColor());
+            TextPaint paint = new TextPaint();
+            text.getSpans(0, text.length(), URLSpan.class)[0].updateDrawState(paint);
+            assertEquals(theme.accent, paint.getColor());
+            CharSequence previous = body.getText();
+            assertFalse(markdown.bind("`code` [link](https://example.com)", true));
+            assertSame(previous, body.getText());
+            assertTrue(markdown.bind("`code` [link](https://example.com)", false));
+            assertEquals("`code` [link](https://example.com)", body.getText().toString());
+            assertEquals(0, ((Spanned) body.getText()).getSpans(0, body.length(), URLSpan.class).length);
+        }
+    }
+
+    private static TextView markdownBody(View root, String expected) {
+        TextView found = markdownBodyOrNull(root, expected);
+        if (found != null) { return found; }
+        throw new AssertionError("Missing rendered Markdown text: " + expected);
+    }
+
+    private static TextView markdownBodyOrNull(View root, String expected) {
+        if (root instanceof TextView && expected.equals(((TextView) root).getText().toString())) {
+            return (TextView) root;
+        }
+        if (root instanceof ViewGroup) {
+            ViewGroup group = (ViewGroup) root;
+            for (int index = 0; index < group.getChildCount(); index++) {
+                TextView found = markdownBodyOrNull(group.getChildAt(index), expected);
+                if (found != null) { return found; }
+            }
+        }
+        return null;
     }
 
     @Test
