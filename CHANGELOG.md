@@ -1,8 +1,12 @@
 # Package Edition
 
-## 0.1.5 — Package Edition (Android versionCode 8) — prepared 2026-10-12
+## 0.1.5 — Package Edition (Android versionCode 8) — 2026-10-14
 
-**Prepared for `main`; not yet published. Physical Android device validation is pending.**
+**Experimental prerelease (published). Device tests: passed on physical Android hardware.**
+
+- Published [AGENTCODI Package Edition V0.1.5](https://github.com/Mcpasi/AGENTCODI-Package-Edition/releases/tag/V.0.1.5-package) on 2026-10-14, tagged `V.0.1.5-package`.
+  The release asset is `AGENTCODI-Package-0.1.5-arm64-v8a-release.apk`.
+- Physical Android device tests for version 0.1.5 passed.
 
 - Give Package Edition its own launcher icon using the supplied AC package
   artwork, with density-specific fallback images and adaptive launcher masking.
@@ -68,7 +72,7 @@
   and [debug APK build](https://github.com/Mcpasi/AGENTCODI-Package-Edition/actions/runs/38271484746)
   succeeded before this release-preparation bump. Native
   file-reader/save regressions and a host JNI persistence smoke pass. Physical
-  device testing of version 0.1.5 remains outstanding.
+  Android device tests for the published version 0.1.5 also passed.
 - Release-preparation checks: 441 Java host tests, native workspace file-reader
   regressions, architecture/payload contracts, 44 Python signing/build-input/
   APK/MPL checks and workflow lint pass. Main branch guards, build path filters

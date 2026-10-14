@@ -5,12 +5,10 @@ This contract does not authorize a PR,
 merge, APK release or APT publication. Minimum API is 29, target SDK is 28,
 installation ID is de.agentcodi.pkg, and Full access is the sole runtime mode.
 
-The current source version prepared for `main` is **Package Edition 0.1.5,
-Android versionCode 8**. Publication and physical-device editor validation are
-pending. The latest published release is **Package Edition 0.1.4, Android
-versionCode 7**, released on 2026-10-11 as an experimental prerelease, tagged
-[`v.0.1.4.package.3`](https://github.com/Mcpasi/AGENTCODI-Package-Edition/releases/tag/v.0.1.4.package.3).
-Physical Android device tests for version 0.1.4 passed.
+The current source and latest published release are **Package Edition 0.1.5,
+Android versionCode 8**, released on 2026-10-14 as an experimental prerelease, tagged
+[`V.0.1.5-package`](https://github.com/Mcpasi/AGENTCODI-Package-Edition/releases/tag/V.0.1.5-package).
+Physical Android device tests for version 0.1.5 passed.
 CI artifacts are test builds; hardware test results are recorded separately.
 
 The existing Package Edition prerelease `v0.1.0-package.3` was published on
@@ -90,7 +88,7 @@ Package installation/use passed on a physical device on 2026-10-06.
 At that milestone the Android-version/device matrix and the MCP hardware
 retest were still outstanding. Subsequent release APK tests from APT through
 MCP passed. Physical Android device tests for Package Edition 0.1.2 also
-passed. Physical Android device tests for versions 0.1.3 and 0.1.4 passed.
+passed. Physical Android device tests for versions 0.1.3, 0.1.4 and 0.1.5 passed.
 The complete version/device/update matrix and new
 MPL source-saving feature are not documented as hardware-validated; hosted CI
 continues to skip device tests.

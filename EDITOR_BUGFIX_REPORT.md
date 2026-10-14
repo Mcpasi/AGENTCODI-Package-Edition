@@ -1,47 +1,52 @@
-# Editor-Bugprüfung
+# Editor bugfix report
 
-Package Edition 0.1.5 · Zielbranch: `main`
+Package Edition 0.1.5 · Target branch: `main`
 
-Historische Bugprüfung im Branch `feat/modular-file-editor`:
-Ausgangsstand `88be555`, bestätigte Fixes `43861cf`. Die unten genannten
-Testergebnisse stammen von diesem Stand vor dem Versionsbump auf 0.1.5.
+Version 0.1.5 was published on 2026-10-14 as an experimental prerelease,
+tagged [`V.0.1.5-package`](https://github.com/Mcpasi/AGENTCODI-Package-Edition/releases/tag/V.0.1.5-package).
+The results below document the editor fixes before that release.
 
-Für jeden der acht Befunde wurde zuerst ein fehlschlagender Reproduktionstest
-ausgeführt. Die Änderungen beheben die bestätigten Ursachen in der Eingabe,
-dem Editor-Lebenszyklus oder den zuständigen Lexern.
+Historical bug investigation on branch `feat/modular-file-editor`:
+baseline `88be555`, confirmed fixes `43861cf`. The test results below come
+from that revision, before the version bump to 0.1.5.
 
-Die Reproduktionstests sind separat in `74fc035` committed. Auf diesem Stand mit
-unverändertem Produktcode schlagen alle fünf neuen Syntaxprüfungen und 24
-Android-Testfälle (API 29/35) fehl; mit den gezielten Fixes sind beide Suiten grün.
+Each of the eight findings was first reproduced with a failing test. The
+changes address the confirmed causes in input handling, the editor lifecycle
+or the relevant language lexers.
 
-| Befund | Reproduktion | Gezielte Korrektur |
+The reproduction tests were committed separately in `74fc035`. With product
+code unchanged at that revision, all five new syntax checks and 24 Android
+test cases (API 29/35) fail. Both suites pass with the targeted fixes applied.
+
+| Finding | Reproduction | Targeted fix |
 | --- | --- | --- |
-| JavaScript-RegExp nach Kontrollbedingungen wird als Division zerlegt. | `javascriptRegexAfterControlConditions`: `if (ready) /a[\\/]+/giu.test(value)`; auch verschachtelte Bedingungen und Schleifen. | Klammern behalten den Unterschied zwischen Kontrollbedingung, Funktionsaufruf und gruppiertem Wert. |
-| Schlüsselwort-Properties führen zur falschen RegExp-Erkennung. | `javascriptKeywordPropertiesKeepDivisionOperators`: `object.return / 2 / 3`, auch `?.` und weitere Schlüsselwort-Namen. | Property-Namen übernehmen nicht die Bedeutung eigenständiger JavaScript-Schlüsselwörter. |
-| Python-Strings enden vorzeitig bei escaped CRLF. | `pythonEscapedCrLfStaysInsideStrings`: Raw-, Byte- und Format-Strings mit Backslash vor CRLF. | Ein escaped CRLF wird vollständig innerhalb des Strings konsumiert. |
-| HTML-Raw-Text verschluckt den nachfolgenden HTML-Inhalt. | `htmlRawTextClosesBeforeTrailingSlash`: `</SCRIPT/>`, außerdem Style-, Textarea- und Title-Endtags. | Der Raw-Text-Scanner erkennt auch `/` als Grenze des Abschlusstag-Namens. |
-| CSS-Gruppen verwechseln Selektoren und Deklarationen. | `cssGroupingRulesKeepSelectorsSeparateFromDeclarations`: Klassen, Pseudoklassen und hexadezimal aussehende IDs innerhalb von `@media`, `@supports` und weiteren Gruppen. | Ein Kontextstapel erhält die Grammatik des übergeordneten Blocks; Farbwerte bleiben Zahlen und Eigenschaften bleiben Attribute. |
-| IME-Delete löscht nur die Hälfte eines dargestellten CRLF. | `imeBackspaceRemovesDisplayedCrLfAsOneLineBreak`, `imeForwardDeleteRemovesDisplayedCrLfAsOneLineBreak`, Codepoint- und Speichertests. | Die Eingabeverbindung erweitert Löschbereiche, deren Grenze zwischen CR und LF liegt. Komposition und Emoji bleiben erhalten. |
-| Copy/Cut kopieren Darstellungsersatzzeichen statt des Quelltexts. | `copyingMixedLineEndingsUsesOriginalSource`: CRLF wird zu U+FEFF + LF und einzelnes CR zu LF. Zusätzlich Cut/Paste-Prüfung. | Die Zwischenablage erhält den ausgewählten Originaltext ohne Syntax-Spans. |
-| Activity-Neuerstellung verliert Entwürfe und laufende Speicherzustände. | `activityRecreationKeepsUnsavedDraftAndSelection`, `activityRecreationKeepsAnEmptyNewFileDraft`, `activityRecreationWaitsForThePendingSaveAndKeepsItsRevision`. | Entwurf, Auswahl, Scrollposition, Verzeichnis und Speicherrevision werden im Arbeitsspeicher übergeben. Laufende Saves aktualisieren die erhaltene Session und anschließend die neue Oberfläche. |
+| JavaScript regular expressions after control conditions are split into division tokens. | `javascriptRegexAfterControlConditions`: `if (ready) /a[\\/]+/giu.test(value)`; also nested conditions and loops. | Parenthesis tracking distinguishes control conditions, function calls and grouped values. |
+| Keyword-named properties cause incorrect regular-expression detection. | `javascriptKeywordPropertiesKeepDivisionOperators`: `object.return / 2 / 3`, also `?.` and other keyword names. | Property names no longer inherit the meaning of standalone JavaScript keywords. |
+| Python strings end prematurely at escaped CRLF. | `pythonEscapedCrLfStaysInsideStrings`: raw, byte and formatted strings with a backslash before CRLF. | An escaped CRLF is consumed completely within the string. |
+| HTML raw text consumes the HTML content that follows it. | `htmlRawTextClosesBeforeTrailingSlash`: `</SCRIPT/>`, plus style, textarea and title closing tags. | The raw-text scanner also recognizes `/` as a boundary of the closing-tag name. |
+| CSS grouping rules confuse selectors with declarations. | `cssGroupingRulesKeepSelectorsSeparateFromDeclarations`: classes, pseudo-classes and hexadecimal-looking IDs inside `@media`, `@supports` and other groups. | A context stack preserves the parent block's grammar; color values remain numbers and properties remain attributes. |
+| IME deletion removes only half of a displayed CRLF. | `imeBackspaceRemovesDisplayedCrLfAsOneLineBreak`, `imeForwardDeleteRemovesDisplayedCrLfAsOneLineBreak`, code-point and save tests. | The input connection expands deletion ranges whose boundary falls between CR and LF. Composition and emoji are preserved. |
+| Copy/cut copies display replacement characters instead of source text. | `copyingMixedLineEndingsUsesOriginalSource`: CRLF is displayed as U+FEFF + LF, and a standalone CR as LF. Also includes a cut/paste check. | The clipboard receives the selected original text without syntax spans. |
+| Activity recreation loses drafts and pending save state. | `activityRecreationKeepsUnsavedDraftAndSelection`, `activityRecreationKeepsAnEmptyNewFileDraft`, `activityRecreationWaitsForThePendingSaveAndKeepsItsRevision`. | The draft, selection, scroll position, directory and save revision are retained in memory. Pending saves update the retained session and then the recreated UI. |
 
-Die Lebenszyklus-Regressionen prüfen zusätzlich zwei aufeinanderfolgende
-Neuerstellungen während eines Saves, weitere Speicherrevisionen, Speicherkonflikte
-sowie „Speichern und zurück“. Große Dokumente werden weiterhin nicht in Androids
-View-State-Bundle serialisiert. Diese Übergabe betrifft Konfigurationswechsel;
-sie ist keine Speicherung von Entwürfen über einen Prozessabbruch hinweg.
+The lifecycle regressions also cover two consecutive Activity recreations
+during a save, subsequent save revisions, save conflicts and "Save and back".
+Large documents are still excluded from serialization into Android's
+view-state bundle. This handoff covers configuration changes; it does not
+persist drafts across process termination.
 
-## Validierung
+## Validation
 
-- Java-Host-Suite: **441 Tests bestanden**; vorher **436**.
-- Android-UI-Suite: **152 Tests bestanden** auf API 29 und 35; vorher **126**.
-- Architektur- und Package-Edition-Verträge bestanden.
-- Android-Quellen, Ressourcen und Manifest-Komponenten kompiliert/geprüft.
-- Sechs APK-Signaturtests bestanden; Update-Signer bleibt über zwei Builds identisch.
-- Diff ohne Whitespace-Fehler.
+- Java host suite: **441 tests passed**, previously **436**.
+- Android UI suite: **152 tests passed** on API 29 and 35, previously **126**.
+- Architecture and Package Edition contracts passed.
+- Android sources, resources and manifest components compiled/verified.
+- Six APK signing tests passed; the update signer remains identical across two builds.
+- No whitespace errors in the diff.
 
-Die vorhandenen Speicherprüfungen für UTF-8/BOM, gemischte Zeilenenden, Dateigröße,
-atomare Ersetzung, ausführbare Dateirechte, externe Änderungen und Namenskollisionen
-sind weiterhin grün. Die UI-Tests nutzen Robolectric mit nativer Grafik und der
-vorhandenen Host-Dateispeicherung; ein Test auf einem physischen Gerät wurde nicht
-durchgeführt. Alle Produktfunktionen bleiben erhalten.
+The existing save checks for UTF-8/BOM, mixed line endings, file size, atomic
+replacement, executable permissions, external changes and filename collisions
+continue to pass. The UI tests use Robolectric with native graphics and the
+existing host file storage. No physical-device test was performed as part of
+this historical investigation. Physical Android device tests for the published
+0.1.5 release have since passed. All product features are preserved.

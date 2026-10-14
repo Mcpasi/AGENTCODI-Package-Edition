@@ -8,13 +8,13 @@
 
 ![Android](https://img.shields.io/badge/Android-10%2B-3DDC84?logo=android&logoColor=white)
 ![Architecture](https://img.shields.io/badge/Architecture-ARM64-555555)
-![Release](https://img.shields.io/badge/Published-0.1.4-blue)
+![Release](https://img.shields.io/badge/Published-0.1.5-blue)
 ![Status](https://img.shields.io/badge/Status-experimental%20prerelease-orange)
 ![License](https://img.shields.io/badge/License-Apache%202.0-blue)
 
 </div>
 
-AGENTCODI Package Edition lets you work on code from your phone or tablet. Ask Codex to explain a project, change files or run commands, then follow its progress in the chat. You can also use the built-in terminal and install tools such as Python, Node.js and Git.
+AGENTCODI Package Edition lets you work on code from your phone or tablet. Ask Codex to explain a project, change files or run commands, then follow its progress in the chat. You can also edit code yourself in the built-in editor, use the terminal and install tools such as Python, Node.js and Git.
 
 The terminal, project files and development tools run on your device. Codex model requests use an online service and require an internet connection and sign-in. You can use the app without installing Termux or setting up a separate gateway.
 
@@ -24,6 +24,7 @@ Package Edition installs alongside [regular AGENTCODI](https://github.com/Mcpasi
 
 - **Work with Codex:** start chats and follow responses, plans, commands and file changes as they arrive.
 - **Use a terminal:** run commands yourself, install packages and work with the same tools Codex uses.
+- **Edit code yourself:** open workspace files or create new ones, with syntax highlighting for JavaScript, HTML, CSS and Python.
 - **Bring in your files:** import files through Android's file picker, browse your workspace and export files or folders. A workspace is the app's folder for your project files.
 - **Browse installed tools:** inspect and export package files in separate, read-only views.
 - **Connect extra tools:** manage MCP servers, which give Codex access to additional tools. Each managed MCP tool request asks for your approval.
@@ -40,7 +41,7 @@ You need **Android 10 or newer**, an **ARM64 (arm64-v8a) device**, and an intern
 
 ## Get started
 
-1. Download the APK from the [latest published release, 0.1.4](https://github.com/Mcpasi/AGENTCODI-Package-Edition/releases/tag/v.0.1.4.package.3). Under **Assets**, choose `AGENTCODI-Package-0.1.4-arm64-v8a-release.apk`.
+1. Download the APK from the [latest published release, 0.1.5](https://github.com/Mcpasi/AGENTCODI-Package-Edition/releases/tag/V.0.1.5-package). Under **Assets**, choose `AGENTCODI-Package-0.1.5-arm64-v8a-release.apk`.
 2. Open the APK on your device and install it. If Android asks, allow installation from the app you used to download or open it.
 3. Open AGENTCODI, go to **Settings** and tap **Start Codex runtime**. This starts the local service used by the chat and terminal.
 4. In **Settings**, use **Sign in with ChatGPT** and finish in your browser, or enter an OpenAI API key using the dedicated account controls.
@@ -52,8 +53,8 @@ Android may show an installation warning because the app targets an older Androi
 
 ## Versions
 
-- **Available to download: 0.1.4.** Published on October 11, 2026 as an experimental prerelease. This version passed tests on physical Android hardware.
-- **Current source: 0.1.5.** Adds the workspace editor described below, a separate Package Edition icon and an Android freedom page in Settings. It has not been published yet, and physical-device validation is pending.
+- **Available to download: 0.1.5.** Published on October 14, 2026 as an experimental prerelease, tagged `V.0.1.5-package`. Device tests passed on physical Android hardware.
+- **Included in 0.1.5:** the workspace editor described below, a separate Package Edition icon and an Android freedom page in Settings.
 
 The [changelog](CHANGELOG.md) has the full release notes. The [roadmap](ROADMAP-package-edition.md) tracks ongoing work and benchmark results.
 
@@ -124,9 +125,9 @@ You can export individual files or folders through Android's file picker. Folder
 
 ZIP exports are useful for moving files. They do not preserve executable permissions, links or empty directories, so they are not a complete backup of installed packages.
 
-### Workspace editor (coming in 0.1.5)
+### Workspace editor
 
-The editor is available in source/test builds of 0.1.5. It is **not included in the published 0.1.4 APK**.
+The workspace editor is included in the published 0.1.5 APK.
 
 Open a text or code file in **Workspace** to edit it, or tap **New file** in a folder to start a file. Tap **Save** when you are done; a hardware keyboard also supports **Ctrl+S**. New files are created on their first save.
 
@@ -136,6 +137,8 @@ Open a text or code file in **Workspace** to edit it, or tap **New file** in a f
 - If another program changes a file while you are editing, saving reports the conflict and keeps your draft.
 
 The editor supports UTF-8 text files up to 1 MiB. Images, binary files, larger text files and installed package files open in read-only previews. Saving keeps the file's existing line endings, UTF-8 byte order mark and executable permissions. Save before exporting an edited file.
+
+To run code you have saved, open **Terminal** in the file's folder and use the appropriate tool. For example, after `apt install python`, run a Python file with `python example.py`.
 
 ## Approvals and extra tools
 
@@ -160,7 +163,7 @@ Package Edition uses the application ID `de.agentcodi.pkg` and separate private 
 
 It uses `targetSdk 28` to allow execution from its writable package directory. The minimum supported version is Android 10 / API 29.
 
-The published 0.1.4 APK has Android `versionCode 7`; the current 0.1.5 source uses `versionCode 8`.
+The published 0.1.5 APK and current source use Android `versionCode 8`.
 
 </details>
 

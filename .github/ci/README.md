@@ -33,15 +33,14 @@ uploads `agentcodi-package-debug-apk`. Java classes and resources retain the
 use their full Java class names. Host compilation does not replace an APK
 installation and parallel-app test on Android hardware.
 
-[Package Edition 0.1.4](https://github.com/Mcpasi/AGENTCODI-Package-Edition/releases/tag/v.0.1.4.package.3)
-was published on 2026-10-11 as an experimental prerelease, tagged
-`v.0.1.4.package.3`.
-Physical Android device tests for version 0.1.4 passed. This remains the latest
-published release; 0.1.5 publication and physical-device editor validation are
-pending. Its [changelog](../../CHANGELOG.md) records the editor features and the
+[Package Edition 0.1.5](https://github.com/Mcpasi/AGENTCODI-Package-Edition/releases/tag/V.0.1.5-package)
+was published on 2026-10-14 as the latest experimental prerelease, tagged
+`V.0.1.5-package`, with Android `versionCode 8`.
+Physical Android device tests for version 0.1.5 passed.
+Its [changelog](../../CHANGELOG.md) records the editor features and the
 successful pre-bump Tests/APK runs at `43861cf`.
-This result is separate from hosted CI. The published 0.1.0
-(`v0.1.0-package.3`), 0.1.1, 0.1.2 and 0.1.3 releases remain experimental prereleases.
+Device validation is separate from hosted CI. The published 0.1.0
+(`v0.1.0-package.3`), 0.1.1, 0.1.2, 0.1.3 and 0.1.4 releases remain experimental prereleases.
 Their artifacts below are historical evidence for those earlier versions.
 
 ## Running them locally
@@ -347,8 +346,8 @@ and license work are complete, and the signed Package Edition prerelease
 was published on 2026-10-06. Release APK tests from APT through MCP passed,
 and physical Android hardware tests for 0.1.1 passed on 2026-10-07.
 Physical Android device tests for version 0.1.2 also passed.
-Physical Android device tests for versions 0.1.3 and 0.1.4 passed.
-Versions 0.1.0, 0.1.1, 0.1.2, 0.1.3 and 0.1.4 are published experimental prereleases.
+Physical Android device tests for versions 0.1.3, 0.1.4 and 0.1.5 passed.
+Versions 0.1.0, 0.1.1, 0.1.2, 0.1.3, 0.1.4 and 0.1.5 are published experimental prereleases.
 
 
 ## Final payload and supplied-license contract
