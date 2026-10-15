@@ -12,8 +12,7 @@ permissions:
 jobs:
   build:
     name: Build ARM64 package bootstrap
-    # TODO(0.1.6): Remove this APK-only feature-branch exception when debug builds return to main.
-    if: github.ref == 'refs/heads/main' || (github.workflow == 'APK' && github.ref == 'refs/heads/feat/chat-markdown-0.1.6')
+    if: github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
     timeout-minutes: 180
     steps:
