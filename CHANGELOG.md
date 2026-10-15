@@ -1,5 +1,94 @@
 # Package Edition
 
+## 0.1.6 — Package Edition (Android versionCode 9) — 2026-10-14
+
+**Experimental prerelease (in development).**
+
+- Render Codex answers, reasoning and plan cards as selectable native Markdown:
+  headings, bold/italic/strikethrough, nested and numbered lists, task lists,
+  quotations, rules, inline and fenced/indented code, and aligned text tables.
+  Use the current light/dark theme for code and links. Preserve literal code,
+  escaped punctuation, Unicode and incomplete streamed markup; render image alt
+  text and literal HTML as text. Activate HTTP, HTTPS and mailto links.
+- Cache each text field's Markdown source and reuse its spans when only status
+  changes. Render updated content inside the existing transcript rows on the
+  chat's established 250-ms active refresh. Preserve reading position, composer
+  focus and selectable/copyable text. Keep user/system messages and technical
+  tool output in their literal presentation.
+- Add pure Java and Android regression coverage for nested formatting, code
+  fences, lists/tables, link destinations, streamed prefixes, Unicode offsets,
+  adversarial input, source preservation, row/span reuse, copy and link actions,
+  narrow-phone layout and light/dark colors.
+- Bump the application, manifest, APK builder and native identity to `0.1.6`,
+  Android versionCode 9, with matching architecture checks and test fixtures.
+- Temporarily enable debug APK builds exclusively on `feat/chat-markdown-0.1.6`.
+  Scope the reusable bootstrap exception to the `APK` caller on that branch.
+  Add TODO comments at both workflow gates to restore debug builds to `main`
+  before merging; release and package workflows retain their existing gates.
+
+- Validation: 455 Java host tests and 176 Robolectric Android UI tests on API 29/35 pass.
+  Architecture contracts, Android source/resource compilation, installation
+  identity checks, six debug-signing checks and ten benchmark-reporting checks
+  pass. Markdown is also visually checked at 320 px on API 35.
+- Rerun the unchanged terminal, chat and protocol replays once, plus the separate
+  complete-text-consumer replay, on OpenJDK 17.0.20.1 / Linux x86_64 / AMD EPYC
+  9V74. Use three JVM forks, two warmups and five measured samples per workload,
+  with `-Xms128m -Xmx512m -XX:+UseG1GC -XX:ActiveProcessorCount=2`.
+  All 17 primary workloads pass the original diagnostic gates; all four
+  consumer workloads pass their content checks. These are final-source host
+  measurements; Android layout, device FPS, native PTY and network are outside
+  the replays. The earlier 0.1.4 measurements used a different host/JDK.
+
+| Workload | Median ms | Allocated MiB |
+| --- | ---: | ---: |
+| `terminal.output-256b` | 21.98 | 54.519 |
+| `terminal.output-4096b` | 19.02 | 52.335 |
+| `terminal.utf8-7b` | 13.31 | 10.081 |
+| `terminal.idle-empty` | 0.0073 | 0.000 |
+| `terminal.idle-full` | 0.0036 | 0.000 |
+| `chat.assistant-16k-64b` | 4.20 | 0.686 |
+| `chat.assistant-32k-64b` | 6.03 | 1.372 |
+| `chat.assistant-64k-64b` | 12.36 | 2.744 |
+| `chat.assistant-64k-4096b` | 8.67 | 0.363 |
+| `chat.assistant-64k-64b-history` | 12.91 | 6.416 |
+| `chat.tool-16k-128b` | 2.61 | 0.423 |
+| `chat.tool-32k-128b` | 5.01 | 0.846 |
+| `chat.reasoning-16k-128b` | 2.56 | 0.410 |
+| `chat.reasoning-32k-128b` | 4.47 | 0.819 |
+| `protocol.history-16x4096` | 5.71 | 5.835 |
+| `protocol.history-240x4096` | 19.81 | 29.067 |
+| `protocol.history-240x16384` | 38.20 | 56.736 |
+| `consumer.assistant-64k-64b` | 20.45 | 34.815 |
+| `consumer.tool-32k-128b` | 6.99 | 4.876 |
+| `consumer.reasoning-32k-128b` | 5.85 | 4.844 |
+| `consumer.reasoning-multipart-32k-128b` | 9.24 | 9.339 |
+
+- Add a standalone `ChatMarkdownBenchmark` companion for the new pure Java
+  presentation projection, keeping the established core replay harness intact.
+  Measure 65,536-character plain, rich Markdown and delimiter-heavy unfinished
+  documents with three forks, two warmups and five samples of 20 parses each.
+  Rich input repeats headings, emphasis, links, lists, fenced code and tables.
+  Span binding and Android layout are outside this parser measurement.
+
+| Markdown projection | Median ms/parse | Allocated MiB/parse |
+| --- | ---: | ---: |
+| `plain` | 0.69 | 1.393 |
+| `markdown` | 5.03 | 4.449 |
+| `unfinished` | 1.98 | 1.512 |
+
+Reproduce the host replays from a clean checkout with JDK 17 on `PATH`, using
+fresh output directories:
+
+```sh
+python3 -B .github/ci/run-performance-benchmarks.py --suite all --output /tmp/agentcodi-016-core --fail-on-findings
+python3 -B .github/ci/run-stream-consumer-benchmark.py --output /tmp/agentcodi-016-consumer
+mkdir -p /tmp/agentcodi-016-markdown
+javac --release 17 -encoding UTF-8 -d /tmp/agentcodi-016-markdown app/src/main/java/de/agentcodi/app/ChatMarkdown.java .github/ci/ChatMarkdownBenchmark.java
+for fork in 1 2 3; do
+  java -Xms128m -Xmx512m -XX:+UseG1GC -XX:ActiveProcessorCount=2 -cp /tmp/agentcodi-016-markdown de.agentcodi.app.ChatMarkdownBenchmark > "/tmp/agentcodi-016-markdown/fork-$fork.jsonl"
+done
+```
+
 ## 0.1.5 — Package Edition (Android versionCode 8) — 2026-10-14
 
 **Experimental prerelease (published). Device tests: passed on physical Android hardware.**

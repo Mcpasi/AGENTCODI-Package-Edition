@@ -19,6 +19,7 @@ modules/connector-contracts/src/main/java
 modules/connector-client/src/main/java
 app/src/main/java/de/agentcodi/app/TranscriptCardPresentation.java
 app/src/main/java/de/agentcodi/app/FileChangeDetail.java
+app/src/main/java/de/agentcodi/app/ChatMarkdown.java
 scripts/java/de/agentcodi/tools/CodexPackageMetadata.java
 scripts/java/de/agentcodi/tools/CodexLocalSource.java
 scripts/java/de/agentcodi/tools/CodexRuntimeUpdater.java

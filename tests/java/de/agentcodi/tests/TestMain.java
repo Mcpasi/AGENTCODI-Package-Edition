@@ -12,6 +12,7 @@ public final class TestMain {
         passed += ChatUiIconResourcesTest.run();
         passed += de.agentcodi.app.TranscriptCardPresentationTest.run();
         passed += de.agentcodi.app.FileChangeDetailTest.run();
+        passed += de.agentcodi.app.ChatMarkdownTest.run();
         passed += ExecutionModeTest.run();
         passed += EditionPermissionContractTest.run();
         passed += CustomReviewModeTest.run();

@@ -293,8 +293,9 @@ final class ChatTranscriptController {
         } else {
             String value = messageBody(item.getMessage());
             String label = messageRole(item.getMessage());
-            if (!value.contentEquals(row.text.getText()) || !label.contentEquals(row.role.getText())) {
-                row.text.setText(value);
+            boolean textChanged = row.markdownText.bind(value,
+                item.getMessage().getRole() == ChatMessage.Role.ASSISTANT);
+            if (textChanged || !label.contentEquals(row.role.getText())) {
                 row.role.setText(label);
                 styleTranscriptRow(row, item);
                 changed = true;
@@ -321,7 +322,7 @@ final class ChatTranscriptController {
             role.setTypeface(Typeface.DEFAULT_BOLD);
             role.setLetterSpacing(0.08f);
             bubble.addView(role);
-            text = theme.text(messageBody(item.getMessage()), 14, theme.primary);
+            text = theme.text("", 14, theme.primary);
             text.setTextIsSelectable(true);
             text.setLineSpacing(0.0f, 1.2f);
             theme.addWithTopMargin(bubble, text, 6);
@@ -359,9 +360,11 @@ final class ChatTranscriptController {
         content.addView(imageAction, imageActionParams);
 
         TranscriptRow row = new TranscriptRow(
-            root, bubble, role, text, card, imageStatus, imageAction
+            root, bubble, role, text, card, imageStatus, imageAction, theme
         );
         if (card == null) {
+            row.markdownText.bind(messageBody(item.getMessage()),
+                item.getMessage().getRole() == ChatMessage.Role.ASSISTANT);
             styleTranscriptRow(row, item);
         }
         bindImageAction(row, item);
@@ -797,6 +800,7 @@ final class ChatTranscriptController {
         private final LinearLayout bubble;
         private final TextView role;
         private final TextView text;
+        private final ChatMarkdownText markdownText;
         private final TranscriptCardView card;
         private final TextView imageStatus;
         private final ImageButton imageAction;
@@ -813,12 +817,14 @@ final class ChatTranscriptController {
             TextView text,
             TranscriptCardView card,
             TextView imageStatus,
-            ImageButton imageAction
+            ImageButton imageAction,
+            UiTheme theme
         ) {
             this.root = root;
             this.bubble = bubble;
             this.role = role;
             this.text = text;
+            this.markdownText = text == null ? null : new ChatMarkdownText(text, theme);
             this.card = card;
             this.imageStatus = imageStatus;
             this.imageAction = imageAction;
