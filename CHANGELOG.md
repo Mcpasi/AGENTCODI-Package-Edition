@@ -4,6 +4,28 @@
 
 **Experimental prerelease (in development).**
 
+- Show generated Codex images and image-view results directly in the chat, even
+  while technical tool details are collapsed. Load validated workspace snapshots
+  off the UI thread and downsample previews without cropping or stretching.
+  Reuse previews across chat refreshes, preserve the reading position, and release
+  images when rows disappear, threads change or the chat closes. Keep image export
+  available when a preview exceeds its limits or cannot be decoded.
+- Add seven image UI regression cases on API 29 and 35. Validation: all 458 Java
+  host tests and 190 Robolectric Android UI tests pass, along with Android source
+  and resource compilation, debug signing, architecture contracts and workflow lint.
+- Fix list and task markers in indented code being rendered as active Markdown.
+  Preserve their literal text and code styling while retaining nested lists and
+  indented paragraph continuations.
+- Fix unfinished inline code swallowing table column separators and preventing
+  header recognition. Keep unmatched backticks literal and preserve completed
+  code spans containing pipes.
+- Decode named and numeric entities consistently in bare and angle-bracket link
+  destinations. Process escaped punctuation and entities once, then validate the
+  decoded destination before creating a clickable link.
+- Add three parser regression tests, each verified to fail against the unchanged
+  parser before its fix. Validation: all 458 Java host tests and the architecture
+  contracts pass.
+
 - Render Codex answers, reasoning and plan cards as selectable native Markdown:
   headings, bold/italic/strikethrough, nested and numbered lists, task lists,
   quotations, rules, inline and fenced/indented code, and aligned text tables.
@@ -21,9 +43,9 @@
   narrow-phone layout and light/dark colors.
 - Bump the application, manifest, APK builder and native identity to `0.1.6`,
   Android versionCode 9, with matching architecture checks and test fixtures.
-- Temporarily enable debug APK builds exclusively on `feat/chat-markdown-0.1.6`.
+- Temporarily enable debug APK builds exclusively on `fix/codex-markdown-0.1.6`.
   Scope the reusable bootstrap exception to the `APK` caller on that branch.
-  Add TODO comments at both workflow gates to restore debug builds to `main`
+  Add TODO comments at the workflow gates to restore debug builds to `main`
   before merging; release and package workflows retain their existing gates.
 
 - Validation: 455 Java host tests and 176 Robolectric Android UI tests on API 29/35 pass.

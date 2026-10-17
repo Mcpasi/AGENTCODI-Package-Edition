@@ -9,10 +9,13 @@ public final class ChatMarkdownTest {
         preservesPlainTextAndUnicode();
         projectsNestedEmphasisAndEscapes();
         preservesCodeLiterally();
+        preservesListMarkersInIndentedCode();
         rendersHeadingsWithoutTreatingHashesInWordsAsMarkup();
         rendersListsTasksAndQuotes();
         rendersTablesWithEscapedAndCodePipes();
+        preservesTableColumnsWithUnfinishedCode();
         handlesBalancedLinksAndAutolinks();
+        decodesEntitiesInLinkDestinations();
         keepsUnsafeDestinationsInactive();
         leavesUnfinishedInlineMarkupVisible();
         supportsOpenFencesDuringStreaming();
@@ -20,7 +23,7 @@ public final class ChatMarkdownTest {
         validatesEveryStreamingPrefix();
         boundsDeepAndDelimiterHeavyInput();
         validatesRandomizedUnicodeInput();
-        return 14;
+        return 17;
     }
 
     private static void preservesPlainTextAndUnicode() {
@@ -81,6 +84,25 @@ public final class ChatMarkdownTest {
         valid(doc);
     }
 
+    private static void preservesListMarkersInIndentedCode() {
+        ChatMarkdown.Document doc = ChatMarkdown.parse(
+            "    - **literal**\n    1. [link](https://example.com)\n    + [x] task\n"
+        );
+        TestSupport.assertEquals("- **literal**\n1. [link](https://example.com)\n+ [x] task\n", doc.text,
+            "list and task markers inside indented code remain literal");
+        span(doc, ChatMarkdown.Style.CODE_BLOCK, "- **literal**\n");
+        span(doc, ChatMarkdown.Style.CODE_BLOCK, "1. [link](https://example.com)\n");
+        span(doc, ChatMarkdown.Style.CODE_BLOCK, "+ [x] task\n");
+        TestSupport.assertEquals(Integer.valueOf(3), Integer.valueOf(doc.spans.size()),
+            "indented code cannot activate links, emphasis or tasks");
+        TestSupport.assertEquals("• outer\n    • inner", ChatMarkdown.parse("- outer\n    - inner").text,
+            "an indented marker in an active list still renders a nested item");
+        TestSupport.assertEquals("paragraph\n    - continuation",
+            ChatMarkdown.parse("paragraph\n    - continuation").text,
+            "an indented marker cannot interrupt an existing paragraph");
+        valid(doc);
+    }
+
     private static void rendersListsTasksAndQuotes() {
         ChatMarkdown.Document doc = ChatMarkdown.parse("- **eins**\n  + zwei\n1. drei\n2) [x] fertig\n- [ ] offen\n\n> Zitat *kursiv*\n");
         TestSupport.assertEquals("• eins\n  • zwei\n1. drei\n2) ☑ fertig\n• ☐ offen\n\nZitat kursiv\n", doc.text,
@@ -117,6 +139,51 @@ public final class ChatMarkdownTest {
         int links = 0;
         for (ChatMarkdown.Span span : doc.spans) { if (span.style == ChatMarkdown.Style.LINK) { links++; } }
         TestSupport.assertEquals(Integer.valueOf(2), Integer.valueOf(links), "image alt text is not a remote image action");
+    }
+
+    private static void preservesTableColumnsWithUnfinishedCode() {
+        ChatMarkdown.Document doc = ChatMarkdown.parse(
+            "| A | B |\n| --- | --- |\n| `open | value |\n| `x|y` | ok |"
+        );
+        TestSupport.assertEquals("A     │ B\n`open │ value\nx|y   │ ok", doc.text,
+            "an unmatched backtick is literal and cannot swallow table column separators");
+        span(doc, ChatMarkdown.Style.TABLE, doc.text);
+        span(doc, ChatMarkdown.Style.CODE, "x|y");
+        ChatMarkdown.Document header = ChatMarkdown.parse("| `open | B |\n| --- | --- |\n| a | b |");
+        TestSupport.assertEquals("`open │ B\na     │ b", header.text,
+            "an unfinished code span in a header cannot prevent table recognition");
+        span(header, ChatMarkdown.Style.TABLE, header.text);
+        valid(doc);
+        valid(header);
+    }
+
+    private static void decodesEntitiesInLinkDestinations() {
+        for (String entity : new String[] { "&amp;", "&#38;", "&#x26;" }) {
+            String encoded = "https://example.com/?a=1" + entity + "b=2";
+            for (boolean angle : new boolean[] { true, false }) {
+                String target = angle ? "<" + encoded + ">" : encoded;
+                ChatMarkdown.Document doc = ChatMarkdown.parse("[**Doku 👋**](" + target + " \"Titel\")");
+                TestSupport.assertEquals("Doku 👋", doc.text, "link labels keep their formatted Unicode text");
+                TestSupport.assertEquals("https://example.com/?a=1&b=2",
+                    span(doc, ChatMarkdown.Style.LINK, "Doku 👋").destination,
+                    "named and numeric entities decode in bare and angle-bracket link destinations");
+                span(doc, ChatMarkdown.Style.BOLD, "Doku 👋");
+                valid(doc);
+            }
+        }
+        ChatMarkdown.Document escaped = ChatMarkdown.parse(
+            "[literal](<https://example.com/\\*x\\*?a=1\\&amp;b=2>)"
+        );
+        TestSupport.assertEquals("https://example.com/*x*?a=1&amp;b=2",
+            span(escaped, ChatMarkdown.Style.LINK, "literal").destination,
+            "escaped punctuation is decoded once and escaped entity text stays literal");
+        ChatMarkdown.Document once = ChatMarkdown.parse("[once](<https://example.com/?x=&amp;amp;>)");
+        TestSupport.assertEquals("https://example.com/?x=&amp;",
+            span(once, ChatMarkdown.Style.LINK, "once").destination, "entities are never decoded twice");
+        ChatMarkdown.Document unsafe = ChatMarkdown.parse("[unsafe](<javascript&#58;alert(1)>)");
+        TestSupport.assertEquals("unsafe", unsafe.text, "encoded unsafe destinations retain their label");
+        TestSupport.assertEquals(Integer.valueOf(0), Integer.valueOf(unsafe.spans.size()),
+            "destination validation happens after entity decoding");
     }
 
     private static void keepsUnsafeDestinationsInactive() {

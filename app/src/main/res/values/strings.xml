@@ -278,6 +278,8 @@
   <string name="status_interrupted">Stopped</string>
 
   <string name="image_export">Export image</string>
+  <string name="image_preview_description">Preview of %1$s</string>
+  <string name="image_preview_unavailable">Preview unavailable. You can still export this image.</string>
   <string name="image_exported">Image exported: %1$s</string>
   <string name="image_export_start_failed">The image export could not be started.</string>
   <string name="image_path_checking">The reported path is being checked against the actual private workspace.</string>
