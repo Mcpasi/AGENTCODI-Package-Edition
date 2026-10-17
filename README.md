@@ -20,6 +20,18 @@ The terminal, project files and development tools run on your device. Codex mode
 
 Package Edition installs alongside [regular AGENTCODI](https://github.com/Mcpasi/AGENTCODI), with its own files, settings and sign-in.
 
+## Screenshots
+
+<p align="center">
+  <img src="screenshots/Screenshot_20261015_024541_AGENTCODI%20Package.jpg" alt="Codex chat planning a package installation" width="30%">
+  <img src="screenshots/Screenshot_20261015_024547_AGENTCODI%20Package.jpg" alt="Codex chat with completed commands and package verification" width="30%">
+  <img src="screenshots/Screenshot_20261017_221255_AGENTCODI%20Package.jpg" alt="Generated image displayed inline in the Codex chat" width="30%">
+</p>
+<p align="center">
+  <img src="screenshots/Screenshot_20261015_024629_AGENTCODI%20Package.jpg" alt="Built-in terminal running ripgrep" width="30%">
+  <img src="screenshots/Screenshot_20261015_024708_AGENTCODI%20Package.jpg" alt="Workspace editor with JavaScript syntax highlighting" width="30%">
+</p>
+
 ## What you can do
 
 - **Work with Codex:** start chats and follow responses, plans, commands and file changes as they arrive.
