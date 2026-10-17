@@ -387,17 +387,37 @@ final class ChatMarkdown {
         String trimmed = value.trim();
         if (trimmed.startsWith("<")) {
             int end = trimmed.indexOf('>');
-            return end < 0 ? "" : trimmed.substring(1, end);
+            return end < 0 ? "" : decodeDestination(trimmed.substring(1, end));
         }
+        int end = 0;
+        while (end < trimmed.length() && !Character.isWhitespace(trimmed.charAt(end))) { end++; }
+        return decodeDestination(trimmed.substring(0, end));
+    }
+
+    private static String decodeDestination(String value) {
         StringBuilder result = new StringBuilder();
-        for (int index = 0; index < trimmed.length(); index++) {
-            char character = trimmed.charAt(index);
-            if (Character.isWhitespace(character)) { break; }
-            if (character == '\\' && index + 1 < trimmed.length()
-                && punctuation(trimmed.charAt(index + 1))) { character = trimmed.charAt(++index); }
+        for (int index = 0; index < value.length(); index++) {
+            char character = value.charAt(index);
+            if (character == '\\' && index + 1 < value.length()
+                && punctuation(value.charAt(index + 1))) {
+                result.append(value.charAt(++index));
+                continue;
+            }
+            if (character == '&') {
+                int end = index + 1;
+                while (end < value.length() && end - index <= 16 && value.charAt(end) != ';'
+                    && !Character.isWhitespace(value.charAt(end))) { end++; }
+                String decoded = end < value.length() && value.charAt(end) == ';'
+                    ? entity(value.substring(index + 1, end)) : "";
+                if (!decoded.isEmpty()) {
+                    result.append(decoded);
+                    index = end;
+                    continue;
+                }
+            }
             result.append(character);
         }
-        return result.toString().replace("&amp;", "&");
+        return result.toString();
     }
 
     static boolean safeDestination(String value) {
