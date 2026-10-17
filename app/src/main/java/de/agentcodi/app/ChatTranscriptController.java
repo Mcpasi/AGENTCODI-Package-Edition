@@ -3,6 +3,7 @@ package de.agentcodi.app;
 import android.app.Activity;
 import android.content.Context;
 import android.content.Intent;
+import android.graphics.Bitmap;
 import android.graphics.Typeface;
 import android.net.Uri;
 import android.os.Handler;
@@ -12,6 +13,7 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.view.ViewTreeObserver;
 import android.widget.ImageButton;
+import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.TextView;
 import android.widget.Toast;
@@ -32,7 +34,7 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.RejectedExecutionException;
 
-/** Renders transcript rows and owns asynchronous image inspection/export. */
+/** Renders transcript rows and owns asynchronous image preview/export. */
 final class ChatTranscriptController {
     private static final int IMAGE_EXPORT_REQUEST_CODE = 7001;
     private final Activity activity;
@@ -139,6 +141,9 @@ final class ChatTranscriptController {
         newOutputButton.setOnClickListener(null);
         newOutputButton.setVisibility(View.GONE);
         imageOperations.shutdownNow();
+        for (TranscriptRow row : renderedTranscriptRows) {
+            clearImagePreview(row);
+        }
     }
 
     boolean handleActivityResult(int requestCode, int resultCode, Intent data) {
@@ -191,6 +196,7 @@ final class ChatTranscriptController {
         boolean newOutput = false;
         if (threadChanged) {
             for (TranscriptRow row : renderedTranscriptRows) {
+                clearImagePreview(row);
                 messagesContainer.removeView(row.root);
             }
             renderedThreadId = threadId;
@@ -210,6 +216,7 @@ final class ChatTranscriptController {
         while (previous.hasNext()) {
             Map.Entry<String, TranscriptRow> entry = previous.next();
             if (!keys.contains(entry.getKey())) {
+                clearImagePreview(entry.getValue());
                 messagesContainer.removeView(entry.getValue().root);
                 previous.remove();
                 changed = true;
@@ -342,10 +349,27 @@ final class ChatTranscriptController {
             content = card.contentContainer();
         }
 
+        // Keep the generated image visible even when technical tool details are collapsed.
+        LinearLayout imageContent = new LinearLayout(activity);
+        imageContent.setOrientation(LinearLayout.VERTICAL);
+        imageContent.setVisibility(View.GONE);
+        theme.addWithTopMargin(content == bubble ? bubble : root, imageContent, 8);
+
+        ImageView imagePreview = new ImageView(activity);
+        imagePreview.setAdjustViewBounds(true);
+        imagePreview.setScaleType(ImageView.ScaleType.FIT_CENTER);
+        imagePreview.setMaxHeight(theme.dp(480));
+        imagePreview.setBackground(theme.background(theme.surfaceRaised, theme.border, 12));
+        imagePreview.setClipToOutline(true);
+        imagePreview.setVisibility(View.GONE);
+        imageContent.addView(imagePreview, new LinearLayout.LayoutParams(
+            ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT
+        ));
+
         TextView imageStatus = theme.text("", 12, theme.secondary);
         imageStatus.setLineSpacing(0.0f, 1.15f);
         imageStatus.setVisibility(View.GONE);
-        theme.addWithTopMargin(content, imageStatus, 6);
+        theme.addWithTopMargin(imageContent, imageStatus, 6);
 
         ImageButton imageAction = theme.iconButton(
             R.drawable.ic_chat_download,
@@ -357,10 +381,10 @@ final class ChatTranscriptController {
         );
         imageActionParams.setMarginStart(theme.dp(0));
         imageActionParams.topMargin = theme.dp(6);
-        content.addView(imageAction, imageActionParams);
+        imageContent.addView(imageAction, imageActionParams);
 
         TranscriptRow row = new TranscriptRow(
-            root, bubble, role, text, card, imageStatus, imageAction, theme
+            root, bubble, role, text, card, imageContent, imagePreview, imageStatus, imageAction, theme
         );
         if (card == null) {
             row.markdownText.bind(messageBody(item.getMessage()),
@@ -399,13 +423,13 @@ final class ChatTranscriptController {
     private void bindImageAction(TranscriptRow row, CodexTranscriptItem item) {
         String imagePath = item.getReportedImagePath();
         if (item.isStreaming() || imagePath.isEmpty()) {
+            row.imageRequestId++;
+            clearImagePreview(row);
             row.imagePath = "";
             row.imageState = ImageValidationState.NONE;
             row.imageInfo = null;
             row.imageFailure = "";
-            row.imageStatus.setVisibility(View.GONE);
-            row.imageAction.setVisibility(View.GONE);
-            row.imageAction.setOnClickListener(null);
+            applyImageAction(row);
             return;
         }
         if (!imagePath.equals(row.imagePath)) {
@@ -417,6 +441,8 @@ final class ChatTranscriptController {
     }
 
     private void beginImageInspection(final TranscriptRow row, final String imagePath) {
+        final long requestId = ++row.imageRequestId;
+        clearImagePreview(row);
         row.imageState = ImageValidationState.CHECKING;
         row.imageInfo = null;
         row.imageFailure = "";
@@ -429,10 +455,17 @@ final class ChatTranscriptController {
                 try {
                     final WorkspaceImageExporter.ImageExport image =
                         WorkspaceImageExporter.inspect(applicationContext, imagePath);
+                    Bitmap decoded = null;
+                    try {
+                        decoded = WorkspaceImageExporter.preview(applicationContext, imagePath);
+                    } catch (java.io.IOException | RuntimeException | OutOfMemoryError ignored) {
+                        // A preview failure must not remove the separately validated export action.
+                    }
+                    final Bitmap preview = decoded;
                     handler.post(new Runnable() {
                         @Override
                         public void run() {
-                            completeImageInspection(row, imagePath, image, "");
+                            completeImageInspection(row, imagePath, requestId, image, preview, "");
                         }
                     });
                 } catch (Throwable error) {
@@ -440,7 +473,7 @@ final class ChatTranscriptController {
                     handler.post(new Runnable() {
                         @Override
                         public void run() {
-                            completeImageInspection(row, imagePath, null, failure);
+                            completeImageInspection(row, imagePath, requestId, null, null, failure);
                         }
                     });
                 }
@@ -449,6 +482,8 @@ final class ChatTranscriptController {
             completeImageInspection(
                 row,
                 imagePath,
+                requestId,
+                null,
                 null,
                 activity.getString(R.string.image_inspection_start_failed)
             );
@@ -458,10 +493,15 @@ final class ChatTranscriptController {
     private void completeImageInspection(
         TranscriptRow row,
         String imagePath,
+        long requestId,
         WorkspaceImageExporter.ImageExport image,
+        Bitmap preview,
         String failure
     ) {
-        if (!isCurrentImageRow(row, imagePath)) {
+        if (!isCurrentImageRow(row, imagePath, requestId)) {
+            if (preview != null) {
+                preview.recycle();
+            }
             return;
         }
         ReadingPosition position = viewportUpdatePending
@@ -471,17 +511,28 @@ final class ChatTranscriptController {
         row.imageState = image == null
             ? ImageValidationState.INVALID
             : ImageValidationState.VALID;
+        clearImagePreview(row);
+        row.previewUnavailable = image != null && preview == null;
+        if (preview != null) {
+            row.imagePreview.setImageBitmap(preview);
+            row.imagePreview.setContentDescription(activity.getString(
+                R.string.image_preview_description, image.getDisplayName()
+            ));
+            row.imagePreview.setVisibility(View.VISIBLE);
+        }
         applyImageAction(row);
         scheduleViewportUpdate(position);
     }
 
     private void applyImageAction(final TranscriptRow row) {
         if (row.imageState == ImageValidationState.NONE) {
+            row.imageContent.setVisibility(View.GONE);
             row.imageStatus.setVisibility(View.GONE);
             row.imageAction.setVisibility(View.GONE);
             row.imageAction.setOnClickListener(null);
             return;
         }
+        row.imageContent.setVisibility(View.VISIBLE);
         row.imageStatus.setVisibility(View.VISIBLE);
         row.imageAction.setVisibility(View.VISIBLE);
         if (row.imageState == ImageValidationState.CHECKING) {
@@ -497,6 +548,7 @@ final class ChatTranscriptController {
             return;
         }
         if (row.imageState == ImageValidationState.INVALID) {
+            clearImagePreview(row);
             row.imageStatus.setText(row.imageFailure);
             row.imageStatus.setTextColor(theme.danger);
             theme.setIcon(
@@ -514,12 +566,12 @@ final class ChatTranscriptController {
             return;
         }
         WorkspaceImageExporter.ImageExport image = row.imageInfo;
-        row.imageStatus.setText(
-            activity.getString(
+        row.imageStatus.setText(activity.getString(
                 R.string.image_workspace_confirmed,
                 image.getDisplayName(),
                 ChatUiFormatting.readableByteCount(activity, image.getByteCount())
-            )
+            ) + (row.previewUnavailable
+                ? "\n" + activity.getString(R.string.image_preview_unavailable) : "")
         );
         row.imageStatus.setTextColor(theme.secondary);
         theme.setIcon(
@@ -540,6 +592,7 @@ final class ChatTranscriptController {
         final TranscriptRow row,
         final String imagePath
     ) {
+        final long requestId = ++row.imageRequestId;
         row.imageState = ImageValidationState.CHECKING;
         row.checkingMessage = activity.getString(R.string.image_pre_export_check);
         applyImageAction(row);
@@ -553,7 +606,7 @@ final class ChatTranscriptController {
                     handler.post(new Runnable() {
                         @Override
                         public void run() {
-                            if (!isCurrentImageRow(row, imagePath)) {
+                            if (!isCurrentImageRow(row, imagePath, requestId)) {
                                 return;
                             }
                             row.imageState = ImageValidationState.VALID;
@@ -568,7 +621,7 @@ final class ChatTranscriptController {
                     handler.post(new Runnable() {
                         @Override
                         public void run() {
-                            completeImageInspection(row, imagePath, null, failure);
+                            completeImageInspection(row, imagePath, requestId, null, null, failure);
                         }
                     });
                 }
@@ -577,6 +630,8 @@ final class ChatTranscriptController {
             completeImageInspection(
                 row,
                 imagePath,
+                requestId,
+                null,
                 null,
                 activity.getString(R.string.image_recheck_start_failed)
             );
@@ -607,8 +662,16 @@ final class ChatTranscriptController {
         }
     }
 
-    private boolean isCurrentImageRow(TranscriptRow row, String imagePath) {
+    private static void clearImagePreview(TranscriptRow row) {
+        row.imagePreview.setImageDrawable(null);
+        row.imagePreview.setContentDescription(null);
+        row.imagePreview.setVisibility(View.GONE);
+        row.previewUnavailable = false;
+    }
+
+    private boolean isCurrentImageRow(TranscriptRow row, String imagePath, long requestId) {
         return !destroyed
+            && requestId == row.imageRequestId
             && imagePath.equals(row.imagePath)
             && row.root.getParent() != null;
     }
@@ -802,6 +865,8 @@ final class ChatTranscriptController {
         private final TextView text;
         private final ChatMarkdownText markdownText;
         private final TranscriptCardView card;
+        private final LinearLayout imageContent;
+        private final ImageView imagePreview;
         private final TextView imageStatus;
         private final ImageButton imageAction;
         private String imagePath = "";
@@ -809,6 +874,8 @@ final class ChatTranscriptController {
         private WorkspaceImageExporter.ImageExport imageInfo;
         private String imageFailure = "";
         private String checkingMessage = "";
+        private long imageRequestId;
+        private boolean previewUnavailable;
 
         private TranscriptRow(
             LinearLayout root,
@@ -816,6 +883,8 @@ final class ChatTranscriptController {
             TextView role,
             TextView text,
             TranscriptCardView card,
+            LinearLayout imageContent,
+            ImageView imagePreview,
             TextView imageStatus,
             ImageButton imageAction,
             UiTheme theme
@@ -826,6 +895,8 @@ final class ChatTranscriptController {
             this.text = text;
             this.markdownText = text == null ? null : new ChatMarkdownText(text, theme);
             this.card = card;
+            this.imageContent = imageContent;
+            this.imagePreview = imagePreview;
             this.imageStatus = imageStatus;
             this.imageAction = imageAction;
         }

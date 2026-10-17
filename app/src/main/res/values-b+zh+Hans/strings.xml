@@ -271,6 +271,8 @@
   <string name="status_interrupted">已停止</string>
 
   <string name="image_export">导出图片</string>
+  <string name="image_preview_description">%1$s 的预览</string>
+  <string name="image_preview_unavailable">无法显示预览，仍可导出此图片。</string>
   <string name="image_exported">图片已导出：%1$s</string>
   <string name="image_export_start_failed">无法开始图片导出。</string>
   <string name="image_path_checking">正在根据实际私有工作区检查报告的路径。</string>

@@ -278,6 +278,8 @@
   <string name="status_interrupted">Gestoppt</string>
 
   <string name="image_export">Bild exportieren</string>
+  <string name="image_preview_description">Vorschau von %1$s</string>
+  <string name="image_preview_unavailable">Vorschau nicht verfügbar. Das Bild kann weiterhin exportiert werden.</string>
   <string name="image_exported">Bild exportiert: %1$s</string>
   <string name="image_export_start_failed">Der Bildexport konnte nicht gestartet werden.</string>
   <string name="image_path_checking">Der gemeldete Pfad wird gegen den tatsächlichen privaten Workspace geprüft.</string>

@@ -12,7 +12,8 @@ permissions:
 jobs:
   build:
     name: Build ARM64 package bootstrap
-    if: github.ref == 'refs/heads/main'
+    # TODO: Remove the temporary APK branch exception before merging into main.
+    if: github.ref == 'refs/heads/main' || (github.workflow == 'APK' && github.ref == 'refs/heads/fix/codex-markdown-0.1.6')
     runs-on: ubuntu-latest
     timeout-minutes: 180
     steps:

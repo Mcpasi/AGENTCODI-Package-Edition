@@ -61,7 +61,8 @@ find "$PROJECT_ROOT/tests/android" -type f -name '*.java' -print | sort > "$BUIL
 javac -encoding UTF-8 -cp "$classpath" -d "$BUILD_DIR/test-classes" @"$BUILD_DIR/test-sources.txt"
 java -Drobolectric.dependency.repo.url=https://repo.maven.apache.org/maven2 \
   -Dagentcodi.chatUiReport="$REPORT_DIR" -cp "$classpath" \
-  org.junit.runner.JUnitCore de.agentcodi.app.ChatConversationUiTest de.agentcodi.app.TerminalUiTest \
+  org.junit.runner.JUnitCore de.agentcodi.app.ChatConversationUiTest de.agentcodi.app.ChatImageUiTest \
+    de.agentcodi.app.TerminalUiTest \
     de.agentcodi.app.WorkspaceEditorUiTest de.agentcodi.app.WorkspaceCodeEditorUiTest \
     de.agentcodi.app.AndroidFreedomUiTest \
   | tee "$REPORT_DIR/results.txt"

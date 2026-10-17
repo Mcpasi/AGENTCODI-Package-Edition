@@ -15,7 +15,8 @@ name: APK
 on:
   push:
     branches:
-      - 'main'
+      # TODO: Restore debug builds to main before merging this branch into main.
+      - 'fix/codex-markdown-0.1.6'
     paths:
       - 'app/**'
       - 'modules/**'
@@ -55,7 +56,8 @@ concurrency:
 jobs:
   build-inputs:
     name: Validate archived build-input access
-    if: github.ref == 'refs/heads/main'
+    # TODO: Restore this debug-build gate to main before merging into main.
+    if: github.ref == 'refs/heads/fix/codex-markdown-0.1.6'
     runs-on: ubuntu-latest
     timeout-minutes: 5
     steps:
@@ -68,7 +70,8 @@ jobs:
         run: bash .github/ci/check-build-inputs-access.sh
   bootstrap:
     needs: build-inputs
-    if: github.ref == 'refs/heads/main'
+    # TODO: Restore this debug-build gate to main before merging into main.
+    if: github.ref == 'refs/heads/fix/codex-markdown-0.1.6'
     uses: ./.github/workflows/bootstrap.yml
     with:
       # Reuse only this repository's verified builds; old repository runs are not portable.
