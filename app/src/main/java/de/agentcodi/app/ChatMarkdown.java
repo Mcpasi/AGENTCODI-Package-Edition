@@ -144,7 +144,7 @@ final class ChatMarkdown {
                 output.span(Style.QUOTE, start, output.length());
                 output.text.append(newline);
                 inList = false;
-            } else if (listPrefix(trimmed) != 0) {
+            } else if ((indent <= 3 || inList) && listPrefix(trimmed) != 0) {
                 flush(paragraph, output);
                 int prefix = listPrefix(trimmed);
                 String body = trimmed.substring(prefix).trim();
