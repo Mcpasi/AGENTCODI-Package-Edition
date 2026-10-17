@@ -497,17 +497,14 @@ final class ChatMarkdown {
         int end = value.length();
         if (end > start && value.charAt(end - 1) == '|' && value.charAt(end - 2) != '\\') { end--; }
         List<String> result = new ArrayList<String>();
-        int codeRun = 0;
+        int[] codeEnds = codeEnds(value);
         int cellStart = start;
         for (int index = start; index < end; index++) {
             char character = value.charAt(index);
             if (character == '\\' && index + 1 < end) { index++; }
-            else if (character == '`') {
-                int count = runLength(value, index);
-                if (codeRun == 0) { codeRun = count; }
-                else if (count == codeRun) { codeRun = 0; }
-                index += count - 1;
-            } else if (character == '|' && codeRun == 0) {
+            else if (character == '`' && codeEnds[index] >= 0) {
+                index = codeEnds[index] + runLength(value, index) - 1;
+            } else if (character == '|') {
                 result.add(value.substring(cellStart, index).trim());
                 cellStart = index + 1;
             }
