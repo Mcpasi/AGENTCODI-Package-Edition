@@ -4,6 +4,19 @@
 
 **Experimental prerelease (in development).**
 
+- Fix list and task markers in indented code being rendered as active Markdown.
+  Preserve their literal text and code styling while retaining nested lists and
+  indented paragraph continuations.
+- Fix unfinished inline code swallowing table column separators and preventing
+  header recognition. Keep unmatched backticks literal and preserve completed
+  code spans containing pipes.
+- Decode named and numeric entities consistently in bare and angle-bracket link
+  destinations. Process escaped punctuation and entities once, then validate the
+  decoded destination before creating a clickable link.
+- Add three parser regression tests, each verified to fail against the unchanged
+  parser before its fix. Validation: all 458 Java host tests and the architecture
+  contracts pass.
+
 - Render Codex answers, reasoning and plan cards as selectable native Markdown:
   headings, bold/italic/strikethrough, nested and numbered lists, task lists,
   quotations, rules, inline and fenced/indented code, and aligned text tables.
