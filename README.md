@@ -8,7 +8,7 @@
 
 ![Android](https://img.shields.io/badge/Android-10%2B-3DDC84?logo=android&logoColor=white)
 ![Architecture](https://img.shields.io/badge/Architecture-ARM64-555555)
-![Release](https://img.shields.io/badge/Published-0.1.5-blue)
+![Release](https://img.shields.io/badge/Published-0.1.6-blue)
 ![Status](https://img.shields.io/badge/Status-experimental%20prerelease-orange)
 ![License](https://img.shields.io/badge/License-Apache%202.0-blue)
 
@@ -35,6 +35,8 @@ Package Edition installs alongside [regular AGENTCODI](https://github.com/Mcpasi
 ## What you can do
 
 - **Work with Codex:** start chats and follow responses, plans, commands and file changes as they arrive.
+- **Read formatted responses:** view selectable native Markdown in answers, reasoning and plan cards, with code blocks, tables, lists and clickable links.
+- **View images in chat:** see generated Codex images and image-view results directly in the conversation, even when technical tool details are collapsed.
 - **Use a terminal:** run commands yourself, install packages and work with the same tools Codex uses.
 - **Edit code yourself:** open workspace files or create new ones, with syntax highlighting for JavaScript, HTML, CSS and Python.
 - **Bring in your files:** import files through Android's file picker, browse your workspace and export files or folders. A workspace is the app's folder for your project files.
@@ -53,7 +55,7 @@ You need **Android 10 or newer**, an **ARM64 (arm64-v8a) device**, and an intern
 
 ## Get started
 
-1. Download the APK from the [latest published release, 0.1.5](https://github.com/Mcpasi/AGENTCODI-Package-Edition/releases/tag/V.0.1.5-package). Under **Assets**, choose `AGENTCODI-Package-0.1.5-arm64-v8a-release.apk`.
+1. Download the APK from the [latest published release, 0.1.6](https://github.com/Mcpasi/AGENTCODI-Package-Edition/releases/tag/v.0.1.6.package.3). Under **Assets**, choose `AGENTCODI-Package-0.1.6-arm64-v8a-release.apk`.
 2. Open the APK on your device and install it. If Android asks, allow installation from the app you used to download or open it.
 3. Open AGENTCODI, go to **Settings** and tap **Start Codex runtime**. This starts the local service used by the chat and terminal.
 4. In **Settings**, use **Sign in with ChatGPT** and finish in your browser, or enter an OpenAI API key using the dedicated account controls.
@@ -65,8 +67,9 @@ Android may show an installation warning because the app targets an older Androi
 
 ## Versions
 
-- **Available to download: 0.1.5.** Published on October 14, 2026 as an experimental prerelease, tagged `V.0.1.5-package`. Device tests passed on physical Android hardware.
-- **Included in 0.1.5:** the workspace editor described below, a separate Package Edition icon and an Android freedom page in Settings.
+- **Available to download: 0.1.6.** Published on October 18, 2026 as an experimental prerelease, tagged `v.0.1.6.package.3`. Device tests passed on physical Android hardware.
+- **New in 0.1.6:** selectable native Markdown for answers, reasoning and plan cards, plus inline previews of generated images and image-view results.
+- **Included since 0.1.5:** the workspace editor described below, a separate Package Edition icon and an Android freedom page in Settings.
 
 The [changelog](CHANGELOG.md) has the full release notes. The [roadmap](ROADMAP-package-edition.md) tracks ongoing work and benchmark results.
 
@@ -139,7 +142,7 @@ ZIP exports are useful for moving files. They do not preserve executable permiss
 
 ### Workspace editor
 
-The workspace editor is included in the published 0.1.5 APK.
+The workspace editor is included in published APKs from 0.1.5 onward.
 
 Open a text or code file in **Workspace** to edit it, or tap **New file** in a folder to start a file. Tap **Save** when you are done; a hardware keyboard also supports **Ctrl+S**. New files are created on their first save.
 
@@ -175,7 +178,7 @@ Package Edition uses the application ID `de.agentcodi.pkg` and separate private 
 
 It uses `targetSdk 28` to allow execution from its writable package directory. The minimum supported version is Android 10 / API 29.
 
-The published 0.1.5 APK and current source use Android `versionCode 8`.
+The published 0.1.6 APK and current source use Android `versionCode 9`.
 
 </details>
 

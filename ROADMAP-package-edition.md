@@ -1,16 +1,43 @@
 # Roadmap: AGENTCODI Package Edition
 
-Status: 2026-10-14. Development and releases use `main` in
+Status: 2026-10-18. Development and releases use `main` in
 `Mcpasi/AGENTCODI-Package-Edition`. Repository operation and workflow inputs
 are documented in the [setup guide](.github/ci/PACKAGE_EDITION_SETUP.md).
 
 The dated records below retain historical CI links and branch names from the
 original AGENTCODI repository.
 
+### Package Edition 0.1.6: native Markdown and inline images (published)
+
+Current source and release identity: `0.1.6`, Android `versionCode 9`, application ID
+`de.agentcodi.pkg`. The latest published experimental prerelease is
+[AGENTCODI Package Edition V0.1.6](https://github.com/Mcpasi/AGENTCODI-Package-Edition/releases/tag/v.0.1.6.package.3),
+published on 2026-10-18, tagged `v.0.1.6.package.3`, with asset
+`AGENTCODI-Package-0.1.6-arm64-v8a-release.apk`. Physical Android device
+tests for version 0.1.6 passed.
+
+- Render answers, reasoning and plan cards as selectable native Markdown,
+  including headings, emphasis, nested lists, task lists, quotations, code
+  blocks and aligned text tables. Links and code follow the light/dark theme.
+- Display generated Codex images and image-view results directly in the chat,
+  including when technical tool details are collapsed. Load bounded image
+  previews in the background, preserve their aspect ratio and retain export.
+- Reuse rendered text and image previews across chat updates while preserving
+  reading position, input focus and selectable/copyable text.
+
+The implementation passed 458 Java host tests and 190 Android UI tests on
+API 29/35. The 17 core replay workloads and four complete-text consumer
+workloads passed their checks; these host measurements remain separate from
+physical Android device validation. Physical Android device tests for the
+published 0.1.6 release passed.
+
+See the [0.1.6 changelog](CHANGELOG.md) for the full changes, validation and
+benchmark results.
+
 ### Package Edition 0.1.5: modular workspace editor (published)
 
-Current source and release identity: `0.1.5`, Android `versionCode 8`, application ID
-`de.agentcodi.pkg`. The latest published experimental prerelease is
+Release identity at this milestone: `0.1.5`, Android `versionCode 8`, application ID
+`de.agentcodi.pkg`. The experimental prerelease is
 [AGENTCODI Package Edition V0.1.5](https://github.com/Mcpasi/AGENTCODI-Package-Edition/releases/tag/V.0.1.5-package),
 published on 2026-10-14, tagged `V.0.1.5-package`, with asset
 `AGENTCODI-Package-0.1.5-arm64-v8a-release.apk`. Physical Android device

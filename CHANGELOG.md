@@ -1,8 +1,12 @@
 # Package Edition
 
-## 0.1.6 — Package Edition (Android versionCode 9) — 2026-10-14
+## 0.1.6 — Package Edition (Android versionCode 9) — 2026-10-18
 
-**Experimental prerelease (in development).**
+**Experimental prerelease (published). Device tests: passed on physical Android hardware.**
+
+- Published [AGENTCODI Package Edition V0.1.6](https://github.com/Mcpasi/AGENTCODI-Package-Edition/releases/tag/v.0.1.6.package.3) on 2026-10-18, tagged `v.0.1.6.package.3`.
+  The release asset is `AGENTCODI-Package-0.1.6-arm64-v8a-release.apk`.
+- Physical Android device tests for version 0.1.6 passed.
 
 - Show generated Codex images and image-view results directly in the chat, even
   while technical tool details are collapsed. Load validated workspace snapshots
