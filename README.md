@@ -16,6 +16,11 @@
 
 AGENTCODI Package Edition lets you work on code from your phone or tablet. Ask Codex to explain a project, change files or run commands, then follow its progress in the chat. You can also edit code yourself in the built-in editor, use the terminal and install tools such as Python, Node.js and Git.
 
+The integration branch embeds [Arch Terminal](https://github.com/Mcpasi/Arch_Terminal)
+0.1.9 unchanged and replaces the former APT bootstrap, package catalog and terminal.
+Published 0.1.6 APKs predate this migration; the Arch instructions below apply to
+new builds from this source branch.
+
 The terminal, project files and development tools run on your device. Codex model requests use an online service and require an internet connection and sign-in. You can use the app without installing Termux or setting up a separate gateway.
 
 Package Edition installs alongside [regular AGENTCODI](https://github.com/Mcpasi/AGENTCODI), with its own files, settings and sign-in.
@@ -55,9 +60,9 @@ You need **Android 10 or newer**, an **ARM64 (arm64-v8a) device**, and an intern
 
 ## Get started
 
-1. Download the APK from the [latest published release, 0.1.6](https://github.com/Mcpasi/AGENTCODI-Package-Edition/releases/tag/v.0.1.6.package.3). Under **Assets**, choose `AGENTCODI-Package-0.1.6-arm64-v8a-release.apk`.
+1. For Arch integration, download the APK from a successful **APK** or **APK Release** Actions run on `Mcpasi/Fusion_Arch_Termux`. The [published 0.1.6 release](https://github.com/Mcpasi/AGENTCODI-Package-Edition/releases/tag/v.0.1.6.package.3) still uses the earlier APT environment.
 2. Open the APK on your device and install it. If Android asks, allow installation from the app you used to download or open it.
-3. Open AGENTCODI, go to **Settings** and tap **Start Codex runtime**. This starts the local service used by the chat and terminal.
+3. For an Arch integration build, open **Terminal** and choose **Arch installieren / fortsetzen**. The pinned first download is about 791 MiB; allow at least 5 GiB of free internal storage. Then go to **Settings** and tap **Start Codex runtime**. Terminal sessions also work independently of Codex.
 4. In **Settings**, use **Sign in with ChatGPT** and finish in your browser, or enter an OpenAI API key using the dedicated account controls.
 5. Tap **New chat**. You can ask Codex to create something, or use **Import files** to bring existing files into the workspace.
 
@@ -75,64 +80,33 @@ The [changelog](CHANGELOG.md) has the full release notes. The [roadmap](ROADMAP-
 
 ## Install development tools
 
-The app sets up its package manager on first start. Open **Terminal** and run:
+In **Terminal**, complete the Arch installation and initialize its keyring at the
+first login. Update Arch and install tools with pacman:
 
 ```sh
-apt update
-apt install python nodejs-lts npm git ripgrep
+pacman -Syu
+pacman -S git python python-pip nodejs npm ripgrep
 ```
 
-This installs Python, Node.js, npm, Git and ripgrep, a tool for searching text in files. You can install just the packages you need.
+Remove a package with `pacman -R <package>` and inspect installed packages with
+`pacman -Q`. Arch Terminal manages the mirrors and package signatures. The former
+AGENTCODI APT repository and catalog are no longer part of this source build.
 
-To update installed APT packages:
+Terminal sessions and Codex commands share the same Arch installation and
+workspace. The workspace is available at `/workspace` and at the original
+absolute path used by AGENTCODI's editor and file APIs. Arch packages live inside
+`files/arch`; the guest home is `/root`. Use a project virtual environment for
+Python packages and the regular npm commands for Node packages. Restart the
+Codex runtime after installing a new program needed as a direct stdio MCP command
+so its host launcher is refreshed.
 
-```sh
-apt update
-apt upgrade
-```
-
-To remove one:
-
-```sh
-apt remove <package>
-```
-
-Replace `<package>` with its name. Install APT packages from the app's signed repository; packages built for Termux may contain paths that do not work in AGENTCODI.
-
-<details>
-<summary>npm, Python and package paths</summary>
-
-Install an npm tool:
-
-```sh
-npm install -g <npm-package>
-```
-
-Install a Python package for your user:
-
-```sh
-python -m ensurepip --user
-python -m pip install --user <python-package>
-```
-
-Or create a Python environment for a project:
-
-```sh
-python -m venv .venv
-.venv/bin/python -m pip install <python-package>
-```
-
-Replace the names in angle brackets with the package you want.
-
-APT packages live under `$PREFIX`, normally `/data/data/de.agentcodi.pkg/files/usr`. Global npm tools and Python user packages use `$HOME/.local`. Use `dpkg-query -W` to list installed APT packages.
-
-If a command is missing or resolves to an unexpected location, open **Terminal > Package diagnostics**. It shows installed APT packages, command locations and environment paths without changing anything.
-
-</details>
+Old APT and `$HOME/.local` data remain available in the legacy read-only browser
+areas for export. Their binaries are absent from the active command and library
+paths and are not converted to pacman packages.
 
 ## Work with files
 
-The file browser has three areas: **Workspace** for your project files, **APT packages** for installed system tools, and **User packages** for tools installed under `$HOME/.local`. Both package areas are read-only.
+The file browser shows **Workspace** and read-only areas for **Earlier APT packages** and **Earlier user packages**. These retain files from previous APKs for export. Inspect the active Arch installation and its pacman packages in Terminal.
 
 Imported files go into `workspace/imports`. Importing an archive or DEB file only copies it into the workspace; use the terminal to unpack or install it.
 
@@ -153,7 +127,7 @@ Open a text or code file in **Workspace** to edit it, or tap **New file** in a f
 
 The editor supports UTF-8 text files up to 1 MiB. Images, binary files, larger text files and installed package files open in read-only previews. Saving keeps the file's existing line endings, UTF-8 byte order mark and executable permissions. Save before exporting an edited file.
 
-To run code you have saved, open **Terminal** in the file's folder and use the appropriate tool. For example, after `apt install python`, run a Python file with `python example.py`.
+To run code you have saved, open **Terminal** in the file's folder and use the appropriate tool. For example, after `pacman -S python`, run a Python file with `python example.py`.
 
 ## Approvals and extra tools
 
@@ -163,7 +137,7 @@ Managed MCP servers ask before each tool call. The dialog shows the server, requ
 
 ## Updating the app
 
-Install a newer release APK over the existing app to keep your files, settings and installed packages. Use `apt update` and `apt upgrade` separately to update APT packages.
+Install a newer release APK over the existing app to keep your files, settings and installed packages. For Arch integration builds, use `pacman -Syu` separately to update Arch packages.
 
 If Android refuses an update because the signing certificate differs, you may have an older development build. Export the files you need before uninstalling it: uninstalling deletes the app's private data.
 
@@ -183,25 +157,16 @@ The published 0.1.6 APK and current source use Android `versionCode 9`.
 </details>
 
 <details>
-<summary>Package repository and compatibility</summary>
+<summary>Arch Terminal integration</summary>
 
-The signed APT repository is:
+The unchanged upstream snapshot is pinned at
+`99fad098fe41e1a19b5a5e81351105bef4498a01` and checked with SHA-256 per file.
+PRoot runs Arch Linux ARM aarch64 under Android without requiring a separate app
+or root access. Rootfs downloads retain upstream's pinned size, SHA-256 and
+installation transaction. PRoot is not a separate security boundary.
 
-```text
-https://mcpasi.github.io/AGENTCODI-Package-Edition/apt/package-edition
-```
-
-Pinned signing-key fingerprint:
-
-```text
-2768291D12B6C3D22CFBAF9EEC79CBDF7E93DC89
-```
-
-Packages are built for Android ARM64/Bionic and AGENTCODI's own installation prefix. Existing Termux DEBs can contain hard-coded paths such as `/data/data/com.termux/files/usr`, so compatibility is not automatic.
-
-Version 0.1.2 uses the original APT endpoint. Published APKs from 0.1.3 onward migrate the original managed source to the dedicated repository on update, retaining installed packages and custom sources.
-
-See the [package build contract](scripts/package-edition/README.md) for recipes, provenance and reconstruction instructions.
+The [integration guide](scripts/arch-terminal/README.md) describes the shared
+workspace, command adapters, native build and corresponding source artifacts.
 
 </details>
 
@@ -210,14 +175,14 @@ See the [package build contract](scripts/package-edition/README.md) for recipes,
 
 The app pins the Community Android ARM64 runtime from [DioNanos/codex-termux](https://github.com/DioNanos/codex-termux), release [v0.156.1-termux.1](https://github.com/DioNanos/codex-termux/releases/tag/v0.156.1-termux.1), based on OpenAI Codex `rust-v0.156.1`. Runtime archives, source revisions, native binaries, schema files and integration hashes are pinned and verified in CI.
 
-Full access is the only runtime mode. Optional command/file confirmation uses Codex's `untrusted` policy. Programs installed through APT, npm, pip or other tools run with AGENTCODI's app permissions. The workspace, `HOME`, `CODEX_HOME` and package prefix are separate directories, but that separation does not isolate programs from account files.
+Full access is the only runtime mode. Optional command/file confirmation uses Codex's `untrusted` policy. Programs installed through pacman, npm, pip or other tools run with AGENTCODI's app permissions. The workspace, `HOME`, `CODEX_HOME` and Arch rootfs are separate directories, but that separation does not isolate programs from account files.
 
 </details>
 
 <details>
 <summary>Build and verification</summary>
 
-The repository includes application sources, package recipes, build scripts and CI checks.
+The repository includes application sources, the unchanged Arch Terminal snapshot, build scripts and CI checks.
 
 - [Package Edition roadmap](ROADMAP-package-edition.md)
 - [Package build contract](scripts/package-edition/README.md)
@@ -226,14 +191,15 @@ The repository includes application sources, package recipes, build scripts and 
 - [Repository setup and workflow inputs](.github/ci/PACKAGE_EDITION_SETUP.md)
 - [Release signing](.github/ci/RELEASE_SIGNING.md)
 
-Local runners require the Termux Android toolchain:
+The complete APK runner retains its pinned ARM64 build container. Portable checks can also run on a Linux host:
 
 ```sh
-./scripts/test.sh
-./scripts/build-debug-apk.sh
+bash .github/ci/run-java-tests.sh
+python3 -B .github/ci/test-arch-terminal.py
+bash scripts/check-architecture.sh
 ```
 
-APK and package builds run on `main`. The Tests workflow also checks feature branches and pull requests. CI checks app identity, APK contents, ARM64 compatibility, alignment, signing, package bootstrap, source availability and license material.
+APK builds run on `main` and temporarily on `Mcpasi/Fusion_Arch_Termux`, with TODO comments to restore main-only builds after integration. The Tests workflow checks all branches and pull requests. The reusable native-runtime job replaces the former APT bootstrap dependency; the existing APK container and signing path remain. CI checks app identity, DEX, APK contents, ARM64 compatibility, alignment, signing, Arch integration and source/license material.
 
 </details>
 
@@ -241,7 +207,7 @@ APK and package builds run on `main`. The Tests workflow also checks feature bra
 
 AGENTCODI is an independent open-source project, with no affiliation with or endorsement by OpenAI.
 
-Original application code, tests, resources, build automation and documentation are copyright 2026 Pascal (Mc Pasi), licensed under [Apache 2.0](LICENSE). Third-party components retain their own licenses and copyright notices. See [NOTICE.md](NOTICE.md) and the notices in the app.
+Original AGENTCODI code, tests, resources, build automation and documentation are copyright 2026 Pascal (Mc Pasi), licensed under [Apache 2.0](LICENSE). The combined APK including Arch Terminal is distributed under GPL-3.0-or-later; Arch Terminal and native input source bundles accompany the build artifacts. Third-party components retain their own licenses and copyright notices. See [NOTICE.md](NOTICE.md) and the notices in the app.
 
 Complete original sources for the Codex runtime's MPL-2.0 components are included in the APK. Export them without an account or internet connection:
 
@@ -251,5 +217,5 @@ Source and license documentation:
 
 - [Community Codex dependency licenses and provenance](third_party/community-codex/README.md)
 - [MPL source offer, archive hashes and upstream locations](third_party/community-codex/MPL-SOURCE-OFFER.txt)
-- [APT package sources and reconstruction instructions](third_party/package-source-archives/README.md)
+- [Arch Terminal sources and notices](third_party/arch-terminal/NOTICE.md)
 - [Package build contract](scripts/package-edition/README.md)

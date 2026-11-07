@@ -1,0 +1,12 @@
+{
+  "format": 1,
+  "distribution": "Arch Linux ARM",
+  "architecture": "aarch64",
+  "url": "https://mirror.math.princeton.edu/pub/archlinuxarm/os/ArchLinuxARM-aarch64-latest.tar.gz",
+  "signature_url": "https://mirror.math.princeton.edu/pub/archlinuxarm/os/ArchLinuxARM-aarch64-latest.tar.gz.sig",
+  "size": 829367415,
+  "sha256": "42a4eeaa038994ffd31fa173256ef2f0ef511358eeb41b9ea1f8626391b9b319",
+  "signing_key_fingerprint": "68B3537F39A313B3E574D06777193F152BDBE6A6",
+  "verified_on": "2026-11-06",
+  "notes": "Upstream latest URL is mutable; checksum changes require an explicit verified lock update."
+}

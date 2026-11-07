@@ -20,7 +20,7 @@ from performance_report import SCHEMA_VERSION, aggregate, compare_baseline, mark
 
 ROOT = Path(__file__).resolve().parents[2]
 JVM_FLAGS = ["-Xms128m", "-Xmx512m", "-XX:+UseG1GC", "-XX:ActiveProcessorCount=2"]
-SUITES = ("terminal", "chat", "protocol")
+SUITES = ("chat", "protocol")
 
 
 def positive(value):

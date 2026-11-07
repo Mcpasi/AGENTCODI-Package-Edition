@@ -7,18 +7,18 @@ on an Android device. Security reports are especially important when they concer
 the boundaries between the private workspace, account data, Android storage,
 packaged runtimes, and hosted services. The Package Edition APK contains the native
 Codex app-server/code-mode host, the app engine and shell bridge, libc++ and zlib,
-plus the minimal package bootstrap. Node.js, npm, Python and ripgrep are installed
-separately through the signed edition APT repository. Retired APK activation
-aliases are excluded from PATH; updates preserve user-installed packages.
-The obsolete extraction, activation and guard/attestor APIs are removed. Optional
-alias retirement does not follow linked legacy roots, and runtime startup no
-longer requires retired tool directories. Existing legacy data is retained;
-Full-access programs can still access it.
+plus Arch Terminal's PRoot, loader, native PTY/extractor and terminal emulator.
+Development tools run in the pinned Arch Linux ARM installation and are managed
+by pacman. Commands from Codex and the terminal share the same workspace and
+Arch installation. PRoot translates filesystem/process operations; it does not
+provide a separate security boundary or grant Android root access. The former
+APT/catalog and app-server PTY UI implementations have been removed. Existing
+legacy package files remain for export and are not on the active tool paths.
 
 ## Browser and export areas
 
 The graphical browser exposes only three explicit roots: workspace, the managed
-package prefix and the user package prefix `$HOME/.local`. It does not expose
+legacy APT prefix and the legacy user package prefix `$HOME/.local`. It does not expose
 the entire home or Codex account directory. Package views reuse bounded,
 descriptor-relative no-follow access, reject hard links, and exclude known
 credential paths, including Codex auth files, SSH directories, `.npmrc`/`.pypirc` credential
@@ -166,10 +166,11 @@ not currently operate a paid bug-bounty program.
 
 The final payload contract checks the exact ARM64 native/asset set and compares
 all delivered native and supplied legal bytes against the verified build
-staging. It verifies the bootstrap archive/manifest, per-package legal ownership
-and corresponding-source metadata. See [the test contract](scripts/package-edition/TEST_CONTRACT.md).
-Java and native tests preserve installed tool bytes, executable permissions,
-the dpkg database and caches, and reject inherited retired activation variables.
+staging. It verifies the unchanged Arch snapshot, rootfs download pin, original
+license assets and corresponding-source artifacts. See [the test contract](scripts/package-edition/TEST_CONTRACT.md).
+Java and native tests check argument-preserving Arch command wrappers, shared
+paths, loader-environment cleanup, shell discovery and PRoot command cancellation.
+Legacy user data remains separate from the active Arch installation.
 
 Hosted Linux and ARM64/Bionic containers cannot validate Android installation,
 APK updates, foreground services, notifications, login browser flows, document
@@ -201,3 +202,6 @@ The corrected smoke checks actual tool output, and native ARM64 CI now checks
 isolated callbacks plus all approval decisions through both native and nested
 MCP paths. See the [diagnosis](.github/ci/CODE_MODE_SIGSEGV.md) and
 [roadmap](ROADMAP-package-edition.md#code-mode-sigsegv-ci-fix--2026-10-07).
+
+Arch integration builds require new device validation; historical APT/device
+results above do not validate the new terminal or guest environment.

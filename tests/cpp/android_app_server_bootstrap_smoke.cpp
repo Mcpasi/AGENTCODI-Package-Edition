@@ -204,16 +204,15 @@ const std::string kRetiredEnvironmentChecks =
     "test x${AGENTCODI_PYTHON_VERSION+set} = x && "
     "test x${AGENTCODI_RIPGREP_VERSION+set} = x";
 
-bool check_package_prefix(
+bool check_arch_command_environment(
     const std::shared_ptr<agentcodi::AppServerProcess>& process,
     const agentcodi::ProcessConfig& config,
     std::string* error) {
-  const std::string managed = config.package_prefix + "/bin/package-check";
+  const std::string managed = config.state_directory + "/arch-bin/package-check";
   const std::string legacy = config.home_directory + "/.local/bin/package-check";
-  const std::string legacy_only = config.home_directory + "/.local/bin/legacy-package-check";
+  const std::string legacy_only = config.state_directory + "/arch-bin/legacy-package-check";
   const std::string shared_path = config.home_directory + "/shared-package-path";
-  const std::string package_path = config.package_prefix + "/bin:"
-      + config.home_directory + "/.local/bin:/system/bin:/system/xbin";
+  const std::string package_path = config.state_directory + "/arch-bin:/system/bin:/system/xbin";
   const auto cleanup = [&]() {
     unlink(managed.c_str());
     unlink(legacy.c_str());
@@ -221,32 +220,31 @@ bool check_package_prefix(
   };
   if (!safe_json_path(config.package_prefix)
       || !safe_json_path(config.home_directory)
-      || !create_private_fixture(managed, "#!/system/bin/sh\nprintf 'managed-package-ok '\n")
+      || !create_private_fixture(managed, "#!/system/bin/sh\nprintf 'arch-adapter-ok '\n")
       || !create_private_fixture(legacy, "#!/system/bin/sh\nprintf 'legacy-package-ok '\n")
-      || !create_private_fixture(legacy_only, "#!/system/bin/sh\nprintf legacy-only-ok\n")
+      || !create_private_fixture(legacy_only, "#!/system/bin/sh\nprintf arch-command-ok\n")
       || chmod(managed.c_str(), 0700) != 0
       || chmod(legacy.c_str(), 0700) != 0
       || chmod(legacy_only.c_str(), 0700) != 0) {
     cleanup();
-    std::cerr << "Package-prefix fixtures could not be prepared\n";
+    std::cerr << "Arch adapter fixtures could not be prepared\n";
     return false;
   }
   const auto execute = [&](int id, const std::string& shell, const std::string& expected) {
     return write_request(process,
         "{\"method\":\"command/exec\",\"id\":" + std::to_string(id) + ",\"params\":{"
         "\"command\":[\"" + shell + "\",\"-c\","
-        "\"test \\\"$PREFIX\\\" = '" + config.package_prefix + "' && "
+        "\"test x${PREFIX+set} = x && "
         "test \\\"$HOME\\\" = '" + config.home_directory + "' && "
         "test \\\"$TMPDIR\\\" = '" + config.temporary_directory + "' && "
-        "test \\\"$NPM_CONFIG_PREFIX\\\" = '" + config.home_directory + "/.local' && "
+        "test x${NPM_CONFIG_PREFIX+set} = x && "
         "test \\\"$XDG_CACHE_HOME\\\" = '" + config.home_directory + "/.cache' && "
         "case \\\"$PATH\\\" in '" + config.codex_home + "/tmp/arg0/codex-arg0'*:'"
         + package_path + "') :;; *) exit 12;; esac && "
         + (id == 29
             ? "printf '%s' \\\"$PATH\\\" > '" + shared_path + "' && "
             : "test \\\"$PATH\\\" = \\\"$(/system/bin/cat '" + shared_path + "')\\\" && ")
-        + "test \\\"$LD_LIBRARY_PATH\\\" = '" + config.package_prefix + "/lib:"
-        + config.home_directory + "/.local/lib:" + config.library_directory + "' && "
+        + "test \\\"$LD_LIBRARY_PATH\\\" = '" + config.library_directory + "' && "
         + kRetiredEnvironmentChecks + " && "
         "package-check && legacy-package-check\"],"
         "\"cwd\":\"" + config.working_directory + "\","
@@ -254,31 +252,26 @@ bool check_package_prefix(
         "\"outputBytesCap\":4096,\"timeoutMs\":" + std::to_string(kCommandTimeoutMs) + "}}",
         error) && read_command_response(process, id, expected, error);
   };
-  // Exercise both Codex's system shell and the terminal's packaged shell.
-  bool passed = execute(29, "/system/bin/sh", "managed-package-ok legacy-only-ok")
-      && execute(30, config.shell_executable, "managed-package-ok legacy-only-ok");
-  if (passed) {
-    passed = unlink(managed.c_str()) == 0
-        && execute(31, config.shell_executable, "legacy-package-ok legacy-only-ok");
-  }
+  // Exercise the same explicit host-shell fixture through both RPC calls.
+  bool passed = execute(29, "/system/bin/sh", "arch-adapter-ok arch-command-ok")
+      && execute(30, config.shell_executable, "arch-adapter-ok arch-command-ok");
   cleanup();
   if (!passed) {
     unlink(shared_path.c_str());
-    std::cerr << "Managed precedence or legacy package fallback failed\n";
+    std::cerr << "Arch command-adapter PATH or legacy-path exclusion failed\n";
   }
   return passed;
 }
 
-bool check_stdio_package_environment(
+bool check_stdio_arch_environment(
     const std::shared_ptr<agentcodi::AppServerProcess>& process,
     const agentcodi::ProcessConfig& config,
     std::string* error) {
-  const std::string fixture = config.package_prefix + "/bin/agentcodi-mcp-env-fixture";
+  const std::string fixture = config.state_directory + "/arch-bin/agentcodi-mcp-env-fixture";
   const std::string proof = config.home_directory + "/mcp-env-proof";
   const std::string diagnostics = config.home_directory + "/mcp-env-diagnostics";
   const std::string shared_path = config.home_directory + "/shared-package-path";
-  const std::string libraries = config.package_prefix + "/lib:"
-      + config.home_directory + "/.local/lib:" + config.library_directory;
+  const std::string libraries = config.library_directory;
   const std::string script =
       "#!/system/bin/sh\nset -eu\n"
       "printf 'PATH=%s\\nPREFIX=%s\\nLD_LIBRARY_PATH=%s\\nHOME=%s\\nTMPDIR=%s\\nNPM_CONFIG_PREFIX=%s\\nXDG_CACHE_HOME=%s\\nTERMUX_VERSION=%s\\n' "
@@ -286,11 +279,11 @@ bool check_stdio_package_environment(
       "\"${HOME-unset}\" \"${TMPDIR-unset}\" \"${NPM_CONFIG_PREFIX-unset}\" "
       "\"${XDG_CACHE_HOME-unset}\" \"${TERMUX_VERSION-unset}\" > '" + diagnostics + "'\n"
       "test \"$PATH\" = \"$(/system/bin/cat '" + shared_path + "')\"\n"
-      "test \"$PREFIX\" = '" + config.package_prefix + "'\n"
+      "test x${PREFIX+set} = x\n"
       "test \"$LD_LIBRARY_PATH\" = '" + libraries + "'\n"
       "test \"$HOME\" = '" + config.home_directory + "'\n"
       "test \"$TMPDIR\" = '" + config.temporary_directory + "'\n"
-      "test \"$NPM_CONFIG_PREFIX\" = \"$HOME/.local\"\n"
+      "test x${NPM_CONFIG_PREFIX+set} = x\n"
       "test \"$XDG_CACHE_HOME\" = \"$HOME/.cache\"\n"
       + kRetiredEnvironmentChecks + " || exit 17\n"
       "printf stdio-package-env-ok > '" + proof + "'\n"
@@ -358,7 +351,7 @@ done
     } else {
       std::cerr << "MCP fixture did not record its environment\n";
     }
-    std::cerr << "Actual stdio-MCP package environment or handshake failed\n";
+    std::cerr << "Actual stdio-MCP Arch adapter environment or handshake failed\n";
   }
   unlink(fixture.c_str());
   unlink(proof.c_str());
@@ -418,7 +411,7 @@ bool check_full_access_runtime(
       error)
       && read_command_response(process, 28, "AGENTCODI-PAYLOAD-READY", error);
   if (!native_started) {
-    std::cerr << "Full-access executor must start the packaged native shell and read the workspace\n";
+    std::cerr << "Full-access executor must start the explicit Android shell fixture and read the workspace\n";
     cleanup();
     return false;
   }
@@ -736,6 +729,8 @@ int main(int argc, char* argv[]) {
   config.state_directory = argv[7];
   config.temporary_directory = argv[8];
   config.library_directory = argv[9];
+  // The system-shell fixture is intentionally outside the packaged library directory.
+  config.arguments = agentcodi::CodexAppServerArguments(config);
 
   std::string error;
   std::shared_ptr<agentcodi::AppServerProcess> process =
@@ -759,10 +754,10 @@ int main(int argc, char* argv[]) {
     return 1;
   }
 
-  // Full access must execute the packaged shell and read/write private siblings.
+  // Full access must execute its host fixture and read/write private siblings.
   if (!check_full_access_runtime(process, config, &error)
-      || !check_package_prefix(process, config, &error)
-      || !check_stdio_package_environment(process, config, &error)) {
+      || !check_arch_command_environment(process, config, &error)
+      || !check_stdio_arch_environment(process, config, &error)) {
     process->Stop(2'000);
     return 1;
   }
@@ -802,7 +797,7 @@ int main(int argc, char* argv[]) {
 
   const std::string terminal_request =
       "{\"method\":\"command/exec\",\"id\":6,\"params\":{"
-      "\"command\":[\"" + shell + "\",\"--interactive\"],"
+      "\"command\":[\"" + shell + "\",\"-i\"],"
       "\"cwd\":\"" + workspace + "\","
       "\"processId\":\"agentcodi-build-terminal\","
       "\"permissionProfile\":\":danger-full-access\","
@@ -829,13 +824,13 @@ int main(int argc, char* argv[]) {
       "test ! -e \\\"${LD_LIBRARY_PATH##*:}/libripgrep.so\\\" && "
       "test -z \\\"$(command -v node)\\\" && test -z \\\"$(command -v rg)\\\" && "
       "test -z \\\"$(command -v agentcodi-toolchain)\\\" && "
-      "printf minimal-package-shell-ok\"],"
+      "printf arch-host-protocol-ok\"],"
       "\"cwd\":\"" + workspace + "\","
       "\"permissionProfile\":\":danger-full-access\","
       "\"tty\":false,\"outputBytesCap\":65536,\"timeoutMs\":"
       + std::to_string(kCommandTimeoutMs) + "}}";
   if (!write_request(process, model_shell_request, &error)
-      || !read_command_response(process, 9, "minimal-package-shell-ok", &error)) {
+      || !read_command_response(process, 9, "arch-host-protocol-ok", &error)) {
     process->Stop(2'000);
     return 1;
   }
@@ -872,7 +867,7 @@ int main(int argc, char* argv[]) {
 
   const std::string terminated_terminal_request =
       "{\"method\":\"command/exec\",\"id\":10,\"params\":{"
-      "\"command\":[\"" + shell + "\",\"--interactive\"],"
+      "\"command\":[\"" + shell + "\",\"-i\"],"
       "\"cwd\":\"" + workspace + "\","
       "\"processId\":\"agentcodi-build-terminal-stop\","
       "\"permissionProfile\":\":danger-full-access\","

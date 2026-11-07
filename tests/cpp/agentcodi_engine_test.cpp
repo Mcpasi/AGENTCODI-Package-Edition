@@ -960,21 +960,18 @@ int main(int argc, char* argv[]) {
          "Codex environment deny patterns remain enabled");
   expect(joined_arguments.find("CODEX_HOME=") == std::string::npos,
          "Codex home excluded from tool environment");
-  expect(joined_arguments.find("/private/state") == std::string::npos,
-         "materialization proof state excluded from tool arguments");
-  expect(joined_arguments.find("NPM_CONFIG_PREFIX=\"/private/home/.local\"") != std::string::npos
-             && joined_arguments.find("XDG_CACHE_HOME=\"/private/home/.cache\"") != std::string::npos
-             && joined_arguments.find("TERMUX_VERSION=\"agentcodi-package-edition\"") != std::string::npos,
-         "Codex uses writable npm and cache paths plus the Community stdio bridge");
-  expect(joined_arguments.find("PREFIX=\"/private/usr\"") != std::string::npos,
-         "Codex commands receive the writable package prefix");
-  expect(joined_arguments.find(
-             "LD_LIBRARY_PATH=\"/private/usr/lib:/private/home/.local/lib:/private/native\"")
-             != std::string::npos,
-         "Codex commands can resolve libraries installed with user packages");
-  expect(joined_arguments.find("SHELL=\"/system/bin/sh\"")
-             != std::string::npos,
-         "Codex reports the actual Android system shell");
+  expect(joined_arguments.find("image-materialization-proofs") == std::string::npos,
+         "materialization proof filenames excluded from tool arguments");
+  expect(joined_arguments.find("XDG_CACHE_HOME=\"/private/home/.cache\"") != std::string::npos
+             && joined_arguments.find("TERMUX_VERSION=\"agentcodi-arch-terminal\"") != std::string::npos,
+         "Codex retains cache and Community stdio compatibility settings");
+  expect(joined_arguments.find("NPM_CONFIG_PREFIX=") == std::string::npos
+             && joined_arguments.find("PREFIX=") == std::string::npos,
+         "retired package manager settings are absent");
+  expect(joined_arguments.find("LD_LIBRARY_PATH=\"/private/native\"") != std::string::npos,
+         "Bionic app-server uses only its packaged libraries");
+  expect(joined_arguments.find("SHELL=\"/private/state/arch-bin/bash\"") != std::string::npos,
+         "Codex selects the shared Arch Bash adapter");
   expect(joined_arguments.find("include_only=[") != std::string::npos
              && joined_arguments.find("\"PATH\"") != std::string::npos
              && joined_arguments.find(",PATH=") == std::string::npos
@@ -1210,11 +1207,12 @@ int main(int argc, char* argv[]) {
     }
     expect(mkdir(package_prefix.c_str(), 0700) == 0, "process-test package prefix");
     expect(mkdir((package_prefix + "/bin").c_str(), 0700) == 0, "package binary directory");
-    const std::string user_node = package_prefix + "/bin/node";
+    expect(mkdir(state.c_str(), 0700) == 0, "process-test private state");
+    expect(mkdir((state + "/arch-bin").c_str(), 0700) == 0, "Arch adapter directory");
+    const std::string user_node = state + "/arch-bin/node";
     expect(write_fixture_file(user_node, "#!/system/bin/sh\nprintf 'user-package-selected\\n'\n"),
            "install a managed program that takes precedence over user-prefix Node");
     expect(chmod(user_node.c_str(), 0700) == 0, "make user package executable");
-    expect(mkdir(state.c_str(), 0700) == 0, "process-test private state");
     expect(mkdir(temporary.c_str(), 0700) == 0, "process-test temporary directory");
 
     const std::vector<unsigned char> valid_png = make_valid_fixture_png();
@@ -1675,7 +1673,7 @@ int main(int argc, char* argv[]) {
         "printf '%s\\n' \"$PATH\"; "
         "printf '%s|%s\\n' \"$PREFIX\" \"$LD_LIBRARY_PATH\"; "
         "printf '%s|%s|%s|%s\\n' \"$TMPDIR\" \"$NPM_CONFIG_PREFIX\" \"$XDG_CACHE_HOME\" \"$TERMUX_VERSION\"; "
-        "node; package-check; "
+        "node; command -v package-check >/dev/null && exit 18; printf 'legacy-package-unreachable\\n'; "
         "IFS= read -r line; printf '%s\\n' \"$line\"",
     };
     expect(setenv("AGENTCODI_TOOLCHAIN", "retired", 1) == 0
@@ -1717,30 +1715,29 @@ int main(int argc, char* argv[]) {
               == agentcodi::LineReadStatus::kLine,
           "read closed app-server PATH");
       expect(
-          child_path == package_prefix + "/bin:" + legacy_prefix + "/bin:" + "/system/bin:/system/xbin"
+          child_path == state + "/arch-bin:/system/bin:/system/xbin"
               && child_path.find("/system/lib64") == std::string::npos,
-          "app-server PATH uses managed and user packages without retired aliases");
+          "app-server PATH uses Arch adapters without retired prefixes");
       std::string package_environment;
       expect(process->ReadLine(4096U, &package_environment, &error)
                  == agentcodi::LineReadStatus::kLine
-                 && package_environment == package_prefix + "|" + package_prefix + "/lib:"
-                     + legacy_prefix + "/lib:/system/lib64",
-             "supervisor exports the managed prefix and both library search paths");
+                 && package_environment == "|/system/lib64",
+             "supervisor excludes retired prefixes and uses its native libraries");
       std::string user_environment;
       expect(process->ReadLine(4096U, &user_environment, &error)
                  == agentcodi::LineReadStatus::kLine
-                 && user_environment == temporary + "|" + legacy_prefix + "|"
-                     + home + "/.cache|agentcodi-package-edition",
-             "supervisor shares temporary, npm and cache paths with Codex commands");
+                 && user_environment == temporary + "||"
+                     + home + "/.cache|agentcodi-arch-terminal",
+             "supervisor shares temporary and cache paths without retired npm settings");
       std::string package_output;
       expect(process->ReadLine(1024U, &package_output, &error)
                  == agentcodi::LineReadStatus::kLine
                  && package_output == "user-package-selected",
-             "managed executable wins over legacy and APK aliases");
+             "Arch command adapter wins over retired package prefixes");
       expect(process->ReadLine(1024U, &package_output, &error)
                  == agentcodi::LineReadStatus::kLine
-                 && package_output == "legacy-package-selected",
-             "legacy-only executable remains reachable through the supervisor");
+                 && package_output == "legacy-package-unreachable",
+             "legacy APT and user prefixes are absent from the active command path");
       const std::string probe = "{\"probe\":\"ok\"}";
       std::vector<unsigned char> mutable_probe(probe.begin(), probe.end());
       expect(
@@ -1764,25 +1761,6 @@ int main(int argc, char* argv[]) {
       expect(process->Stop(500) != INT_MIN, "supervised process stop");
     }
 
-    expect(unlink(user_node.c_str()) == 0, "remove managed override");
-    auto restarted = agentcodi::AppServerProcess::Start(config, &error);
-    expect(restarted != nullptr, "restart with preserved legacy installations");
-    if (restarted != nullptr) {
-      std::string line;
-      for (int index = 0; index < 5; ++index) {
-        expect(restarted->ReadLine(4096U, &line, &error) == agentcodi::LineReadStatus::kLine,
-               "read restarted supervisor environment");
-      }
-      for (int index = 0; index < 2; ++index) {
-        expect(restarted->ReadLine(1024U, &line, &error) == agentcodi::LineReadStatus::kLine
-                   && line == "legacy-package-selected",
-               "legacy fallback survives process restart and managed removal");
-      }
-      expect(restarted->Stop(500) != INT_MIN, "stop restarted supervisor");
-    }
-    expect(write_fixture_file(user_node, "#!/system/bin/sh\nprintf 'user-package-selected\\n'\n")
-               && chmod(user_node.c_str(), 0700) == 0, "restore managed override");
-
     char self_executable[PATH_MAX];
     const char* current_library_path = std::getenv("LD_LIBRARY_PATH");
     std::string test_library_directory = current_library_path == nullptr
@@ -1803,7 +1781,7 @@ int main(int argc, char* argv[]) {
       int shell_exit = -1;
       expect(
           run_package_shell(
-              argv[1], {"-c", "PATH=" + package_prefix + "/bin:" + legacy_prefix + "/bin:/system/bin node"},
+              argv[1], {"-c", "PATH=" + state + "/arch-bin:/system/bin node"},
               workspace, &shell_output, &shell_exit)
               && shell_exit == 0
               && shell_output == "user-package-selected\n",

@@ -61,32 +61,11 @@ class ApkContractTest(unittest.TestCase):
         pins.parent.mkdir(parents=True, exist_ok=True)
         pins.write_text(json.dumps(runtime))
         self.update_community()
-        prefix = "/data/data/de.agentcodi.pkg/files/usr"
-        self.legal = "share/doc/fixture/copyright"
-        files = {self.legal: b"Copyright fixture\nMIT License\n",
-                 "var/lib/dpkg/info/fixture.list": (prefix + "/" + self.legal + "\n").encode()}
-        stream = io.BytesIO()
-        with zipfile.ZipFile(stream, "w") as archive:
-            for name, data in files.items():
-                archive.writestr(name, data)
-        manifest = ("AGENTCODI_BOOTSTRAP_V1\n" + "".join(
-            "F\t600\t" + str(len(data)) + "\t" + contract.digest(data) + "\t" + name + "\n"
-            for name, data in files.items())).encode()
-        record = {"path": self.legal, "installed_path": self.legal, "size": len(files[self.legal]),
-                  "sha256": contract.digest(files[self.legal])}
-        self.report = {"archive_sha256": contract.digest(stream.getvalue()),
-                       "manifest_sha256": contract.digest(manifest),
-                       "lock": {"target": {"prefix": prefix}},
-                       "packages": {"fixture": {"Version": "1.0"}},
-                       "licenses": {"fixture": [record]},
-                       "corresponding_sources": {"archive": "bootstrap-corresponding-sources.tar.xz",
-                                                 "sha256": "1" * 64}}
-        self.index = {"format_version": 1, "packages": [
-            {"name": "fixture", "version": "1.0", "files": [record], "notice": ""}]}
-        self.bootstrap = "assets/third-party/package-bootstrap/"
-        self.entries[self.bootstrap + "bootstrap-aarch64.zip"] = stream.getvalue()
-        self.entries[self.bootstrap + "BOOTSTRAP-MANIFEST"] = manifest
-        self.update_report()
+        for name, source in contract.arch_assets().items():
+            target = self.project / source.relative_to(REPO)
+            target.parent.mkdir(parents=True, exist_ok=True)
+            target.write_bytes(source.read_bytes())
+            self.entries[name] = source.read_bytes()
         self.write()
 
     def update_community(self):
@@ -99,10 +78,6 @@ class ApkContractTest(unittest.TestCase):
         self.entries[root + "DEPENDENCY-PROVENANCE.json"] = json.dumps(self.community_provenance).encode()
         for filename in ("DEPENDENCY-LICENSE-INDEX.json", "DEPENDENCY-LICENSES.zip", "DEPENDENCY-PROVENANCE.json"):
             (base / filename).write_bytes(self.entries[root + filename])
-
-    def update_report(self):
-        self.entries[self.bootstrap + "bootstrap-report.json"] = json.dumps(self.report).encode()
-        self.entries[self.bootstrap + "BOOTSTRAP-LICENSE-INDEX.json"] = json.dumps(self.index).encode()
 
     def write(self, staged=True):
         if staged:
@@ -121,49 +96,24 @@ class ApkContractTest(unittest.TestCase):
     def test_exact_payload_and_legal_bytes_pass_with_complete_notices(self):
         report = self.verify()
         self.assertTrue(report["license_release_ready"])
-        self.assertFalse(report["release_blockers"])
-        self.assertEqual([self.legal], [x["path"] for x in report["bootstrap"]["licenses"]["fixture"]])
+        self.assertEqual("0.1.9", report["arch_terminal"]["version"])
 
-    def shared_license(self, target="../../LICENSES/MIT.txt"):
-        shared = "share/LICENSES/MIT.txt"
-        prefix = self.report["lock"]["target"]["prefix"]
-        data = b"Copyright fixture\nMIT License\n"
-        files = {shared: data,
-                 "var/lib/dpkg/info/fixture.list": (prefix + "/" + self.legal + "\n").encode(),
-                 "var/lib/dpkg/info/termux-licenses.list": (prefix + "/" + shared + "\n").encode()}
-        stream = io.BytesIO()
-        with zipfile.ZipFile(stream, "w") as archive:
-            for name, value in files.items():
-                archive.writestr(name, value)
-        manifest = ("AGENTCODI_BOOTSTRAP_V1\nL\t" + target + "\t" + self.legal + "\n" + "".join(
-            "F\t600\t" + str(len(value)) + "\t" + contract.digest(value) + "\t" + name + "\n"
-            for name, value in files.items())).encode()
-        linked = {"path": shared, "installed_path": self.legal,
-                  "size": len(data), "sha256": contract.digest(data)}
-        direct = {**linked, "installed_path": shared}
-        self.report["archive_sha256"] = contract.digest(stream.getvalue())
-        self.report["manifest_sha256"] = contract.digest(manifest)
-        self.report["packages"]["termux-licenses"] = {"Version": "2.2"}
-        self.report["licenses"] = {"fixture": [linked], "termux-licenses": [direct]}
-        self.index["packages"] = [
-            {"name": name, "version": value["Version"],
-             "files": self.report["licenses"][name], "notice": ""}
-            for name, value in sorted(self.report["packages"].items())]
-        self.entries[self.bootstrap + "bootstrap-aarch64.zip"] = stream.getvalue()
-        self.entries[self.bootstrap + "BOOTSTRAP-MANIFEST"] = manifest
-        self.update_report()
+    def test_changed_arch_rootfs_pin_is_rejected(self):
+        self.entries["assets/rootfs.lock.json"] = b"{}"
         self.write()
+        with self.assertRaisesRegex(ValueError, "Arch Terminal asset differs"):
+            self.verify()
 
-    def test_manifest_owned_shared_license_links_are_resolved(self):
-        self.shared_license()
-        report = self.verify()
-        self.assertEqual("share/LICENSES/MIT.txt",
-                         report["bootstrap"]["licenses"]["fixture"][0]["path"])
-        self.assertFalse(report["release_blockers"])
+    def test_changed_arch_license_is_rejected(self):
+        self.entries["assets/licenses/LICENSE"] = b"changed license"
+        self.write()
+        with self.assertRaisesRegex(ValueError, "Arch Terminal asset differs"):
+            self.verify()
 
-    def test_escaping_legal_link_is_rejected_without_host_access(self):
-        self.shared_license("../../../../../../outside")
-        with self.assertRaisesRegex(ValueError, "leaves bootstrap prefix"):
+    def test_retired_apt_payload_is_rejected(self):
+        self.entries["assets/third-party/package-bootstrap/bootstrap-aarch64.zip"] = b"retired"
+        self.write()
+        with self.assertRaisesRegex(ValueError, "APK asset set differs"):
             self.verify()
 
     def test_foreign_abi_is_rejected(self):
@@ -190,40 +140,6 @@ class ApkContractTest(unittest.TestCase):
         self.entries["assets/third-party/codex/NOTICE"] = b"mutated"
         self.write(staged=False)
         with self.assertRaisesRegex(ValueError, "bytes differ"):
-            self.verify()
-
-    def test_bootstrap_manifest_mutation_is_rejected(self):
-        self.entries[self.bootstrap + "BOOTSTRAP-MANIFEST"] += b"invalid\n"
-        self.write()
-        with self.assertRaisesRegex(ValueError, "manifest checksum"):
-            self.verify()
-
-    def test_unindexed_bootstrap_license_is_rejected(self):
-        self.report["licenses"]["fixture"] = []
-        self.update_report()
-        self.write()
-        with self.assertRaisesRegex(ValueError, "Unindexed"):
-            self.verify()
-
-    def test_wrong_bootstrap_license_digest_is_rejected(self):
-        self.report["licenses"]["fixture"][0]["sha256"] = "2" * 64
-        self.update_report()
-        self.write()
-        with self.assertRaisesRegex(ValueError, "license checksum"):
-            self.verify()
-
-    def test_ui_index_must_match_real_package_legal_files(self):
-        self.index["packages"][0]["version"] = "0.9"
-        self.update_report()
-        self.write()
-        with self.assertRaisesRegex(ValueError, "UI license index"):
-            self.verify()
-
-    def test_missing_corresponding_source_evidence_is_rejected(self):
-        del self.report["corresponding_sources"]
-        self.update_report()
-        self.write()
-        with self.assertRaisesRegex(ValueError, "corresponding sources"):
             self.verify()
 
     def test_final_release_accepts_complete_dependency_notices(self):

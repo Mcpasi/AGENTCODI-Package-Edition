@@ -34,7 +34,7 @@ final class ChatBenchmarks {
     }
 
     private static final class StreamReplay implements Benchmark.Workload {
-        private final ReplaySession session = new ReplaySession(false);
+        private final ReplaySession session = new ReplaySession();
         private final String kind;
         private final String expected;
         private final String[] frames;

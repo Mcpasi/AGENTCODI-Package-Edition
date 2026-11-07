@@ -1,15 +1,31 @@
 {
-  "format_version": 1,
+  "format_version": 2,
   "abi": "arm64-v8a",
   "native_files": [
+    "libagentcodi-arch-env.so",
     "libagentcodi-shell.so",
     "libagentcodi.so",
+    "libarch-proot.so",
+    "libarchterminal.so",
     "libc++_shared.so",
     "libcodex-codehost.so",
     "libcodex.so",
+    "libproot-loader.so",
+    "libproot.so",
     "libz_1.so"
   ],
   "third_party_assets": [
+    "assets/licenses/APACHE-2.0.txt",
+    "assets/licenses/ARCHLINUX-ARTWORK-AUTHORS.txt",
+    "assets/licenses/ARCHLINUX-ARTWORK-COPYING",
+    "assets/licenses/LIBARCHIVE-COPYING",
+    "assets/licenses/LICENSE",
+    "assets/licenses/NOTICE.md",
+    "assets/licenses/PROOT-COPYING",
+    "assets/licenses/TALLOC-LGPL-3.0.txt",
+    "assets/licenses/UPSTREAM-LICENSE.md",
+    "assets/rootfs.lock.json",
+    "assets/third-party/arch-terminal/source-lock.json",
     "assets/third-party/codex/DEPENDENCY-LICENSE-INDEX.json",
     "assets/third-party/codex/DEPENDENCY-LICENSES.zip",
     "assets/third-party/codex/DEPENDENCY-PROVENANCE.json",
@@ -20,10 +36,6 @@
     "assets/third-party/codex/NOTICE",
     "assets/third-party/libcxx/DISTRIBUTOR-LICENSE",
     "assets/third-party/libcxx/LLVM-LICENSES",
-    "assets/third-party/package-bootstrap/BOOTSTRAP-LICENSE-INDEX.json",
-    "assets/third-party/package-bootstrap/BOOTSTRAP-MANIFEST",
-    "assets/third-party/package-bootstrap/bootstrap-aarch64.zip",
-    "assets/third-party/package-bootstrap/bootstrap-report.json",
     "assets/third-party/zlib/ZLIB-LICENSE"
   ],
   "resources": [

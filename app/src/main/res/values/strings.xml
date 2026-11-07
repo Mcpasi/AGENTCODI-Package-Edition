@@ -150,32 +150,6 @@
   <string name="chat_update_failed">The chat interface could not be updated: %1$s</string>
   <string name="chat_initialization_failed">AGENTCODI could not initialize the chat interface.</string>
 
-  <string name="terminal_title">Terminal</string>
-  <string name="terminal_back">‹ Chats</string>
-  <string name="terminal_description">Interactive shell with Full access. $PREFIX/bin takes priority over $HOME/.local/bin and Android system commands. Package diagnostics shows current paths, command resolution and managed package versions. Terminal output stays in memory. Commands can access workspace and account data reachable by the app.</string>
-  <string name="terminal_status_checking">Checking terminal runtime…</string>
-  <string name="terminal_status_runtime_required">Start the Codex runtime in Settings before opening a terminal.</string>
-  <string name="terminal_status_starting">Starting the bounded PTY shell…</string>
-  <string name="terminal_status_running">Terminal is running · shared package environment.</string>
-  <string name="terminal_status_failed">Terminal failed: %1$s</string>
-  <string name="terminal_status_exited">Terminal exited with code %1$d.</string>
-  <string name="terminal_status_stopped">Terminal is stopped.</string>
-  <string name="terminal_start">Start</string>
-  <string name="terminal_package_diagnostics">Package diagnostics</string>
-  <string name="terminal_stop">Stop</string>
-  <string name="terminal_output_empty">Terminal output will appear here.</string>
-  <string name="terminal_clear">Clear</string>
-  <string name="terminal_control_c" translatable="false">Ctrl-C</string>
-  <string name="terminal_tab" translatable="false">Tab</string>
-  <string name="terminal_escape" translatable="false">Esc</string>
-  <string name="terminal_input_hint">Command…</string>
-  <string name="terminal_send">Send</string>
-  <string name="terminal_input_too_long">The command exceeds the bounded terminal input limit.</string>
-  <string name="terminal_credential_warning">Credential-shaped input was rejected and cleared. Use only the dedicated sign-in controls in Settings.</string>
-  <string name="terminal_send_failed">The input could not be sent to the terminal.</string>
-  <string name="terminal_start_failed">The terminal runtime is no longer ready. Restart it from Settings.</string>
-  <string name="terminal_initialization_failed">AGENTCODI could not initialize the terminal interface.</string>
-
   <string name="model_section">MODEL</string>
   <string name="reasoning_effort_section">REASONING EFFORT</string>
   <string name="chat_reasoning_label">Thinking</string>
@@ -356,7 +330,7 @@
   <string name="language_simplified_chinese">Simplified Chinese (简体中文)</string>
 
   <string name="workspace_export_section">WORKSPACE AND PACKAGE FILES</string>
-  <string name="workspace_export_description">Choose Workspace, APT packages or User packages in the graphical file browser. Preview and export verified files or folders. Import files, including DEBs and archives, into workspace/imports; use the terminal to install them. Package views exclude account storage and known credential paths.</string>
+  <string name="workspace_export_description">Preview, edit and export workspace files. Earlier APT and user-package areas remain read-only for exporting old data. Imported files are copied to workspace/imports. Use Arch Terminal and pacman for the active development environment.</string>
   <string name="workspace_export_ready">Individual files are limited to 512 MiB. Folder ZIPs are limited to 2,048 regular files, 1 GiB of content, 65,536 scanned entries, and 64 directory levels. Unsafe or unavailable children are omitted locally and never make safe siblings unavailable.</string>
 
   <string name="account_section">SIGN-IN</string>
@@ -762,8 +736,8 @@
   <string name="card_field_receiver">Recipients</string>
   <string name="card_field_agent_status">Agent status</string>
     <string name="browser_choose_scope">Choose file area</string>
-    <string name="browser_managed_packages">APT packages</string>
-    <string name="browser_user_packages">User packages</string>
+    <string name="browser_managed_packages">Earlier APT packages</string>
+    <string name="browser_user_packages">Earlier user packages</string>
     <string name="browser_import">Import file</string>
     <string name="browser_workspace_scope_hint">Imports go to workspace/imports, including DEBs and archives. Use the terminal to install them.</string>
     <string name="browser_package_scope_hint">Read-only package files: preview or export a file/folder. Account storage and known credential files are excluded. ZIPs omit links and do not restore a package installation.</string>
@@ -773,9 +747,6 @@
     <string name="browser_unavailable_credential">Credential path: preview and export are excluded.</string>
   <string name="license_codex_dependencies_title">Codex dependency notices</string>
   <string name="license_codex_dependencies_summary">Choose a component to read original Rust crate, Rust standard library and V8 source notices, including native dependencies. Build and test source material is included conservatively and identified by its original path.</string>
-  <string name="license_bootstrap_title">APT/dpkg bootstrap</string>
-  <string name="license_bootstrap_summary">Choose a bundled package to read its original license files. This list describes the APK bootstrap; packages installed later retain notices under their installation prefix.</string>
-  <string name="license_bootstrap_missing">This package supplies no separate license text. Consult its source and shared dependency notices; the build report records this gap.</string>
   <string name="license_mpl_sources_title">MPL-2.0 source code</string>
   <string name="license_mpl_show_sources">Read MPL source availability notice</string>
   <string name="license_mpl_sources_summary">Complete original sources for the MPL-2.0 components are included with this app. Save them free of charge without an account or internet connection. Original copyright notices and license terms remain included.</string>

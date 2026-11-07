@@ -150,32 +150,6 @@
   <string name="chat_update_failed">Die Chat-Oberfläche konnte nicht aktualisiert werden: %1$s</string>
   <string name="chat_initialization_failed">AGENTCODI konnte die Chat-Oberfläche nicht initialisieren.</string>
 
-  <string name="terminal_title">Terminal</string>
-  <string name="terminal_back">‹ Chats</string>
-  <string name="terminal_description">Interaktive Shell mit Full access. $PREFIX/bin hat Vorrang vor $HOME/.local/bin und Android-Systembefehlen. Paketdiagnose zeigt aktuelle Pfade, Befehlsauflösung und verwaltete Paketversionen. Terminalausgabe bleibt im Speicher. Befehle können erreichbare Workspace- und Kontodaten nutzen.</string>
-  <string name="terminal_status_checking">Terminal-Laufzeit wird geprüft…</string>
-  <string name="terminal_status_runtime_required">Starte zuerst die Codex-Laufzeit in den Einstellungen.</string>
-  <string name="terminal_status_starting">Begrenzte PTY-Shell wird gestartet…</string>
-  <string name="terminal_status_running">Terminal läuft · gemeinsame Paketumgebung.</string>
-  <string name="terminal_status_failed">Terminal fehlgeschlagen: %1$s</string>
-  <string name="terminal_status_exited">Terminal wurde mit Code %1$d beendet.</string>
-  <string name="terminal_status_stopped">Terminal ist gestoppt.</string>
-  <string name="terminal_start">Starten</string>
-  <string name="terminal_package_diagnostics">Paketdiagnose</string>
-  <string name="terminal_stop">Stoppen</string>
-  <string name="terminal_output_empty">Die Terminalausgabe erscheint hier.</string>
-  <string name="terminal_clear">Leeren</string>
-  <string name="terminal_control_c" translatable="false">Ctrl-C</string>
-  <string name="terminal_tab" translatable="false">Tab</string>
-  <string name="terminal_escape" translatable="false">Esc</string>
-  <string name="terminal_input_hint">Befehl…</string>
-  <string name="terminal_send">Senden</string>
-  <string name="terminal_input_too_long">Der Befehl überschreitet die begrenzte Terminal-Eingabe.</string>
-  <string name="terminal_credential_warning">Eine nach Zugangsdaten aussehende Eingabe wurde abgewiesen und gelöscht. Nutze ausschließlich die Anmeldung in den Einstellungen.</string>
-  <string name="terminal_send_failed">Die Eingabe konnte nicht an das Terminal gesendet werden.</string>
-  <string name="terminal_start_failed">Die Terminal-Laufzeit ist nicht mehr bereit. Starte sie in den Einstellungen neu.</string>
-  <string name="terminal_initialization_failed">AGENTCODI konnte die Terminal-Oberfläche nicht initialisieren.</string>
-
   <string name="model_section">MODELL</string>
   <string name="reasoning_effort_section">DENKSTUFE</string>
   <string name="chat_reasoning_label">Denkstufe</string>
@@ -356,7 +330,7 @@
   <string name="language_simplified_chinese">Chinesisch (vereinfacht, 简体中文)</string>
 
   <string name="workspace_export_section">WORKSPACE- UND PAKETDATEIEN</string>
-  <string name="workspace_export_description">Im grafischen Dateibrowser Workspace, APT-Pakete oder Nutzerpakete wählen. Geprüfte Dateien und Ordner ansehen und exportieren. Dateien einschließlich DEBs und Archiven nach workspace/imports importieren; die Installation erfolgt im Terminal. Paketbereiche schließen Kontoverzeichnis und bekannte Zugangsdaten-Pfade aus.</string>
+  <string name="workspace_export_description">Workspace-Dateien ansehen, bearbeiten und exportieren. Frühere APT- und Nutzerpaketbereiche bleiben zum Export alter Daten schreibgeschützt. Importierte Dateien landen in workspace/imports. Die aktive Entwicklungsumgebung wird in Arch Terminal mit pacman verwaltet.</string>
   <string name="workspace_export_ready">Einzeldateien sind auf 512 MiB begrenzt. Ordner-ZIPs sind auf 2.048 reguläre Dateien, 1 GiB Inhalt, 65.536 gescannte Einträge und 64 Verzeichnisebenen begrenzt. Unsichere oder nicht verfügbare Kinder werden lokal ausgelassen und machen sichere Geschwister nie unzugänglich.</string>
 
   <string name="account_section">ANMELDUNG</string>
@@ -762,8 +736,8 @@
   <string name="card_field_receiver">Empfänger</string>
   <string name="card_field_agent_status">Agentenstatus</string>
     <string name="browser_choose_scope">Dateibereich auswählen</string>
-    <string name="browser_managed_packages">APT-Pakete</string>
-    <string name="browser_user_packages">Nutzerpakete</string>
+    <string name="browser_managed_packages">Frühere APT-Pakete</string>
+    <string name="browser_user_packages">Frühere Nutzerpakete</string>
     <string name="browser_import">Datei importieren</string>
     <string name="browser_workspace_scope_hint">Importe landen unter workspace/imports, auch DEBs und Archive. Die Installation erfolgt gezielt im Terminal.</string>
     <string name="browser_package_scope_hint">Paketdateien nur lesen: Datei/Ordner ansehen oder exportieren. Kontoverzeichnis und bekannte Zugangsdaten-Dateien sind ausgeschlossen. ZIPs lassen Links aus und stellen keine Paketinstallation wieder her.</string>
@@ -773,9 +747,6 @@
     <string name="browser_unavailable_credential">Zugangsdaten-Pfad: Vorschau und Export sind ausgeschlossen.</string>
   <string name="license_codex_dependencies_title">Codex-Abhängigkeitshinweise</string>
   <string name="license_codex_dependencies_summary">Komponente auswählen und originale Hinweise für Rust-Crates, Rust-Standardbibliothek und V8-Quellen einschließlich nativer Abhängigkeiten lesen. Zusätzliches Build- und Testquellmaterial ist vorsorglich enthalten und am originalen Pfad erkennbar.</string>
-  <string name="license_bootstrap_title">APT-/dpkg-Bootstrap</string>
-  <string name="license_bootstrap_summary">Ein mitgeliefertes Paket auswählen und seine originalen Lizenzdateien lesen. Die Liste beschreibt den APK-Bootstrap; später installierte Pakete behalten ihre Hinweise im Installationspräfix.</string>
-  <string name="license_bootstrap_missing">Dieses Paket liefert keinen separaten Lizenztext. Quellen und gemeinsame Abhängigkeitshinweise prüfen; der Build-Bericht führt diese Lücke auf.</string>
   <string name="license_mpl_sources_title">MPL-2.0-Quellcode</string>
   <string name="license_mpl_show_sources">Hinweis zum Bezug der MPL-Quellen lesen</string>
   <string name="license_mpl_sources_summary">Die vollständigen Originalquellen der MPL-2.0-Komponenten sind in dieser App enthalten. Sie können sie kostenlos ohne Konto oder Internetverbindung speichern. Originale Urheberhinweise und Lizenzbedingungen bleiben enthalten.</string>

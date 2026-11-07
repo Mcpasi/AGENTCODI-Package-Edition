@@ -1,5 +1,13 @@
 # Package Edition
 
+## Unreleased — Arch Terminal integration
+
+- Replace the APT bootstrap, package catalog and custom terminal with the unchanged Arch Terminal 0.1.9 snapshot. Preserve legacy user data for export.
+- Share one Arch installation and workspace between terminal sessions, Codex commands and stdio MCP tools; install development tools with pacman.
+- Retain the existing ARM64 APK/signing pipeline and replace its reusable bootstrap job with an upstream native-runtime build. Temporarily enable `Mcpasi/Fusion_Arch_Termux` with reset-to-main TODO comments.
+- Add source-integrity, command-quoting, workspace, environment, default-shell, cancellation and Android navigation/DEX checks; retain upstream terminal tests and corresponding-source artifacts.
+
+
 ## 0.1.6 — Package Edition (Android versionCode 9) — 2026-10-18
 
 **Experimental prerelease (published). Device tests: passed on physical Android hardware.**

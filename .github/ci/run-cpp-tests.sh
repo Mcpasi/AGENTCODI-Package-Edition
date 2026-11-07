@@ -67,7 +67,7 @@ CXXFLAGS_BASE=("${CXXFLAGS_MIN[@]}" -pthread -I"$NATIVE")
 # Compile the actual Package Edition shell for host supervisor regressions.
 prepare_fixtures() {
   "$CXX" "${CXXFLAGS_BASE[@]}" \
-    "$NATIVE/package_shell_main.cpp" \
+    "$TESTS/host_shell_fixture.cpp" \
     -o "$BUILD_DIR/fixtures/libagentcodi-shell.so"
 }
 

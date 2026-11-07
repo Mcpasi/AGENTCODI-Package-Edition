@@ -4,7 +4,7 @@
 
 The [APK Release](../workflows/apk-release.yml) workflow runs exclusively
 on this repository's `main`. It uses the same container, pinned build inputs
-and verified bootstrap as the debug build and invokes
+and verified Arch runtime as the debug build and invokes
 `scripts/build-release-apk.sh`.
 
 The current release is [AGENTCODI Package Edition V0.1.5](https://github.com/Mcpasi/AGENTCODI-Package-Edition/releases/tag/V.0.1.5-package),
@@ -74,22 +74,22 @@ access is checked before compiler builds. See [repository setup](PACKAGE_EDITION
 
 ## Start the build and download the APK
 
-Select **Actions → APK Release → Run workflow → main**. Set `source_run_id=0`
-for a fresh source build, or select a successful bootstrap or catalog run
-in this repository while its artifacts remain available and recipe inputs
-match. Run IDs from another repository cannot be reused. Reuse
-still validates producer identity, source inputs, successful jobs and hashes.
+Select **Actions → APK Release → Run workflow** and choose `main` or, during
+integration, `Mcpasi/Fusion_Arch_Termux`. The branch exception is marked with
+TODO comments and must be removed after the migration. The reusable runtime job
+builds the unchanged Arch Terminal snapshot; the old `source_run_id` and APT
+catalog publication inputs have been removed.
 
-Relevant pushes to `main` also start **APK Release** automatically. While secrets
-are missing, the run stops with their names before bootstrap/container build.
-See [repository setup](PACKAGE_EDITION_SETUP.md) for catalog publication and
-APK build inputs.
+Relevant pushes to either allowed branch start the configured builds. Existing
+release signing secrets and the private build-input read token keep their names.
+See [repository setup](PACKAGE_EDITION_SETUP.md) for the runtime/source artifacts
+and APK build inputs.
 
 After a successful build, these artifacts are available:
 
 - `agentcodi-package-release-apk`: versioned and unversioned signed release
   APKs with portable `.sha256` files.
-- `agentcodi-package-release-apk-contract`: payload, bootstrap and license
+- `agentcodi-package-release-apk-contract`: payload, Arch runtime and license
   evidence for that APK.
 
 The signature must contain exactly one signer with the configured SHA-256

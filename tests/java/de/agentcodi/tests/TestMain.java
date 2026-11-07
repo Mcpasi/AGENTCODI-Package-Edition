@@ -21,13 +21,10 @@ public final class TestMain {
         passed += CodexLargeIncomingFrameTest.run();
         passed += CodexWorkspaceAttachmentContextTest.run();
         passed += CodexSessionControllerTest.run();
-        passed += de.agentcodi.core.LongRunningTerminalTest.run();
         passed += McpCatalogLoaderTest.run();
         passed += McpConfigurationControllerTest.run();
         passed += ConnectorCatalogLoaderTest.run();
         passed += CredentialGuardTest.run();
-        passed += TerminalOutputBufferTest.run();
-        passed += PackageDiagnosticsCommandTest.run();
         passed += CrashReportFormatterTest.run();
         passed += de.agentcodi.core.StreamTextTest.run();
         passed += CrashReportStoreTest.run();
@@ -38,7 +35,7 @@ public final class TestMain {
         passed += UiLanguageTest.run();
         passed += ChineseLanguageResourcesTest.run();
         passed += WorkspaceLayoutTest.run();
-        passed += PackageBootstrapTest.run();
+        passed += ArchCommandWrappersTest.run();
         passed += WorkspaceImportTest.run();
         passed += de.agentcodi.imports.client.WorkspaceImportLifecycleTest.run();
         passed += WorkspaceExportTest.run();

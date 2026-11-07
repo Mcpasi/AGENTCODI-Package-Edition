@@ -1,0 +1,7 @@
+{
+  "artifact": "androidx.annotation:annotation:1.3.0",
+  "usage": "compile-only; no annotation library is shipped in the APK",
+  "url": "https://dl.google.com/dl/android/maven2/androidx/annotation/annotation/1.3.0/annotation-1.3.0.jar",
+  "sha256": "97dc45afefe3a1e421da42b8b6e9f90491477c45fc6178203e3a5e8a05ee8553",
+  "license": "Apache-2.0"
+}

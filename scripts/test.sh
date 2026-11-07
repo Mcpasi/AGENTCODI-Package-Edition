@@ -60,7 +60,7 @@ find \
 
 "$CLANGXX" -std=c++17 -O2 -Wall -Wextra -Werror -pthread \
   -I"$PROJECT_ROOT/modules/native-engine/src/main/cpp" \
-  "$PROJECT_ROOT/modules/native-engine/src/main/cpp/package_shell_main.cpp" \
+  "$PROJECT_ROOT/tests/cpp/host_shell_fixture.cpp" \
   -o "$TEST_BUILD/cpp/libagentcodi-shell.so"
 
 "$CLANGXX" -std=c++17 -O2 -Wall -Wextra -Werror -pthread -I"$PROJECT_ROOT/modules/native-engine/src/main/cpp" "$PROJECT_ROOT/modules/native-engine/src/main/cpp/agentcodi_engine.cpp" "$PROJECT_ROOT/modules/native-engine/src/main/cpp/app_server_process.cpp" "$PROJECT_ROOT/modules/native-engine/src/main/cpp/png_validator.cpp" "$PROJECT_ROOT/modules/native-engine/src/main/cpp/sha256.cpp" "$PROJECT_ROOT/tests/cpp/agentcodi_engine_test.cpp" -lz -o "$TEST_BUILD/cpp/agentcodi-engine-test"

@@ -27,14 +27,14 @@ and legal asset against its staged bytes, including the exact ABI/file set.
 | Community Codex app-server and code-mode host | Verbatim, SHA-256-pinned assets/third-party/codex/LICENSE and NOTICE; dependency texts/index/provenance supplement the original material, with release/source pins above. |
 | LLVM libc++ shared runtime from Termux libc++ 29 | Verbatim distributor copyright at assets/third-party/libcxx/DISTRIBUTOR-LICENSE, supplemented with complete upstream LLVM libc++/libc++abi/libunwind texts at LLVM-LICENSES. See third_party/libcxx/README.md for the separate legal-source pin. |
 | zlib 1.3.2 for the PNG validator | Verbatim copyright from the pinned zlib DEB at assets/third-party/zlib/ZLIB-LICENSE. |
-| Source-built minimal bootstrap | Original package license files in its ZIP; per-package ownership, size and SHA-256 in bootstrap-report.json and BOOTSTRAP-LICENSE-INDEX.json, accessible from the app's legal-notices screen. |
+| Arch Terminal 0.1.9 and its PRoot/talloc/libarchive/terminal components | Unchanged upstream notices and license texts in assets/licenses; rootfs and source revision pins in the APK; exact upstream/native source archives accompany the build artifact. |
 
 Node.js, npm, Python, ripgrep, their exclusive APK libraries/archives and
-activation guards are not shipped. Users install them from the separate signed
-source-built edition catalog; their licenses remain with those packages.
+activation guards are not shipped. Users install tools with pacman inside Arch;
+their licenses remain with those packages.
 AAPT2 and its exclusive dependencies, R8, the Android compile platform and host
 Python are build tools. The standalone APK still includes libc++ and zlib;
-the bootstrap independently includes its runtime dependency closure.
+Arch Terminal supplies its independently source-built native runtime.
 
 **The declared payload and its dependency license materials are reconciled.**
 The Community archive's Apache LICENSE/NOTICE are retained verbatim. The
@@ -69,14 +69,6 @@ as such and do not invent copyright dates. V8 source coverage conservatively
 includes additional build/test legal files, identified by their original paths;
 it does not assert that all such files are linked into the binary. This is not
 a claim of an independently reproduced Community binary.
-
-The bzip2, gpgv and xz-utils DEBs now own copies of their parent package's
-original license material, with increased package revisions. Their installed
-files are indexed and verified with the same dpkg ownership/ZIP contracts.
-The format-2 report separates license_release_ready from physical-device
-validation, which is not performed by the report. A release build fails if
-legal gaps reappear; these checks do not publish a final APK or complete
-hardware tests. Physical Android device tests for versions 0.1.3 and 0.1.4 passed.
 
 The original distributor material is never rewritten. The historical
 regular-edition provenance below is retained in this repository; it is excluded
@@ -147,49 +139,28 @@ Permission is hereby granted, free of charge, to any person obtaining a copy of 
 THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE CONTRIBUTORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 
-## Package Edition bootstrap
+## Arch Terminal integration
 
-The edition bootstrap is rebuilt from termux/termux-packages at
-b6af76b353140fe17f299248fca1ac13ea91c5c5 with the versioned overlay in
-scripts/package-edition. It includes dash/bash, APT, dpkg, CA certificates and
-their runtime dependency closure. These third-party programs retain their
-upstream authorship and licenses, including GPL-2.0/GPL-3.0, LGPL, BSD, MIT,
-Apache-2.0 and MPL-2.0 as specified by each recipe and installed license file.
-Their inclusion does not relicense them under AGENTCODI's Apache license.
+The combined APK includes the unchanged Arch Terminal 0.1.9 source snapshot at
+`99fad098fe41e1a19b5a5e81351105bef4498a01` from
+https://github.com/Mcpasi/Arch_Terminal. Each original file is pinned in
+`third_party/arch-terminal.lock.json`. Its GPL-3.0-or-later terms apply to the
+combined application; original Apache-2.0 AGENTCODI files retain their notices.
+Upstream component licenses and copyright notices remain unchanged at
+`third_party/arch-terminal/NOTICE.md` and in the APK's `assets/licenses/`.
 
-The APK asset third-party/package-bootstrap/bootstrap-report.json records the
-actual package versions, source/build pins, DEB and ELF checksums. The installed
-prefix retains the upstream license material under share/doc, share/LICENSES and share/licenses.
-The bootstrap CI artifact includes the selected DEBs, build evidence and
-bootstrap-corresponding-sources.tar.xz with the source downloads/Git snapshot,
-recipes, patches and edition build scripts used for these packages.
-The source recipe tree, source download checksums, dpkg Git source commit and
-all edition build modifications are available through the linked package-build
-documentation. No Termux app, API, tools, exec or trust-key package is included.
+AGENTCODI-only adapters bind its workspace to Arch, route commands and stdio MCP
+through PRoot, and select the guest Bash shell for the native Android app-server.
+They do not modify the upstream Arch Terminal files. The reusable workflow builds
+upstream native dependencies from its pinned archives and supplies the original
+Arch source archive, native input archives and a complete combined application
+source bundle beside the runtime/APK artifacts. Keep those archives together
+when distributing the APK. The former APT/bootstrap/catalog is no longer built
+or shipped by this source branch.
 
-The current bootstrap report also records the legal files belonging to each
-selected package. BOOTSTRAP-LICENSE-INDEX.json is generated from those same
-records, compared with the actual ZIP and dpkg ownership lists during APK
-verification, and used by the legal-notices screen. Texts are not inferred from
-license-family names. The first-party edition keyring's public metadata uses
-AGENTCODI's Apache-2.0 notice; it does not add a Termux trust-key package.
-
-The complete attr 2.6.0 and acl 2.4.0 source archives used by package builds
-are retained unchanged in [third_party/package-source-archives](third_party/package-source-archives/README.md)
-with original GPL/LGPL COPYING material, upstream URLs and recovery/hash
-provenance. The pinned overlay retrieves those original bytes through immutable
-GitHub URLs when Savannah cannot be reached. These are package-build source
-inputs; they are not additional APK runtimes or assets.
-
-The attr recipe records both GPL-2.0 and LGPL-2.1 and retains the original
-doc/COPYING and doc/COPYING.LGPL files. libacl retains those original files
-as well, and GnuPG/gpgv retain the original COPYING. Affected package revisions
-are raised so APT installs the supplemented legal material on updates.
-
-The XZ source summary explicitly identifies liblzma as 0BSD and describes
-the additional GPL/LGPL portions of the toolset. Its original COPYING.0BSD is
-retained alongside COPYING and the GNU GPL/LGPL texts in liblzma/xz-utils. The liblzma and GnuPG revisions
-are 2, distinguishing these original-text payloads from earlier CI builds.
+The AndroidX annotation 1.3.0 JAR and Android SDK Build Tools 35.0.0 lambda stubs
+are compile-only inputs with checked-in hashes and upstream license material;
+neither library is added to the runtime APK payload.
 
 ## Development APK signing fixture
 

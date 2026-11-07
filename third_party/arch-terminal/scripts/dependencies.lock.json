@@ -1,0 +1,26 @@
+{
+  "format": 1,
+  "proot": {
+    "version": "5.1.107.102",
+    "url": "https://codeload.github.com/termux/proot/zip/refs/tags/v5.1.107.102",
+    "sha256": "30d12a6e2cc4147123756ff58edea262d3083bbc238c12d0ab9b39e3d1c40852",
+    "file": "proot-v5.1.107.102.zip"
+  },
+  "talloc": {
+    "version": "2.4.3",
+    "url": "https://www.samba.org/ftp/talloc/talloc-2.4.3.tar.gz",
+    "sha256": "dc46c40b9f46bb34dd97fe41f548b0e8b247b77a918576733c528e83abd854dd",
+    "file": "talloc-2.4.3.tar.gz"
+  },
+  "libarchive": {
+    "version": "3.7.7",
+    "url": "https://www.libarchive.org/downloads/libarchive-3.7.7.tar.xz",
+    "sha256": "879acd83c3399c7caaee73fe5f7418e06087ab2aaf40af3e99b9e29beb29faee",
+    "file": "libarchive-3.7.7.tar.xz"
+  },
+  "termux": {
+    "version": "0.118.3",
+    "commit": "5b657c6adf4304e5198951ce815fe0205dcac29c",
+    "url": "https://github.com/termux/termux-app/tree/5b657c6adf4304e5198951ce815fe0205dcac29c"
+  }
+}

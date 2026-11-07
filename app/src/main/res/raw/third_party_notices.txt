@@ -34,26 +34,25 @@ assets/third-party/codex/NOTICE
 
 Current Package Edition payload
 
-The native APK set is the AGENTCODI engine and shell bridge, Community Codex
-app-server and matching code-mode host, LLVM libc++ and zlib 1.3.2.
-Node.js, npm, Python and ripgrep are supplied through the separate signed APT
-catalog. Historical sandbox/tool attributions are retained in repository
-NOTICE.md and do not enumerate this APK.
+The native APK set includes the AGENTCODI engine and Arch command adapters,
+Community Codex app-server and code-mode host, LLVM libc++, zlib 1.3.2 and
+Arch Terminal's PRoot, loader and native PTY/extractor. The terminal emulator
+and renderer come from the unchanged Arch Terminal snapshot.
+
+Arch Terminal 0.1.9, source commit 99fad098fe41e1a19b5a5e81351105bef4498a01:
+https://github.com/Mcpasi/Arch_Terminal
+The combined APK is distributed under GPL-3.0-or-later. Original AGENTCODI
+files retain their Apache-2.0 notices. Upstream Arch and component license
+texts are available in assets/licenses and in the Arch Terminal legal card.
+The complete combined source bundle, original upstream sources and native
+input archives accompany the CI build artifacts.
+
+Development tools are installed with pacman in Arch Linux ARM. The previous
+APT bootstrap/catalog and terminal implementation are no longer shipped.
 
 zlib: assets/third-party/zlib/ZLIB-LICENSE.
 LLVM: assets/third-party/libcxx/DISTRIBUTOR-LICENSE and LLVM-LICENSES.
-The exact libc++ distributor text is retained, supplemented with the complete
-LLVM libc++/libc++abi/libunwind notices and LLVM exceptions.
-
-Bootstrap: shell, APT, dpkg, CA certificates and runtime dependencies rebuilt
-for /data/data/de.agentcodi.pkg/files/usr. The bootstrap keeps original license
-files in share/doc, share/LICENSES and share/licenses. The legal-notices screen selects those
-files from the bundled ZIP, using BOOTSTRAP-LICENSE-INDEX.json.
-The package report records their ownership, sizes and SHA-256 values.
-Corresponding sources, recipes, patches and edition build scripts accompany
-the CI bootstrap artifact. Authenticated catalog source downloads:
-https://mcpasi.github.io/AGENTCODI-Package-Edition/apt/package-edition
-See scripts/package-edition/README.md in the repository for reconstruction.
+The original distributor texts and complete LLVM exception notices remain.
 
 Community dependency license supplement
 

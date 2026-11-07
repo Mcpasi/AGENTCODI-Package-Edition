@@ -1,0 +1,6 @@
+{
+  "artifact": "Android SDK Build Tools 35.0.0 core-lambda-stubs.jar",
+  "usage": "compile-only Java 8 lambda signatures; no stub implementation is shipped in the APK",
+  "sha256": "c8a21e0e653227d1fce74bd547c9e7278e17c016c405aa8e1f6c313b192ade31",
+  "license_notice": "NOTICE.txt"
+}

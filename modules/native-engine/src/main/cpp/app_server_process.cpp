@@ -38,7 +38,6 @@ constexpr std::size_t kMaximumDecodedMetadataBytes = 256U;
 constexpr std::size_t kMaximumMaterializationProofBytes = 256U;
 constexpr unsigned int kRenameNoReplace = 1U;
 constexpr int kExitStatusObservationAttempts = 25;
-constexpr const char* kSystemShell = "/system/bin/sh";
 constexpr const char* kCompactedImageResult =
     "\"<generated-image-data-omitted>\"";
 constexpr const char* kGeneratedImagesDirectory = "generated_images";
@@ -2066,31 +2065,21 @@ int decode_wait_status(int status) {
   _exit(127);
 }
 
-// The managed prefix wins; retain earlier HOME/.local installations as fallback.
-std::string package_search_path(const ProcessConfig& config, const char* directory) {
-  return config.package_prefix + "/" + directory + ":"
-      + config.home_directory + "/.local/" + directory + ":";
-}
-
-// One definition for the app-server, Codex commands and terminal. The pinned
-// Community runtime also forwards these Android compatibility variables to MCP.
+// Commands and stdio MCP enter Arch through generated argv-preserving adapters.
+// Keep Android libraries out of the guest; the app-server itself remains Bionic.
 std::vector<std::string> tool_environment(const ProcessConfig& config) {
-  const std::string prefix = config.package_prefix;
-  const std::string path =
-      package_search_path(config, "bin") + "/system/bin:/system/xbin";
+  const std::string bin = config.state_directory + "/arch-bin";
   return {
       "HOME=" + config.home_directory,
-      "PREFIX=" + prefix,
       // Compatibility marker for codex-termux's Android stdio allowlist; no Termux app is used.
-      "TERMUX_VERSION=agentcodi-package-edition",
-      "NPM_CONFIG_PREFIX=" + config.home_directory + "/.local",
+      "TERMUX_VERSION=agentcodi-arch-terminal",
       "XDG_CACHE_HOME=" + config.home_directory + "/.cache",
       "TMPDIR=" + config.temporary_directory,
       "TMP=" + config.temporary_directory,
       "TEMP=" + config.temporary_directory,
-      "PATH=" + path,
-      "SHELL=" + std::string(kSystemShell),
-      "LD_LIBRARY_PATH=" + package_search_path(config, "lib") + config.library_directory,
+      "PATH=" + bin + ":/system/bin:/system/xbin",
+      "SHELL=" + bin + "/bash",
+      "LD_LIBRARY_PATH=" + config.library_directory,
       "HISTFILE=/dev/null",
       "NODE_REPL_HISTORY=/dev/null",
       "SSL_CERT_DIR=/system/etc/security/cacerts",
@@ -2103,6 +2092,12 @@ std::vector<std::string> child_environment(const ProcessConfig& config) {
   environment.push_back("CODEX_HOME=" + config.codex_home);
   environment.push_back("CODEX_SELF_EXE=" + config.executable);
   environment.push_back("CODEX_CODE_MODE_HOST_PATH=" + config.code_mode_host_executable);
+#if defined(__ANDROID__)
+  // The Community runtime uses getpwuid_r to discover the user's default shell.
+  // Its dynamic Bionic lookup is redirected only in this app-server process.
+  environment.push_back("AGENTCODI_ARCH_SHELL=" + config.state_directory + "/arch-bin/bash");
+  environment.push_back("LD_PRELOAD=" + config.library_directory + "/libagentcodi-arch-env.so");
+#endif
   return environment;
 }
 

@@ -95,7 +95,6 @@ public final class CodexSessionController
         "<generated-image-data-omitted>";
 
     private final CodexAppServerClient client;
-    private final CodexTerminalSession terminal;
     private final CodexReviewMode reviewMode;
     private final String workspacePath;
     private final ConnectionFailureListener connectionFailureListener;
@@ -159,88 +158,32 @@ public final class CodexSessionController
         this(transport, workspacePath, null);
     }
 
-    public CodexSessionController(
-        CodexRpcTransport transport,
-        String workspacePath,
-        ConnectionFailureListener connectionFailureListener
-    ) {
-        this(transport, workspacePath, connectionFailureListener, null);
+    public CodexSessionController(CodexRpcTransport transport, String workspacePath,
+        ConnectionFailureListener listener) {
+        this(transport, workspacePath, listener, null);
     }
 
-    public CodexSessionController(
-        CodexRpcTransport transport,
-        String workspacePath,
-        ConnectionFailureListener connectionFailureListener,
-        String terminalShellPath
-    ) {
-        this(
-            transport,
-            workspacePath,
-            connectionFailureListener,
-            terminalShellPath,
-            null
-        );
+    public CodexSessionController(CodexRpcTransport transport, String workspacePath,
+        ConnectionFailureListener listener, CodexExecutionMode executionMode) {
+        this(transport, workspacePath, listener, executionMode, null);
     }
 
-    public CodexSessionController(
-        CodexRpcTransport transport,
-        String workspacePath,
-        ConnectionFailureListener connectionFailureListener,
-        String terminalShellPath,
-        CodexExecutionMode executionMode
-    ) {
-        this(
-            transport,
-            workspacePath,
-            connectionFailureListener,
-            terminalShellPath,
-            executionMode,
-            null
-        );
+    public CodexSessionController(CodexRpcTransport transport, String workspacePath,
+        ConnectionFailureListener listener, CodexExecutionMode executionMode, CodexReviewMode reviewMode) {
+        this(transport, workspacePath, listener, executionMode, reviewMode, false);
     }
 
-    public CodexSessionController(
-        CodexRpcTransport transport,
-        String workspacePath,
-        ConnectionFailureListener connectionFailureListener,
-        String terminalShellPath,
-        CodexExecutionMode executionMode,
-        CodexReviewMode reviewMode
-    ) {
-        this(
-            transport,
-            workspacePath,
-            connectionFailureListener,
-            terminalShellPath,
-            executionMode,
-            reviewMode,
-            false
-        );
+    public CodexSessionController(CodexRpcTransport transport, String workspacePath,
+        ConnectionFailureListener listener, CodexExecutionMode executionMode,
+        CodexReviewMode reviewMode, boolean compatibilityApprovalsEnabled) {
+        this(transport, workspacePath, listener, executionMode, reviewMode,
+            compatibilityApprovalsEnabled, false);
     }
 
-    public CodexSessionController(
-        CodexRpcTransport transport,
-        String workspacePath,
-        ConnectionFailureListener connectionFailureListener,
-        String terminalShellPath,
-        CodexExecutionMode executionMode,
-        CodexReviewMode reviewMode,
-        boolean compatibilityApprovalsEnabled
-    ) {
-        this(transport, workspacePath, connectionFailureListener, terminalShellPath,
-            executionMode, reviewMode, compatibilityApprovalsEnabled, false);
-    }
-
-    public CodexSessionController(
-        CodexRpcTransport transport,
-        String workspacePath,
-        ConnectionFailureListener connectionFailureListener,
-        String terminalShellPath,
-        CodexExecutionMode executionMode,
-        CodexReviewMode reviewMode,
-        boolean compatibilityApprovalsEnabled,
-        boolean justInTimeApprovalsEnabled
-    ) {
+    public CodexSessionController(CodexRpcTransport transport, String workspacePath,
+        ConnectionFailureListener connectionFailureListener, CodexExecutionMode executionMode,
+        CodexReviewMode reviewMode, boolean compatibilityApprovalsEnabled,
+        boolean justInTimeApprovalsEnabled) {
         if (workspacePath == null || workspacePath.trim().isEmpty()
             || !workspacePath.startsWith("/")) {
             throw new IllegalArgumentException("Workspace path must be absolute");
@@ -259,14 +202,6 @@ public final class CodexSessionController
             && compatibilityApprovalsEnabled;
         this.justInTimeApprovalsEnabled = justInTimeApprovalsEnabled;
         client = new CodexAppServerClient(transport, this);
-        terminal = terminalShellPath == null
-            ? null
-            : new CodexTerminalSession(
-                client,
-                workspacePath,
-                terminalShellPath,
-                permissionProfileId
-            );
         synchronized (this) {
             publishLocked();
         }
@@ -416,49 +351,6 @@ public final class CodexSessionController
         }
     }
 
-    public TerminalSessionSnapshot terminalSnapshot() {
-        return terminal == null ? TerminalSessionSnapshot.stopped() : terminal.snapshot();
-    }
-
-    public void startTerminal(int rows, int columns) {
-        synchronized (this) {
-            if (closed || !ready || terminal == null) {
-                throw new IllegalStateException("Terminal runtime is not ready");
-            }
-        }
-        terminal.start(rows, columns);
-    }
-
-    public void sendTerminalInput(char[] input) throws IOException {
-        synchronized (this) {
-            if (closed || !ready || terminal == null) {
-                if (input != null) {
-                    Arrays.fill(input, '\0');
-                }
-                throw new IOException("Terminal runtime is not ready");
-            }
-        }
-        terminal.write(input);
-    }
-
-    public void resizeTerminal(int rows, int columns) {
-        if (terminal != null) {
-            terminal.resize(rows, columns);
-        }
-    }
-
-    public void stopTerminal() {
-        if (terminal != null) {
-            terminal.stop();
-        }
-    }
-
-    public void clearTerminalOutput() {
-        if (terminal != null) {
-            terminal.clearOutput();
-        }
-    }
-
     public void refreshAccountAndThreads() {
         submit("Konto und Chats werden aktualisiert.", new Operation() {
             @Override
@@ -543,13 +435,6 @@ public final class CodexSessionController
             );
             return false;
         }
-        TerminalSessionSnapshot terminalState = terminalSnapshot();
-        if (terminalState.isRunning() || terminalState.isStarting()) {
-            setUserError(
-                "Das Terminal muss vor einem Wechsel des Ausführungsmodus gestoppt werden."
-            );
-            return false;
-        }
         compatibilityApprovalsEnabled = enabled;
         operationMessage = "Kompatibilitätsmodus ist aktiv.";
         errorMessage = "";
@@ -579,13 +464,6 @@ public final class CodexSessionController
                 );
                 return false;
             }
-            TerminalSessionSnapshot terminalState = terminalSnapshot();
-            if (terminalState.isRunning() || terminalState.isStarting()) {
-                setUserError(
-                    "Das Terminal muss vor einem Wechsel des Ausführungsmodus gestoppt werden."
-                );
-                return false;
-            }
         }
         return submit("Ausführungsmodus wird gewechselt.", new Operation() {
             @Override
@@ -593,16 +471,7 @@ public final class CodexSessionController
                 synchronized (CodexSessionController.this) {
                     requireNoActiveTurnOrRequestLocked();
                 }
-                TerminalSessionSnapshot terminalState = terminalSnapshot();
-                if (terminalState.isRunning() || terminalState.isStarting()) {
-                    throw new IllegalStateException(
-                        "Das Terminal muss vor einem Wechsel des Ausführungsmodus gestoppt werden."
-                    );
-                }
                 verifyPermissionProfileInternal(candidate.permissionProfileId);
-                if (terminal != null) {
-                    terminal.setPermissionProfile(candidate.permissionProfileId);
-                }
                 synchronized (CodexSessionController.this) {
                     executionModeId = candidate.id;
                     permissionProfileId = candidate.permissionProfileId;
@@ -1684,9 +1553,6 @@ public final class CodexSessionController
 
     @Override
     public void onNotification(String method, Map<String, Object> params) {
-        if (terminal != null && terminal.onNotification(method, params)) {
-            return;
-        }
         if ("item/agentMessage/delta".equals(method)) {
             handleAgentDelta(params);
         } else if (REASONING_SUMMARY_DELTA_METHOD.equals(method)) {
@@ -1736,9 +1602,6 @@ public final class CodexSessionController
 
     @Override
     public void onTransportClosed(Throwable error) {
-        if (terminal != null) {
-            terminal.onTransportClosed(error);
-        }
         boolean notifyFailure;
         synchronized (this) {
             if (closed) {
@@ -1792,9 +1655,6 @@ public final class CodexSessionController
         shutdownOperationsNow();
         shutdownTurnControlsNow();
         interactiveResponses.shutdownNow();
-        if (terminal != null) {
-            terminal.close();
-        }
         client.close();
     }
 
@@ -4009,9 +3869,6 @@ public final class CodexSessionController
         shutdownOperationsNow();
         shutdownTurnControlsNow();
         interactiveResponses.shutdownNow();
-        if (terminal != null) {
-            terminal.close();
-        }
         client.close();
         if (notifyFailure) {
             notifyConnectionFailure(error);
@@ -4041,9 +3898,6 @@ public final class CodexSessionController
             publishLocked();
             notifyFailure = !connectionFailureReported;
             connectionFailureReported = true;
-        }
-        if (terminal != null) {
-            terminal.close();
         }
         client.close();
         shutdownOperationsNow();

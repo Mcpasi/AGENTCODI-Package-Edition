@@ -68,9 +68,7 @@ if ! rg -q 'android:targetSdkVersion="28"' "$PROJECT_ROOT/app/src/main/AndroidMa
     || ! rg -q 'getPackagePrefix' "$PROJECT_ROOT/modules/storage/src/main/java/de/agentcodi/storage/WorkspaceLayout.java" \
     || ! rg -Fq 'secureChild(canonicalBase, "usr")' "$PROJECT_ROOT/modules/storage/src/main/java/de/agentcodi/storage/WorkspaceLayout.java" \
     || ! rg -Fq 'layout.getPackagePrefix().getAbsolutePath()' "$PROJECT_ROOT/modules/runtime/src/main/java/de/agentcodi/runtime/AgentRuntimeService.java" \
-    || ! rg -Fq 'secureChild(home, ".local")' "$PROJECT_ROOT/modules/storage/src/main/java/de/agentcodi/storage/WorkspaceLayout.java" \
-    || ! rg -Fq 'package_search_path(config, "bin")' "$PROJECT_ROOT/modules/native-engine/src/main/cpp/app_server_process.cpp" \
-    || ! rg -Fq '"PREFIX=" + prefix' "$PROJECT_ROOT/modules/native-engine/src/main/cpp/app_server_process.cpp"; then
+    || ! rg -Fq 'state_directory + "/arch-bin"' "$PROJECT_ROOT/modules/native-engine/src/main/cpp/app_server_process.cpp"; then
   echo "Package Edition target SDK or shared writable package prefix is incomplete." >&2
   exit 1
 fi
@@ -412,7 +410,7 @@ if [ "$native_declarations" != "$expected_native" ]; then
   exit 1
 fi
 
-if rg -n 'System\.loadLibrary' "$PROJECT_ROOT" --glob '*.java' | grep -v '/modules/runtime/src/main/java/de/agentcodi/runtime/NativeEngine.java:'; then
+if rg -n 'System\.loadLibrary' "$PROJECT_ROOT/app" "$PROJECT_ROOT/modules" --glob '*.java' | grep -v '/modules/runtime/src/main/java/de/agentcodi/runtime/NativeEngine.java:'; then
   echo "Native library loading escaped the runtime gateway." >&2
   exit 1
 fi
@@ -879,97 +877,22 @@ core_root="$PROJECT_ROOT/modules/core/src/main/java/de/agentcodi/core"
 native_process="$PROJECT_ROOT/modules/native-engine/src/main/cpp/app_server_process.cpp"
 storage_layout="$PROJECT_ROOT/modules/storage/src/main/java/de/agentcodi/storage/WorkspaceLayout.java"
 terminal_activity="$PROJECT_ROOT/app/src/main/java/de/agentcodi/app/TerminalActivity.java"
-terminal_session="$core_root/CodexTerminalSession.java"
-session_controller="$core_root/CodexSessionController.java"
-app_server_client="$core_root/CodexAppServerClient.java"
 runtime_service="$PROJECT_ROOT/modules/runtime/src/main/java/de/agentcodi/runtime/AgentRuntimeService.java"
-toolchain_shell="$PROJECT_ROOT/modules/native-engine/src/main/cpp/package_shell_main.cpp"
-if ! rg -Uq 'android:name="de\.agentcodi\.app\.TerminalActivity"[[:space:][:print:]]{0,220}android:exported="false"' "$manifest" \
-    || ! rg -q 'openTerminal' "$PROJECT_ROOT/app/src/main/java/de/agentcodi/app/MainActivity.java" \
-    || ! rg -q 'AgentRuntimeService\.startTerminal' "$terminal_activity" \
-    || ! rg -q 'AgentRuntimeService\.sendTerminalInput' "$terminal_activity" \
-    || ! rg -q 'controller\.startTerminal' "$runtime_service" \
-    || ! rg -q 'new CodexTerminalSession' "$session_controller" \
-    || ! rg -q 'terminal\.onNotification' "$session_controller" \
-    || ! rg -q '"command/exec"' "$terminal_session" \
-    || ! rg -q '"command/exec/write"' "$app_server_client" \
-    || ! rg -q '"command/exec/resize"' "$terminal_session" \
-    || ! rg -q '"command/exec/terminate"' "$terminal_session" \
-    || ! rg -q 'command/exec/outputDelta' "$terminal_session" \
-    || ! rg -q 'setPermissionProfile' "$terminal_session" \
-    || ! rg -q '"permissionProfile", requestedPermissionProfile' "$terminal_session" \
-    || ! rg -q '"tty", Boolean\.TRUE' "$terminal_session" \
-    || ! rg -q '"disableOutputCap", Boolean\.TRUE' "$terminal_session" \
-    || ! rg -q '"disableTimeout", Boolean\.TRUE' "$terminal_session" \
-    || rg -q '"(timeoutMs|outputBytesCap)",' "$terminal_session"; then
-  echo "The Full-access app-server PTY, runtime facade, or non-exported UI route is incomplete." >&2
+if ! rg -Fq 'de.archterminal.MainActivity.class' "$terminal_activity" \
+    || ! rg -Fq 'AgentCodiArch.prepare' "$runtime_service" \
+    || ! rg -Fq 'arch_shell_main.cpp' "$apk_builder" \
+    || ! rg -Fq 'arch_proot_main.cpp' "$apk_builder" \
+    || ! rg -Fq 'arch_shell_environment.cpp' "$apk_builder" \
+    || ! rg -Fq 'third-party/zlib/ZLIB-LICENSE' "$licenses_activity" \
+    || [ -e "$core_root/CodexTerminalSession.java" ] \
+    || [ -e "$core_root/TerminalOutputBuffer.java" ] \
+    || [ -e "$PROJECT_ROOT/modules/storage/src/main/java/de/agentcodi/storage/PackageBootstrap.java" ] \
+    || [ -e "$PROJECT_ROOT/scripts/package-edition/catalog.json" ] \
+    || [ -e "$PROJECT_ROOT/.github/workflows/packages.yml" ]; then
+  echo "Arch Terminal integration or retirement of the APT/PTY implementation is incomplete." >&2
   exit 1
 fi
-
-if [ -e "$PROJECT_ROOT/modules/runtime/src/main/java/de/agentcodi/runtime/TerminalController.java" ] \
-    || [ -e "$PROJECT_ROOT/modules/native-engine/src/main/cpp/terminal_process.cpp" ] \
-    || [ -e "$PROJECT_ROOT/modules/native-engine/src/main/cpp/terminal_process.h" ] \
-    || rg -q 'native(Start|Read|Write|Resize|Poll|Stop)Terminal|forkpty' \
-      "$PROJECT_ROOT/modules/runtime/src/main/java/de/agentcodi/runtime/NativeEngine.java" \
-      "$PROJECT_ROOT/modules/native-engine/src/main/cpp/jni_bridge.cpp"; then
-  echo "A separate same-UID terminal process path bypasses the app-server sandbox." >&2
-  exit 1
-fi
-
-# Active Package Edition payload and start API contract. Retired tool helpers
-# must not return; only the bounded alias migration remains.
-if ! rg -q 'package_shell_main\.cpp' "$apk_builder" \
-    || ! rg -q 'retireLegacyToolAliases' "$storage_layout" "$runtime_service" \
-    || rg -q 'layout\.preparePackagedTool(Aliases|Runtime)' "$runtime_service" \
-    || rg -q '(NODE|NPM|PYTHON|RIPGREP)_(VERSION|LIBRARY_NAME|URL|SHA256)|toolchain_elf_(guard|attestor|injector)\.cpp' "$apk_builder" \
-    || rg -q 'AGENTCODI_(TOOLCHAIN|TOOL_BIN|TOOL_RUNTIME|NODE_VERSION|NPM_VERSION|PYTHON_VERSION|RIPGREP_VERSION)=' "$native_process" \
-    || rg -q 'validate_tool_alias' "$native_process" \
-    || ! rg -q 'EXPECTED_NATIVE_FILES' "$apk_builder" \
-    || ! rg -q 'unresolved ELF dependency' "$apk_builder" \
-    || ! rg -q 'retired user-tool assets' "$apk_builder" \
-    || ! rg -Fq 'PackageDiagnosticsCommand.create()' "$terminal_activity" \
-    || ! rg -q 'third-party/zlib/ZLIB-LICENSE' "$licenses_activity" \
-    || ! rg -q 'SHELL=" \+ std::string\(kSystemShell\)' "$native_process"; then
-  echo "The minimal APK, retired aliases, package diagnostics or legal assets are inconsistent." >&2
-  exit 1
-fi
-
-if [ -e "$PROJECT_ROOT/modules/storage/src/main/java/de/agentcodi/storage/PackagedToolRuntime.java" ] \
-    || [ -e "$core_root/ToolchainCommand.java" ] \
-    || find "$PROJECT_ROOT/modules/native-engine/src/main/cpp" -maxdepth 1 \
-         -name 'toolchain_*' -print -quit | rg -q . \
-    || rg -n '(NODE|NPM|PYTHON|RIPGREP)_RUNTIME_|TOOL_RUNTIME_' "$core_root/BuildIdentity.java" \
-    || rg -n 'nodeExecutable|pythonExecutable|ripgrepExecutable|toolBinaryDirectory|toolRuntimeDirectory|String toolchain' \
-         "$PROJECT_ROOT/modules/runtime/src/main/java/de/agentcodi/runtime/NativeEngine.java" \
-         "$PROJECT_ROOT/modules/runtime/src/main/java/de/agentcodi/runtime/NativeAppServerTransport.java" \
-    || rg -n 'node_executable|python_executable|ripgrep_executable|toolchain_directory|tool_binary_directory|tool_runtime_directory|just_in_time_approvals' \
-         "$PROJECT_ROOT/modules/native-engine/src/main/cpp/app_server_process.h" "$native_process" \
-         "$PROJECT_ROOT/modules/native-engine/src/main/cpp/jni_bridge.cpp" \
-    || rg -n 'secureChild\(.*"(tool-bin|tool-runtime|toolchain)"|preparePackagedTool|is(Node|Npm|Python|Ripgrep)RuntimeEnabled' \
-         "$storage_layout" "$runtime_service"; then
-  echo "Retired APK tool sources, activation pins or startup prerequisites remain." >&2
-  exit 1
-fi
-
-if rg -n 'workspace/console|SharedPreferences|onSaveInstanceState' "$terminal_activity" "$terminal_session" "$toolchain_shell" \
-    || rg -n 'CODEX_HOME|auth\.json|"sandboxPolicy"' "$terminal_activity" "$terminal_session" "$toolchain_shell"; then
-  echo "Terminal output/input must remain transient and outside the authentication boundary." >&2
-  exit 1
-fi
-
-if ! rg -q 'command/exec/outputDelta' "$PROJECT_ROOT/tests/cpp/android_app_server_bootstrap_smoke.cpp" \
-    || ! rg -q 'command/exec/write' "$PROJECT_ROOT/tests/cpp/android_app_server_bootstrap_smoke.cpp" \
-    || ! rg -q 'command/exec/resize' "$PROJECT_ROOT/tests/cpp/android_app_server_bootstrap_smoke.cpp" \
-    || ! rg -q 'command/exec/terminate' "$PROJECT_ROOT/tests/cpp/android_app_server_bootstrap_smoke.cpp" \
-    || ! rg -q 'config/read' "$PROJECT_ROOT/tests/cpp/android_app_server_bootstrap_smoke.cpp" \
-    || ! rg -q 'config/batchWrite' "$PROJECT_ROOT/tests/cpp/android_app_server_bootstrap_smoke.cpp" \
-    || ! rg -q 'config/mcpServer/reload' "$PROJECT_ROOT/tests/cpp/android_app_server_bootstrap_smoke.cpp" \
-    || ! rg -q 'minimal-package-shell-ok' "$PROJECT_ROOT/tests/cpp/android_app_server_bootstrap_smoke.cpp" \
-    || ! rg -q 'check_package_prefix' "$PROJECT_ROOT/tests/cpp/android_app_server_bootstrap_smoke.cpp" \
-    || ! rg -q 'check_stdio_package_environment' "$PROJECT_ROOT/tests/cpp/android_app_server_bootstrap_smoke.cpp"; then
-  echo "Minimal Package Edition runtime smoke coverage is incomplete." >&2
-  exit 1
-fi
+python3 -B "$PROJECT_ROOT/scripts/arch-terminal/verify-source.py"
 
 if ! rg -q 'VERSION_NAME = "0\.1\.6"' "$core_root/BuildIdentity.java" \
     || ! rg -q 'VERSION_CODE = 9' "$core_root/BuildIdentity.java" \

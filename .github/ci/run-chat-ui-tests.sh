@@ -12,16 +12,20 @@ AAPT2="$ANDROID_HOME/build-tools/35.0.0/aapt2"
 REPORT_DIR="${AGENTCODI_CHAT_UI_REPORT:-$BUILD_DIR/report}"
 mkdir -p "$BUILD_DIR/generated" "$BUILD_DIR/classes" "$BUILD_DIR/test-classes/com/android/tools" "$REPORT_DIR"
 
-"$AAPT2" compile --dir "$PROJECT_ROOT/app/src/main/res" -o "$BUILD_DIR/resources.zip"
+python3 -B "$PROJECT_ROOT/scripts/arch-terminal/prepare-resources.py" "$BUILD_DIR/resources"
+"$AAPT2" compile --dir "$BUILD_DIR/resources" -o "$BUILD_DIR/resources.zip"
 "$AAPT2" link -o "$BUILD_DIR/resources.apk" \
   --manifest "$PROJECT_ROOT/app/src/main/AndroidManifest.xml" \
-  --java "$BUILD_DIR/generated" --custom-package de.agentcodi.app \
+  --java "$BUILD_DIR/generated" --custom-package de.agentcodi.app --extra-packages de.archterminal:com.termux.view \
   --min-sdk-version 29 --target-sdk-version 28 \
   -I "$ANDROID_JAR" "$BUILD_DIR/resources.zip"
 find "$PROJECT_ROOT/app/src/main/java" "$PROJECT_ROOT/modules" "$BUILD_DIR/generated" \
+  "$PROJECT_ROOT/third_party/arch-terminal/app/src/main/java" \
+  "$PROJECT_ROOT/third_party/arch-terminal/third_party/termux/emulator-src/main/java" \
+  "$PROJECT_ROOT/third_party/arch-terminal/third_party/termux/view-src/main/java" \
   -type f -name '*.java' -print | sort > "$BUILD_DIR/sources.txt"
 javac -encoding UTF-8 -source 8 -target 8 -Xlint:-options \
-  -bootclasspath "$ANDROID_JAR" -d "$BUILD_DIR/classes" @"$BUILD_DIR/sources.txt"
+  -bootclasspath "$ANDROID_JAR:$PROJECT_ROOT/third_party/android-lambda-stubs/core-lambda-stubs.jar" -classpath "$PROJECT_ROOT/third_party/androidx-annotation/annotation-1.3.0.jar" -d "$BUILD_DIR/classes" @"$BUILD_DIR/sources.txt"
 
 cat > "$BUILD_DIR/pom.xml" <<'XML'
 <project xmlns="http://maven.apache.org/POM/4.0.0">
@@ -51,7 +55,7 @@ for aar in (build / "lib").glob("*.aar"):
         (build / "lib" / (aar.stem + "-classes.jar")).write_bytes(archive.read("classes.jar"))
 (build / "test-classes/com/android/tools/test_config.properties").write_text(
     "android_merged_manifest=" + str(project / "app/src/main/AndroidManifest.xml") + "\n"
-    "android_merged_resources=" + str(project / "app/src/main/res") + "\n"
+    "android_merged_resources=" + str(build / "resources") + "\n"
     "android_merged_assets=" + str(project / "app/src/main/assets") + "\n"
     "android_resource_apk=" + str(build / "resources.apk") + "\n"
     "android_custom_package=de.agentcodi.app\n", encoding="utf-8")
@@ -62,7 +66,7 @@ javac -encoding UTF-8 -cp "$classpath" -d "$BUILD_DIR/test-classes" @"$BUILD_DIR
 java -Drobolectric.dependency.repo.url=https://repo.maven.apache.org/maven2 \
   -Dagentcodi.chatUiReport="$REPORT_DIR" -cp "$classpath" \
   org.junit.runner.JUnitCore de.agentcodi.app.ChatConversationUiTest de.agentcodi.app.ChatImageUiTest \
-    de.agentcodi.app.TerminalUiTest \
+    de.agentcodi.app.ArchTerminalNavigationTest \
     de.agentcodi.app.WorkspaceEditorUiTest de.agentcodi.app.WorkspaceCodeEditorUiTest \
     de.agentcodi.app.AndroidFreedomUiTest \
   | tee "$REPORT_DIR/results.txt"

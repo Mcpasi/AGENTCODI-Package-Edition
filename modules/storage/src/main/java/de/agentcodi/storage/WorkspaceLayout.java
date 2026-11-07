@@ -44,7 +44,7 @@ public final class WorkspaceLayout {
         File state = secureChild(root, "state");
         File logs = secureChild(root, "logs");
         File home = secureChild(root, "home");
-        PackageBootstrap.recoverPrefix(canonicalBase, state);
+        // Preserve older user data; APT is no longer installed or configured.
         File packagePrefix = secureChild(canonicalBase, "usr");
         // Keep earlier installations in place: native packages may embed this path.
         File legacyPrefix = secureChild(home, ".local");

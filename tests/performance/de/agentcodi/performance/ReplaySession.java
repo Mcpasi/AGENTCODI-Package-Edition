@@ -18,19 +18,13 @@ final class ReplaySession implements AutoCloseable {
     final CodexSessionController controller;
     final Peer peer = new Peer();
 
-    ReplaySession(boolean terminal) throws Exception {
-        controller = new CodexSessionController(peer, "/performance/workspace", null,
-            terminal ? "/performance/bin/shell" : null);
+    ReplaySession() throws Exception {
+        controller = new CodexSessionController(peer, "/performance/workspace");
         try {
             controller.start();
-            if (terminal) {
-                controller.startTerminal(24, 80);
-                await(() -> controller.terminalSnapshot().isRunning(), "terminal start");
-            } else {
-                controller.startNewThread();
-                await(() -> THREAD.equals(controller.snapshot().getActiveThreadId())
-                    && !controller.snapshot().isOperationActive(), "thread start");
-            }
+            controller.startNewThread();
+            await(() -> THREAD.equals(controller.snapshot().getActiveThreadId())
+                && !controller.snapshot().isOperationActive(), "thread start");
         } catch (Exception error) {
             close();
             throw error;

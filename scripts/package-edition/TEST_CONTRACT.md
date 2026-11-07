@@ -1,103 +1,30 @@
-# Final Package Edition test contract
+# Arch integration test contract
 
-Package Edition is developed on `main` in `Mcpasi/AGENTCODI-Package-Edition`.
-This contract does not authorize a PR,
-merge, APK release or APT publication. Minimum API is 29, target SDK is 28,
-installation ID is de.agentcodi.pkg, and Full access is the sole runtime mode.
+Installation ID remains `de.agentcodi.pkg`, minimum API 29, target SDK 28 and
+Full access. Arch Terminal 0.1.9 is imported unchanged at
+`99fad098fe41e1a19b5a5e81351105bef4498a01`. The retired APT/catalog and custom
+PTY renderer/session implementation are excluded from this build.
 
-The current source and latest published release are **Package Edition 0.1.5,
-Android versionCode 8**, released on 2026-10-14 as an experimental prerelease, tagged
-[`V.0.1.5-package`](https://github.com/Mcpasi/AGENTCODI-Package-Edition/releases/tag/V.0.1.5-package).
-Physical Android device tests for version 0.1.5 passed.
-CI artifacts are test builds; hardware test results are recorded separately.
-
-The existing Package Edition prerelease `v0.1.0-package.3` was published on
-2026-10-06. Its [release APK](https://github.com/Mcpasi/AGENTCODI/releases/tag/v0.1.0-package.3)
-has SHA-256 `028679df0ebeb2f1a5f9d8b373320122cba1778e67e0f198ac877c2771bc25ed`.
-Publication does not change the required evidence or turn hosted CI into
-hardware validation; this contract itself authorizes no publication action.
-
-apk-contract.json is the shared native/legal payload definition.
-verify-apk-contract.py is called by architecture checks and the complete APK
-build. The APK contains exactly six ARM64 native files: original engine and
-shell bridge, Community Codex app-server and matching code-mode host, libc++,
-and zlib. Only the declared third-party assets are accepted; extra ABIs,
-retired tools, unexpected assets, duplicate ZIP entries and changed staged
-bytes fail verification. The existing ELF dependency, signature, alignment,
-identity and native-runtime checks remain required.
-
-| Layer | Required evidence |
+| Layer | Coverage |
 | --- | --- |
-| Architecture / host contract regressions | Same active C++ suite set in local and hosted drivers; Package shell fixture; exact APK native/asset and legal-byte contract. Twenty-two mutation/acceptance regressions exercise assembled fixture ZIPs; nine MPL-source regressions check complete source coverage and notice preservation. |
-| Java host suite | Full-access identity/protocol, bootstrap interruption/recovery and update preservation; managed and user prefixes; all four user tool names, executable permissions, dpkg state and caches; alias retirement; file-browser/import/export checks, including replaced package roots and same-size ZIP member changes with restored mtime; MCP tool approval allow/decline/cancel, nullable turn IDs, stale/overloaded rejection, invalid elicitation, server resolution and timeout. |
-| Seven portable C++ suites | Supervisor environment, process lifecycle, framing, PNG and file operations; actual Package shell; prefix precedence; inherited retired activation variables stripped. |
-| Android compilation | All sources/resources against API 35, manifest target 28/minimum 29, separate installation identity and compiled component classes; German/English legal UI. |
-| Workspace editor host regressions | Complete UTF-8 files up to 1 MiB, BOM/line-ending/permission preservation, atomic saves, external-change conflicts and concurrent new-file collisions; pure Java editor contracts and JavaScript/HTML/CSS/Python lexers. |
-| Android UI on API 29/35 | Existing chat/terminal regressions and native editor save/Ctrl+S/navigation, new-file drafts, syntax colors, logical line numbers, IME/clipboard source preservation and Activity recreation with pending saves. |
-| Community ARM64/Bionic runtime | Pinned archive/relocation/schemas and actual controller RPCs; real app-server, code-mode JavaScript without external Node/npm, restart and persistent user program; actual Java MCP approval records validated against generated schemas and a real MCP prompt gate with invocation counts for accept/decline/cancel. |
-| Bootstrap ARM64/Bionic smoke | Real ZIP installed through Java; dpkg configuration, shell/APT/gpgv, certificates and local package install/remove. |
-| Complete APK ARM64/Bionic smoke | Full-access sibling access, Codex commands, PTY operations, import context, managed/legacy precedence and identical stdio-MCP environment; no retired activation/version variables. |
-| Package catalog (separate workflow) | Source-built npm/npx, pip/user/venv, Git/ripgrep and install/remove/reinstall/upgrade tests; signed APT and authenticated sources. These tools are not required in the minimal APK smoke. |
-| Physical Android devices, skipped here | Android 10 and current Android: installation/parallel apps/update/low-target warning, service/notifications, login, picker/backups, writable-prefix ELF/shebang/library execution, npm/pip/PTY/MCP and hardware linker behavior. |
+| Source/architecture | All upstream file hashes, compile-only dependency hashes, native/runtime boundaries, removed APT/PTY implementations and one shared APK payload contract. |
+| Java host | Codex/chat/approval/file APIs, preserved legacy data and executable argument-preserving Arch wrappers, quoting, compatibility preferences and rejected linked launchers. |
+| C++ host | Supervisor environment/lifecycle/framing, PNG validation, workspace readers/imports and the host-only system-shell protocol fixture. The supervisor suites require the disposable CI `/system` shim. |
+| Arch adapters | Codex Bash and stdio MCP argv, shared workspace binds, guest environment cleanup, absent-install failure, upstream LaunchSpec compatibility, passwd shell discovery and SIGTERM-to-PRoot-cleanup cancellation. |
+| Upstream Arch | Unchanged native PTY/extractor/hardlink, Java, VT emulator and lint tests in isolated source copies. |
+| Android compile/DEX | Combined sources/resources and both resource namespaces; Java 8 lambda desugaring, target/minimum SDK, manifest classes, identity and update signer stability. |
+| Android UI | Terminal navigation to Arch without starting Codex or downloading packages; existing chat/editor suites on API 29 and 35. |
+| APK/Bionic | Existing pinned Codex and code-mode host/schema/protocol smoke; actual Bionic shell lookup interception, commands, Full access, PTY API and stdio MCP environment. No large guest image is included in this protocol-only smoke. |
+| Final APK | Exact eleven native files, every staged byte, ARM64, 16 KiB segments, signature, original Arch/Codex/libc++/zlib notices, pinned rootfs lock and MPL source material. |
+| Optional rootfs smoke | Manual Arch Terminal runtime workflow input downloads the approximately 791 MiB pinned rootfs and runs the upstream PRoot/QEMU smoke. |
+| Physical Android | Installation/update, keyboard, notifications/services, actual Arch installation, pacman, simultaneous terminal/Codex workspace edits and long-running/cancelled commands remain device checks. |
 
-## License evidence and publication prerequisite
+The APK workflow retains its container and signing path. Its reusable bootstrap
+dependency now builds Arch native runtime files instead of APT packages. Debug,
+release and reusable runtime branch gates temporarily allow
+`Mcpasi/Fusion_Arch_Termux`; TODO comments require returning to `main` afterward.
 
-Assembly indexes the original legal files in each selected bootstrap DEB.
-bootstrap-report.json includes package versions, ownership, size/SHA-256,
-and corresponding-source archive evidence. BOOTSTRAP-LICENSE-INDEX.json exposes
-the same files in the app. APK verification checks the entire bootstrap ZIP
-against its manifest and the legal index against those bytes and dpkg lists.
-Original distributor Codex, libc++ and zlib texts are copied unchanged.
-Checked-in LLVM texts supplement the libc++ distributor's generic NCSA
-template. Historical sandbox/tool notices stay in repository NOTICE.md.
-
-The APK workflow uploads agentcodi-package-apk-contract, containing exact file
-hashes, package legal/source evidence and explicit release blockers.
-The original Community archive omits dependency terms; the committed supplement
-records its target-specific normal/build Cargo closure, Rust standard-library
-notices and exact V8 source/submodules. ZIP/index/provenance and Cargo.lock
-are tied to the release/source/native hashes, with original notices preserved
-and declared standard terms identified explicitly where publishers omit files.
-All twelve MPL components receive complete, unchanged offline sources in the
-APK: ten Cargo.lock-bound crate archives and one Git snapshot for both nucleo
-components. The source offer, manifests, license files and all delivered source
-bytes are verified; saving through the Android document picker remains a
-separate hardware check.
-The bzip2/gpgv/xz-utils DEBs retain their parent source's legal files under their
-own package ownership. The format-2 report's license_release_ready describes
-only legal prerequisites, and device_tests records the unperformed hardware
-validation. Release builds fail if any component or package has a legal gap.
-Debug CI success cannot close device tests or authorize final publication.
-
-Bootstrap copyright links are resolved solely through the audited manifest.
-The index records both the package-owned installed path and the actual shared
-license file under share/LICENSES (or share/licenses). Shared texts are indexed
-for their owning package as well. Dangling, escaping or cyclic legal links fail;
-reading arbitrary host paths is not part of this process.
-
-## MCP tool approval scope
-
-Managed MCP server mutations continue to enforce `prompt` and clear per-tool
-approval overrides. Message-only `mcp_tool_call` form elicitations use a
-dedicated dialog with server/message/redacted parameters. Answers allow once,
-decline or cancel, with no persisted approval metadata. Structured forms needing
-additional input and URL elicitations are rejected safely. This is distinct
-from optional command/file approvals and does not change Full access.
-
-Package installation/use passed on a physical device on 2026-10-06.
-At that milestone the Android-version/device matrix and the MCP hardware
-retest were still outstanding. Subsequent release APK tests from APT through
-MCP passed. Physical Android device tests for Package Edition 0.1.2 also
-passed. Physical Android device tests for versions 0.1.3, 0.1.4 and 0.1.5 passed.
-The complete version/device/update matrix and new
-MPL source-saving feature are not documented as hardware-validated; hosted CI
-continues to skip device tests.
-
-The nested code-mode SIGSEGV in runtime run `37493948718` was reproduced
-and resolved as an Android 9 CI Bionic / native ELF TLS mismatch on 2026-10-07.
-The Community runtime CI image now supplies Android 10 / API 29 Bionic,
-matching the app's minimum API. The actual JavaScript result, six isolated
-host probes and native/nested MCP accept/decline/cancel checks are required.
-All pass in run `37676838798`; binary/schema pins and APK bytes are unchanged.
-See [the diagnosis](../../.github/ci/CODE_MODE_SIGSEGV.md). This hosted evidence
-does not replace the separate physical device matrix.
+The runtime artifact includes original Arch application/native source archives
+and the complete combined AGENTCODI source bundle. Distribute those archives
+with the combined GPL-3.0-or-later APK; original AGENTCODI Apache notices remain.
+Historical APT/device results do not constitute Arch integration validation.

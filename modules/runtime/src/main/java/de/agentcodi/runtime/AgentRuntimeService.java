@@ -25,7 +25,6 @@ import de.agentcodi.core.CodexSessionSnapshot;
 import de.agentcodi.core.RuntimePhase;
 import de.agentcodi.core.RuntimeSnapshot;
 import de.agentcodi.core.RuntimeStateMachine;
-import de.agentcodi.core.TerminalSessionSnapshot;
 import de.agentcodi.mcp.McpCatalogSnapshot;
 import de.agentcodi.mcp.McpConfigurationSnapshot;
 import de.agentcodi.mcp.McpServerDraft;
@@ -34,11 +33,10 @@ import de.agentcodi.mcp.client.McpConfigurationController;
 import de.agentcodi.mode.compatibility.FullAccessExecutionMode;
 import de.agentcodi.review.CustomReviewMode;
 import de.agentcodi.storage.WorkspaceLayout;
-import de.agentcodi.storage.PackageBootstrap;
+import de.archterminal.AgentCodiArch;
 
 import java.io.File;
 import java.io.IOException;
-import java.io.InputStream;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
@@ -60,8 +58,6 @@ public final class AgentRuntimeService extends Service {
     private static final RuntimeStateMachine STATE = new RuntimeStateMachine();
     private static final AtomicBoolean BOOTSTRAP_ACTIVE = new AtomicBoolean(false);
     private static final CodexSessionSnapshot STOPPED_SESSION = CodexSessionSnapshot.stopped();
-    private static final TerminalSessionSnapshot STOPPED_TERMINAL =
-        TerminalSessionSnapshot.stopped();
     private static final McpCatalogSnapshot STOPPED_MCP_CATALOG =
         McpCatalogSnapshot.stopped();
     private static final McpConfigurationSnapshot STOPPED_MCP_CONFIGURATION =
@@ -102,6 +98,10 @@ public final class AgentRuntimeService extends Service {
             session.getPermissionProfileId(),
             session.isCompatibilityApprovalsEnabled()
         );
+    }
+
+    public static void prepareArchTerminalWorkspace(Context context) throws IOException {
+        WorkspaceLayout.create(context.getFilesDir());
     }
 
     public static void stopRuntime() {
@@ -199,11 +199,6 @@ public final class AgentRuntimeService extends Service {
         return controller == null ? STOPPED_SESSION : controller.snapshot();
     }
 
-    public static TerminalSessionSnapshot terminalSnapshot() {
-        CodexSessionController controller = sessionController;
-        return controller == null ? STOPPED_TERMINAL : controller.terminalSnapshot();
-    }
-
     public static McpCatalogSnapshot mcpCatalogSnapshot() {
         McpCatalogController controller = mcpCatalogController;
         return controller == null ? STOPPED_MCP_CATALOG : controller.snapshot();
@@ -271,51 +266,6 @@ public final class AgentRuntimeService extends Service {
     public static boolean reloadMcpConfiguration() {
         McpConfigurationController controller = mcpConfigurationController;
         return controller != null && controller.reload();
-    }
-
-    public static boolean startTerminal(int rows, int columns) {
-        CodexSessionController controller = sessionController;
-        if (controller == null) {
-            return false;
-        }
-        try {
-            controller.startTerminal(rows, columns);
-            return true;
-        } catch (RuntimeException error) {
-            return false;
-        }
-    }
-
-    public static void sendTerminalInput(char[] input) throws java.io.IOException {
-        CodexSessionController controller = sessionController;
-        if (controller == null) {
-            if (input != null) {
-                Arrays.fill(input, '\0');
-            }
-            throw new java.io.IOException("Terminal runtime is not ready");
-        }
-        controller.sendTerminalInput(input);
-    }
-
-    public static void resizeTerminal(int rows, int columns) {
-        CodexSessionController controller = sessionController;
-        if (controller != null) {
-            controller.resizeTerminal(rows, columns);
-        }
-    }
-
-    public static void stopTerminal() {
-        CodexSessionController controller = sessionController;
-        if (controller != null) {
-            controller.stopTerminal();
-        }
-    }
-
-    public static void clearTerminalOutput() {
-        CodexSessionController controller = sessionController;
-        if (controller != null) {
-            controller.clearTerminalOutput();
-        }
     }
 
     public static void refreshAccountAndThreads() {
@@ -773,19 +723,7 @@ public final class AgentRuntimeService extends Service {
                     WorkspaceLayout layout = WorkspaceLayout.create(getFilesDir());
                     WorkspaceFileImporter.recoverPendingImports(layout);
                     NativeEngine engine = new NativeEngine();
-                    try (
-                        InputStream archive = getAssets().open("third-party/package-bootstrap/bootstrap-aarch64.zip");
-                        InputStream manifest = getAssets().open("third-party/package-bootstrap/BOOTSTRAP-MANIFEST")
-                    ) {
-                        PackageBootstrap.prepare(layout, archive, manifest, new PackageBootstrap.Configurator() {
-                            @Override public void configure(File prefix) throws IOException {
-                                engine.configurePackageBootstrap(
-                                    prefix.getCanonicalPath(), layout.getHome().getCanonicalPath(),
-                                    new File(layout.getLogs(), "package-bootstrap.log").getCanonicalPath()
-                                );
-                            }
-                        });
-                    }
+                    AgentCodiArch.prepare(AgentRuntimeService.this, layout.getState());
                     int result = engine.selfTest();
                     if (result != 0) {
                         throw new IllegalStateException("C++ self-test failed with code " + result);
@@ -839,7 +777,6 @@ public final class AgentRuntimeService extends Service {
                                 );
                             }
                         },
-                        shellExecutable.getAbsolutePath(),
                         executionMode,
                         CustomReviewMode.get(),
                         compatibilityApprovalsEnabled,

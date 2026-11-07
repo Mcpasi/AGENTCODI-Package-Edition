@@ -56,7 +56,7 @@ CODEX_DEFAULT_HOST_NAME="codex-code-mode-host"
 CODEX_PACKAGED_HOST_NAME="libcodex-codehost.so"
 CODEX_DEFAULT_HOST_OFFSET="10568364"
 
-# User tools are installed from the edition APT catalog, never from APK payloads.
+# User tools run in Arch Terminal; the APK contains no package catalog.
 TERMINAL_SHELL_NAME="libagentcodi-shell.so"
 ZLIB_RUNTIME_SHA256="fc9659e5d77c32149627ef3c357a1a76cfd44b93917e29c6c1c78cb054f92b83"
 CLANG_TOOLCHAIN_VERSION="21.1.8"
@@ -359,24 +359,31 @@ ZLIB_THIRD_PARTY_ASSETS="$ADDITIONS/assets/third-party/zlib"
 LIBCXX_THIRD_PARTY_ASSETS="$ADDITIONS/assets/third-party/libcxx"
 mkdir -p "$LIBCXX_THIRD_PARTY_ASSETS"
 mkdir -p "$EXTRACT_DIR" "$AAPT2_EXTRACT" "$GENERATED_JAVA" "$CLASSES_ROOT" "$JARS_ROOT" "$DEX_DIR" "$NATIVE_DIR" "$CODEX_EXTRACT" "$THIRD_PARTY_ASSETS" "$ZLIB_THIRD_PARTY_ASSETS"
-# The bootstrap is built from the pinned edition recipes, not from Termux DEBs.
-PACKAGE_BOOTSTRAP_INPUT="$PROJECT_ROOT/output/package-bootstrap"
-PACKAGE_BOOTSTRAP_ASSETS="$ADDITIONS/assets/third-party/package-bootstrap"
-test -f "$PACKAGE_BOOTSTRAP_INPUT/bootstrap-aarch64.zip"
-test -f "$PACKAGE_BOOTSTRAP_INPUT/BOOTSTRAP-MANIFEST"
+# The unchanged upstream runtime is built by the reusable x86_64 workflow.
+ARCH_SOURCE="$PROJECT_ROOT/third_party/arch-terminal"
+ARCH_INPUT="$PROJECT_ROOT/output/arch-terminal"
+python3 -B "$PROJECT_ROOT/scripts/arch-terminal/verify-source.py"
 (
-  cd "$PACKAGE_BOOTSTRAP_INPUT"
+  cd "$ARCH_INPUT"
   sha256sum -c SHA256SUMS
+  test -f AGENTCODI-Arch-Terminal-source.tar.gz
+  test -f ArchTerminal-0.1.9-source.tar.gz
+  test -f ArchTerminal-0.1.9-native-inputs.tar.gz
+  sha256sum -c SOURCE-SHA256SUMS
 )
+cp -a "$ARCH_INPUT/assets/." "$ADDITIONS/assets/"
+mkdir -p "$ADDITIONS/assets/third-party/arch-terminal"
+cp "$ARCH_INPUT/source-lock.json" "$ADDITIONS/assets/third-party/arch-terminal/source-lock.json"
+cmp "$PROJECT_ROOT/third_party/arch-terminal.lock.json" "$ARCH_INPUT/source-lock.json"
+cp "$ARCH_INPUT/native/libarchterminal.so" "$ARCH_INPUT/native/libproot-loader.so" "$NATIVE_DIR/"
+cp "$ARCH_INPUT/native/libproot.so" "$NATIVE_DIR/libarch-proot.so"
+chmod 755 "$NATIVE_DIR/libarchterminal.so" "$NATIVE_DIR/libproot-loader.so" "$NATIVE_DIR/libarch-proot.so"
 cp "$PROJECT_ROOT/third_party/community-codex/DEPENDENCY-LICENSE-INDEX.json" \
   "$PROJECT_ROOT/third_party/community-codex/DEPENDENCY-LICENSES.zip" \
   "$PROJECT_ROOT/third_party/community-codex/DEPENDENCY-PROVENANCE.json" \
   "$PROJECT_ROOT/third_party/community-codex/MPL-SOURCE-INDEX.json" \
   "$PROJECT_ROOT/third_party/community-codex/MPL-SOURCE-OFFER.txt" \
   "$PROJECT_ROOT/third_party/community-codex/MPL-SOURCES.zip" "$THIRD_PARTY_ASSETS/"
-mkdir -p "$PACKAGE_BOOTSTRAP_ASSETS"
-cp "$PACKAGE_BOOTSTRAP_INPUT/bootstrap-aarch64.zip" "$PACKAGE_BOOTSTRAP_INPUT/BOOTSTRAP-MANIFEST" \
-  "$PACKAGE_BOOTSTRAP_INPUT/bootstrap-report.json" "$PACKAGE_BOOTSTRAP_INPUT/BOOTSTRAP-LICENSE-INDEX.json" "$PACKAGE_BOOTSTRAP_ASSETS/"
 mkdir -m 700 "$CODEX_SCHEMA_DIR" "$CODEX_SCHEMA_HOME" "$CODEX_SCHEMA_TMP"
 mkdir -m 700 "$CODEX_SCHEMA_HOME/codex-home"
 
@@ -507,10 +514,11 @@ if cmp -s "$CODEX_BINARY" "$CODEX_CODE_MODE_HOST_BINARY"; then
 fi
 
 echo "Compiling Android resources..."
-env LD_LIBRARY_PATH="$AAPT2_LIBRARY_PATH" "$AAPT2_BIN" compile --dir "$PROJECT_ROOT/app/src/main/res" -o "$COMPILED_RESOURCES"
+python3 -B "$PROJECT_ROOT/scripts/arch-terminal/prepare-resources.py" "$WORK_DIR/resources"
+env LD_LIBRARY_PATH="$AAPT2_LIBRARY_PATH" "$AAPT2_BIN" compile --dir "$WORK_DIR/resources" -o "$COMPILED_RESOURCES"
 
 UNSIGNED_APK="$WORK_DIR/unsigned.apk"
-env LD_LIBRARY_PATH="$AAPT2_LIBRARY_PATH" "$AAPT2_BIN" link -o "$UNSIGNED_APK" --manifest "$PROJECT_ROOT/app/src/main/AndroidManifest.xml" --java "$GENERATED_JAVA" --custom-package de.agentcodi.app --min-sdk-version "$MIN_SDK" --target-sdk-version "$TARGET_SDK" --version-code "$VERSION_CODE" --version-name "$APP_VERSION" -I "$ANDROID_JAR" "$COMPILED_RESOURCES"
+env LD_LIBRARY_PATH="$AAPT2_LIBRARY_PATH" "$AAPT2_BIN" link -o "$UNSIGNED_APK" --manifest "$PROJECT_ROOT/app/src/main/AndroidManifest.xml" --java "$GENERATED_JAVA" --custom-package de.agentcodi.app --extra-packages de.archterminal:com.termux.view --min-sdk-version "$MIN_SDK" --target-sdk-version "$TARGET_SDK" --version-code "$VERSION_CODE" --version-name "$APP_VERSION" -I "$ANDROID_JAR" "$COMPILED_RESOURCES"
 
 echo "Compiling isolated Java modules..."
 CORE_CLASSES="$CLASSES_ROOT/core"
@@ -632,13 +640,26 @@ find "$PROJECT_ROOT/modules/connector-client/src/main/java" -type f -name '*.jav
 CONNECTOR_CLIENT_JAR="$JARS_ROOT/connector-client.jar"
 "$JAR" cf "$CONNECTOR_CLIENT_JAR" -C "$CONNECTOR_CLIENT_CLASSES" .
 
+ARCH_ANNOTATIONS_JAR="$PROJECT_ROOT/third_party/androidx-annotation/annotation-1.3.0.jar"
+ARCH_CLASSES="$CLASSES_ROOT/arch-terminal"
+mkdir -p "$ARCH_CLASSES"
+find "$ARCH_SOURCE/app/src/main/java" \
+  "$ARCH_SOURCE/third_party/termux/emulator-src/main/java" \
+  "$ARCH_SOURCE/third_party/termux/view-src/main/java" \
+  "$PROJECT_ROOT/modules/arch-integration/src/main/java" \
+  "$GENERATED_JAVA/de/archterminal" "$GENERATED_JAVA/com/termux/view" \
+  -type f -name '*.java' -print | sort > "$WORK_DIR/arch-sources.txt"
+"$JAVAC" -encoding UTF-8 -source 8 -target 8 -Xlint:-options -bootclasspath "$ANDROID_JAR:$PROJECT_ROOT/third_party/android-lambda-stubs/core-lambda-stubs.jar" -classpath "$STORAGE_JAR:$ARCH_ANNOTATIONS_JAR" -d "$ARCH_CLASSES" @"$WORK_DIR/arch-sources.txt"
+ARCH_JAR="$JARS_ROOT/arch-terminal.jar"
+"$JAR" cf "$ARCH_JAR" -C "$ARCH_CLASSES" .
+
 find "$PROJECT_ROOT/modules/runtime/src/main/java" -type f -name '*.java' -print | sort > "$WORK_DIR/runtime-sources.txt"
-"$JAVAC" -encoding UTF-8 -source 8 -target 8 -Xlint:-options -bootclasspath "$ANDROID_JAR" -classpath "$CORE_JAR:$REVIEW_MODE_JAR:$COMPATIBILITY_MODE_JAR:$STORAGE_JAR:$FILE_BROWSER_CONTRACTS_JAR:$FILE_BROWSER_CLIENT_JAR:$FILE_EDITOR_CONTRACTS_JAR:$FILE_EDITOR_CLIENT_JAR:$IMPORT_CONTRACTS_JAR:$IMPORT_CLIENT_JAR:$MCP_CONTRACTS_JAR:$MCP_CLIENT_JAR:$CONNECTOR_CONTRACTS_JAR:$CONNECTOR_CLIENT_JAR" -d "$RUNTIME_CLASSES" @"$WORK_DIR/runtime-sources.txt"
+"$JAVAC" -encoding UTF-8 -source 8 -target 8 -Xlint:-options -bootclasspath "$ANDROID_JAR" -classpath "$CORE_JAR:$REVIEW_MODE_JAR:$COMPATIBILITY_MODE_JAR:$STORAGE_JAR:$FILE_BROWSER_CONTRACTS_JAR:$FILE_BROWSER_CLIENT_JAR:$FILE_EDITOR_CONTRACTS_JAR:$FILE_EDITOR_CLIENT_JAR:$IMPORT_CONTRACTS_JAR:$IMPORT_CLIENT_JAR:$MCP_CONTRACTS_JAR:$MCP_CLIENT_JAR:$CONNECTOR_CONTRACTS_JAR:$CONNECTOR_CLIENT_JAR:$ARCH_JAR" -d "$RUNTIME_CLASSES" @"$WORK_DIR/runtime-sources.txt"
 RUNTIME_JAR="$JARS_ROOT/runtime.jar"
 "$JAR" cf "$RUNTIME_JAR" -C "$RUNTIME_CLASSES" .
 
-find "$PROJECT_ROOT/app/src/main/java" "$GENERATED_JAVA" -type f -name '*.java' -print | sort > "$WORK_DIR/app-sources.txt"
-"$JAVAC" -encoding UTF-8 -source 8 -target 8 -Xlint:-options -bootclasspath "$ANDROID_JAR" -classpath "$CORE_JAR:$ANDROID_FREEDOM_JAR:$REVIEW_MODE_JAR:$COMPATIBILITY_MODE_JAR:$STORAGE_JAR:$FILE_BROWSER_CONTRACTS_JAR:$FILE_EDITOR_CONTRACTS_JAR:$FILE_EDITOR_SYNTAX_JAR:$IMPORT_CONTRACTS_JAR:$MCP_CONTRACTS_JAR:$MCP_CLIENT_JAR:$CONNECTOR_CONTRACTS_JAR:$CONNECTOR_CLIENT_JAR:$RUNTIME_JAR" -d "$APP_CLASSES" @"$WORK_DIR/app-sources.txt"
+find "$PROJECT_ROOT/app/src/main/java" "$GENERATED_JAVA/de/agentcodi/app" -type f -name '*.java' -print | sort > "$WORK_DIR/app-sources.txt"
+"$JAVAC" -encoding UTF-8 -source 8 -target 8 -Xlint:-options -bootclasspath "$ANDROID_JAR" -classpath "$CORE_JAR:$ANDROID_FREEDOM_JAR:$REVIEW_MODE_JAR:$COMPATIBILITY_MODE_JAR:$STORAGE_JAR:$FILE_BROWSER_CONTRACTS_JAR:$FILE_EDITOR_CONTRACTS_JAR:$FILE_EDITOR_SYNTAX_JAR:$IMPORT_CONTRACTS_JAR:$MCP_CONTRACTS_JAR:$MCP_CLIENT_JAR:$CONNECTOR_CONTRACTS_JAR:$CONNECTOR_CLIENT_JAR:$RUNTIME_JAR:$ARCH_JAR" -d "$APP_CLASSES" @"$WORK_DIR/app-sources.txt"
 APP_JAR="$JARS_ROOT/app.jar"
 "$JAR" cf "$APP_JAR" -C "$APP_CLASSES" .
 
@@ -646,12 +667,23 @@ echo "Compiling ARM64 JNI engine..."
 "$CLANGXX" --target=aarch64-linux-android"$MIN_SDK" -shared -fPIC -std=c++17 -O2 -Wall -Wextra -Werror -pthread -fvisibility=hidden -I"$JAVA_HOME_17/include" -I"$JAVA_HOME_17/include/linux" -I"$PROJECT_ROOT/modules/native-engine/src/main/cpp" "$PROJECT_ROOT/modules/native-engine/src/main/cpp/agentcodi_engine.cpp" "$PROJECT_ROOT/modules/native-engine/src/main/cpp/app_server_process.cpp" "$PROJECT_ROOT/modules/native-engine/src/main/cpp/png_validator.cpp" "$PROJECT_ROOT/modules/native-engine/src/main/cpp/sha256.cpp" "$PROJECT_ROOT/modules/native-engine/src/main/cpp/workspace_directory_reader.cpp" "$PROJECT_ROOT/modules/native-engine/src/main/cpp/workspace_file_reader.cpp" "$PROJECT_ROOT/modules/native-engine/src/main/cpp/workspace_import_installer.cpp" "$PROJECT_ROOT/modules/native-engine/src/main/cpp/jni_bridge.cpp" -Wl,-soname,libagentcodi.so -lz -llog -o "$NATIVE_DIR/libagentcodi.so"
 "$LLVM_STRIP" --strip-unneeded "$NATIVE_DIR/libagentcodi.so"
 
-echo "Compiling packaged terminal shell bridge..."
-"$CLANGXX" --target=aarch64-linux-android"$MIN_SDK" -fPIE -pie -std=c++17 -O2 -Wall -Wextra -Werror -pthread "$PROJECT_ROOT/modules/native-engine/src/main/cpp/package_shell_main.cpp" -o "$NATIVE_DIR/$TERMINAL_SHELL_NAME"
+echo "Compiling Arch command and workspace adapters..."
+"$CLANGXX" --target=aarch64-linux-android"$MIN_SDK" -fPIE -pie -std=c++17 -O2 -Wall -Wextra -Werror -pthread -Wl,-z,max-page-size=16384 "$PROJECT_ROOT/modules/native-engine/src/main/cpp/arch_shell_main.cpp" -o "$NATIVE_DIR/$TERMINAL_SHELL_NAME"
 "$LLVM_STRIP" --strip-unneeded "$NATIVE_DIR/$TERMINAL_SHELL_NAME"
+"$CLANGXX" --target=aarch64-linux-android"$MIN_SDK" -fPIE -pie -std=c++17 -O2 -Wall -Wextra -Werror -Wl,-z,max-page-size=16384 "$PROJECT_ROOT/modules/native-engine/src/main/cpp/arch_proot_main.cpp" -o "$NATIVE_DIR/libproot.so"
+"$CLANGXX" --target=aarch64-linux-android"$MIN_SDK" -shared -fPIC -std=c++17 -O2 -Wall -Wextra -Werror -Wl,-z,max-page-size=16384 "$PROJECT_ROOT/modules/native-engine/src/main/cpp/arch_shell_environment.cpp" -ldl -o "$NATIVE_DIR/libagentcodi-arch-env.so"
+"$LLVM_STRIP" --strip-unneeded "$NATIVE_DIR/libproot.so" "$NATIVE_DIR/libagentcodi-arch-env.so"
+
+# Verify shell interposition with the actual Android loader, before the real
+# app-server protocol smoke. Host getpwuid_r behavior alone is insufficient.
+"$CLANGXX" --target=aarch64-linux-android"$MIN_SDK" -fPIE -pie -std=c++17 -O2 -Wall -Wextra -Werror \
+  "$PROJECT_ROOT/tests/cpp/arch_shell_probe.cpp" -o "$WORK_DIR/arch-shell-probe"
 
 
 cp "$LIBCXX_SHARED" "$NATIVE_DIR/libc++_shared.so"
+env LD_LIBRARY_PATH="$NATIVE_DIR" LD_PRELOAD="$NATIVE_DIR/libagentcodi-arch-env.so" \
+  AGENTCODI_ARCH_SHELL=/agentcodi-test/arch-bin/bash "$WORK_DIR/arch-shell-probe"
+
 cp "$CODEX_BINARY" "$NATIVE_DIR/libcodex.so"
 cp "$CODEX_CODE_MODE_HOST_BINARY" "$NATIVE_DIR/$CODEX_PACKAGED_HOST_NAME"
 cp -L "$ZLIB_SOURCE_LIBRARY" "$NATIVE_DIR/libz_1.so"
@@ -686,7 +718,8 @@ diff -u "$EXPECTED_NATIVE_FILES" "$WORK_DIR/actual-native-files"
 for native_payload in "$NATIVE_DIR"/*.so; do
   while IFS= read -r dependency; do
     case "$dependency" in
-      libc.so|libdl.so|libm.so|liblog.so) ;;
+      # Arch Terminal's unchanged libarchive build uses Android's public zlib.
+      libc.so|libdl.so|libm.so|liblog.so|libz.so) ;;
       *) test -f "$NATIVE_DIR/$dependency" || {
         echo "Minimal APK has an unresolved ELF dependency: $native_payload -> $dependency" >&2
         exit 1
@@ -793,8 +826,7 @@ for packaged_executable in \
     exit 1
   fi
 done
-# Node, npm, Python and ripgrep are absent from this APK. Their actual APT
-# implementations remain covered by the separate Package catalog workflow.
+# Arch packages are installed by pacman after the pinned guest image is activated.
 app_server_help="$(env LD_LIBRARY_PATH="$NATIVE_DIR" "$NATIVE_DIR/libcodex.so" app-server --help)"
 if ! printf '%s\n' "$app_server_help" | grep -Fq 'Transport endpoint URL'; then
   echo "Android-adapted app-server did not pass its native startup smoke test." >&2
@@ -906,6 +938,8 @@ if [ "$BOOTSTRAP_LAYOUT" = flat ]; then
 fi
 mkdir -p "$BOOTSTRAP_SMOKE_PREFIX/bin" "$BOOTSTRAP_SMOKE_PREFIX/lib" "$BOOTSTRAP_SMOKE_HOME/.local/bin"
 chmod 700 "$BOOTSTRAP_SMOKE_PREFIX" "$BOOTSTRAP_SMOKE_PREFIX/bin" "$BOOTSTRAP_SMOKE_PREFIX/lib" "$BOOTSTRAP_SMOKE_HOME/.local" "$BOOTSTRAP_SMOKE_HOME/.local/bin"
+mkdir -p "$BOOTSTRAP_SMOKE_STATE/arch-bin"
+chmod 700 "$BOOTSTRAP_SMOKE_STATE/arch-bin"
 mkdir -p "$BOOTSTRAP_SMOKE_WORKSPACE" "$BOOTSTRAP_SMOKE_IMPORTS" "$BOOTSTRAP_SMOKE_CODEX_HOME" "$BOOTSTRAP_SMOKE_HOME" "$BOOTSTRAP_SMOKE_STATE" "$BOOTSTRAP_SMOKE_TEMP"
 chmod 700 "$BOOTSTRAP_SMOKE_ROOT" "$BOOTSTRAP_SMOKE_WORKSPACE" "$BOOTSTRAP_SMOKE_IMPORTS" "$BOOTSTRAP_SMOKE_CODEX_HOME" "$BOOTSTRAP_SMOKE_HOME" "$BOOTSTRAP_SMOKE_STATE" "$BOOTSTRAP_SMOKE_TEMP"
 printf '%s\n' 'agentcodi-import-content-smoke' > "$BOOTSTRAP_SMOKE_IMPORTS/0123456789abcdef0123456789abcdef.bin"
@@ -925,7 +959,7 @@ if timeout --kill-after=5s 300s env -i \
     "$BOOTSTRAP_SMOKE_BIN" \
     "$BOOTSTRAP_SMOKE_NATIVE/libcodex.so" \
     "$BOOTSTRAP_SMOKE_NATIVE/$CODEX_PACKAGED_HOST_NAME" \
-    "$BOOTSTRAP_SMOKE_NATIVE/$TERMINAL_SHELL_NAME" \
+    /system/bin/sh \
     "$BOOTSTRAP_SMOKE_WORKSPACE" \
     "$BOOTSTRAP_SMOKE_CODEX_HOME" \
     "$BOOTSTRAP_SMOKE_HOME" \
@@ -959,7 +993,7 @@ DEX_MODE="--debug"
 if [ "$BUILD_VARIANT" = "release" ]; then
   DEX_MODE="--release"
 fi
-"$JAVA" -cp "$R8_JAR" com.android.tools.r8.D8 "$DEX_MODE" --min-api "$MIN_SDK" --lib "$ANDROID_JAR" --output "$DEX_DIR" "$CORE_JAR" "$ANDROID_FREEDOM_JAR" "$REVIEW_MODE_JAR" "$COMPATIBILITY_MODE_JAR" "$STORAGE_JAR" "$FILE_BROWSER_CONTRACTS_JAR" "$FILE_BROWSER_CLIENT_JAR" "$FILE_EDITOR_CONTRACTS_JAR" "$FILE_EDITOR_CLIENT_JAR" "$FILE_EDITOR_SYNTAX_JAR" "$IMPORT_CONTRACTS_JAR" "$IMPORT_CLIENT_JAR" "$MCP_CONTRACTS_JAR" "$MCP_CLIENT_JAR" "$CONNECTOR_CONTRACTS_JAR" "$CONNECTOR_CLIENT_JAR" "$RUNTIME_JAR" "$APP_JAR"
+"$JAVA" -cp "$R8_JAR" com.android.tools.r8.D8 "$DEX_MODE" --min-api "$MIN_SDK" --lib "$ANDROID_JAR" --lib "$ARCH_ANNOTATIONS_JAR" --output "$DEX_DIR" "$CORE_JAR" "$ANDROID_FREEDOM_JAR" "$REVIEW_MODE_JAR" "$COMPATIBILITY_MODE_JAR" "$STORAGE_JAR" "$FILE_BROWSER_CONTRACTS_JAR" "$FILE_BROWSER_CLIENT_JAR" "$FILE_EDITOR_CONTRACTS_JAR" "$FILE_EDITOR_CLIENT_JAR" "$FILE_EDITOR_SYNTAX_JAR" "$IMPORT_CONTRACTS_JAR" "$IMPORT_CLIENT_JAR" "$MCP_CONTRACTS_JAR" "$MCP_CLIENT_JAR" "$CONNECTOR_CONTRACTS_JAR" "$CONNECTOR_CLIENT_JAR" "$RUNTIME_JAR" "$ARCH_JAR" "$APP_JAR"
 cp "$DEX_DIR/classes.dex" "$ADDITIONS/classes.dex"
 
 UNALIGNED_APK="$WORK_DIR/unaligned.apk"
@@ -1038,8 +1072,8 @@ grep -Fx "lib/$ABI/libc++_shared.so" "$WORK_DIR/apk-entries.txt"
 grep -Fx "lib/$ABI/libcodex.so" "$WORK_DIR/apk-entries.txt"
 grep -Fx "lib/$ABI/$CODEX_PACKAGED_HOST_NAME" "$WORK_DIR/apk-entries.txt"
 grep -Fx "lib/$ABI/$TERMINAL_SHELL_NAME" "$WORK_DIR/apk-entries.txt"
-grep -Fx 'assets/third-party/package-bootstrap/bootstrap-aarch64.zip' "$WORK_DIR/apk-entries.txt"
-grep -Fx 'assets/third-party/package-bootstrap/BOOTSTRAP-MANIFEST' "$WORK_DIR/apk-entries.txt"
+grep -Fx 'assets/rootfs.lock.json' "$WORK_DIR/apk-entries.txt"
+grep -Fx 'assets/third-party/arch-terminal/source-lock.json' "$WORK_DIR/apk-entries.txt"
 grep -Fx 'assets/third-party/codex/LICENSE' "$WORK_DIR/apk-entries.txt"
 grep -Fx 'assets/third-party/codex/NOTICE' "$WORK_DIR/apk-entries.txt"
 grep -Fx 'assets/third-party/zlib/ZLIB-LICENSE' "$WORK_DIR/apk-entries.txt"
@@ -1079,6 +1113,7 @@ python3 -B "$PROJECT_ROOT/scripts/package-edition/verify-apk-contract.py" \
 unzip -p "$VERSIONED_APK" classes.dex | strings > "$WORK_DIR/dex-strings.txt"
 grep -Fq 'Lde/agentcodi/app/MainActivity;' "$WORK_DIR/dex-strings.txt"
 grep -Fq 'Lde/agentcodi/app/SettingsActivity;' "$WORK_DIR/dex-strings.txt"
+grep -Fq 'Lde/archterminal/MainActivity;' "$WORK_DIR/dex-strings.txt"
 grep -Fq 'Lde/agentcodi/app/TerminalActivity;' "$WORK_DIR/dex-strings.txt"
 grep -Fq 'Lde/agentcodi/app/LicensesActivity;' "$WORK_DIR/dex-strings.txt"
 grep -Fq 'Lde/agentcodi/app/McpManagementActivity;' "$WORK_DIR/dex-strings.txt"
@@ -1091,9 +1126,6 @@ grep -Fq 'Lde/agentcodi/core/CredentialGuard;' "$WORK_DIR/dex-strings.txt"
 grep -Fq 'Lde/agentcodi/core/CodexFileMention;' "$WORK_DIR/dex-strings.txt"
 grep -Fq 'Lde/agentcodi/core/CodexAppMention;' "$WORK_DIR/dex-strings.txt"
 grep -Fq 'Lde/agentcodi/core/CodexWorkspaceAttachmentContext;' "$WORK_DIR/dex-strings.txt"
-grep -Fq 'Lde/agentcodi/core/TerminalOutputBuffer;' "$WORK_DIR/dex-strings.txt"
-grep -Fq 'Lde/agentcodi/core/TerminalSessionSnapshot;' "$WORK_DIR/dex-strings.txt"
-grep -Fq 'Lde/agentcodi/core/CodexTerminalSession;' "$WORK_DIR/dex-strings.txt"
 grep -Fq 'Lde/agentcodi/core/CodexSessionController;' "$WORK_DIR/dex-strings.txt"
 grep -Fq 'Lde/agentcodi/core/CodexModelOption;' "$WORK_DIR/dex-strings.txt"
 grep -Fq 'Lde/agentcodi/core/CodexReasoningOption;' "$WORK_DIR/dex-strings.txt"

@@ -5,20 +5,20 @@ on:
   push:
     branches:
       - 'main'
+      # TODO: Nach Abschluss der Arch-Integration auf main zurücksetzen.
+      - 'Mcpasi/Fusion_Arch_Termux'
     paths:
       - 'NOTICE.md'
       - 'app/**'
       - 'modules/**'
       - 'scripts/**'
-      - 'third_party/libcxx/**'
-      - 'third_party/community-codex/**'
+      - 'third_party/**'
       - 'tests/**'
       - '.github/workflows/apk-release.yml'
       - '.github/ci/*release-signing*'
       - '.github/ci/build-release-apk.sh'
       - '.github/workflows/bootstrap.yml'
-      - '.github/ci/bootstrap-*'
-      - '.github/ci/BootstrapInstall.java'
+      - '.github/ci/test-arch-terminal.py'
       - '.github/ci/Dockerfile'
       - '.github/ci/*build-inputs*'
       - '.github/ci/build-input-cache.py'
@@ -26,11 +26,6 @@ on:
       - '.github/ci/restore-ndk-sysroot.sh'
       - '.github/ci/ndk-29-inputs.tsv'
   workflow_dispatch:
-    inputs:
-      source_run_id:
-        description: 'Successful bootstrap run in this repository; zero rebuilds from pinned sources'
-        type: number
-        default: 0
 
 permissions:
   contents: read
@@ -43,7 +38,8 @@ concurrency:
 jobs:
   signing:
     name: Validate release signing and build-input access
-    if: github.ref == 'refs/heads/main'
+    # TODO: Nach Abschluss nur refs/heads/main zulassen.
+    if: github.ref == 'refs/heads/main' || github.ref == 'refs/heads/Mcpasi/Fusion_Arch_Termux'
     runs-on: ubuntu-latest
     timeout-minutes: 5
     steps:
@@ -66,10 +62,6 @@ jobs:
   bootstrap:
     needs: signing
     uses: ./.github/workflows/bootstrap.yml
-    with:
-      # The reusable workflow validates this repository's recipes, jobs and artifact hashes.
-      source_run_id: ${{ fromJSON(format('{0}', inputs.source_run_id || 0)) }}
-
   release:
     needs: bootstrap
     name: Signed release APK
@@ -91,8 +83,8 @@ jobs:
       # Inputs that are still available upstream are fetched without it.
       - uses: actions/download-artifact@v4
         with:
-          name: agentcodi-package-bootstrap
-          path: output/package-bootstrap
+          name: agentcodi-arch-terminal
+          path: output/arch-terminal
 
       - name: Select the current edition cache paths
         id: cache-paths

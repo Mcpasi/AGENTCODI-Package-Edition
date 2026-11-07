@@ -1,4 +1,0 @@
-CI_LIBC_VERSION {
-    global: reallocarray; getloadavg;
-    local: *;
-};

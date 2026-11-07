@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Arch Linux logo by Thayer Williams, CC-BY-NC-SA-3.0.
+     Adapted from archlinux-artwork-1.6: isolated symbol, Android vector, TM as paths.
+     Original, author and license: third_party/archlinux-official-dark.svg,
+     ARCHLINUX-ARTWORK-AUTHORS.txt and ARCHLINUX-ARTWORK-COPYING. -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="48dp" android:height="48dp"
+    android:viewportWidth="200" android:viewportHeight="200">
+    <group android:translateX="-5.828125" android:translateY="0.28125">
+        <path android:fillColor="#1793d1" android:pathData="M 105.8125,16.625 C 98.41563,34.760158 93.954196,46.622682 85.71875,64.21875 C 90.76811,69.57107 96.965961,75.804114 107.03125,82.84375 C 96.210077,78.390904 88.828713,73.920352 83.3125,69.28125 C 72.7727,91.274163 56.259864,122.60209 22.75,182.8125 C 49.087628,167.60733 69.504089,158.23318 88.53125,154.65625 C 87.714216,151.1422 87.2497,147.34107 87.28125,143.375 L 87.3125,142.53125 C 87.730417,125.65743 96.508165,112.68146 106.90625,113.5625 C 117.30434,114.44354 125.38666,128.84492 124.96875,145.71875 C 124.89011,148.89387 124.53201,151.9483 123.90625,154.78125 C 142.72683,158.46289 162.92498,167.81304 188.90625,182.8125 C 183.78325,173.3807 179.21053,164.87862 174.84375,156.78125 C 167.96536,151.45004 160.79086,144.51145 146.15625,137 C 156.21524,139.61375 163.41735,142.62932 169.03125,146 C 124.63297,63.338161 121.03766,52.354109 105.8125,16.625 z" />
+        <path android:fillColor="@android:color/transparent" android:strokeColor="#1793d1"
+            android:strokeWidth="0.9" android:pathData="M185,166h5 M187.5,166v5 M192,171v-5l2,3 2,-3v5" />
+    </group>
+</vector>

@@ -146,32 +146,6 @@
   <string name="chat_update_failed">无法更新聊天界面：%1$s</string>
   <string name="chat_initialization_failed">AGENTCODI 无法初始化聊天界面。</string>
 
-  <string name="terminal_title">终端</string>
-  <string name="terminal_back">‹ 聊天</string>
-  <string name="terminal_description">具有完全访问权限的交互式 shell。$PREFIX/bin 优先于 $HOME/.local/bin 和 Android 系统命令。软件包诊断显示当前路径、命令解析结果和受管理软件包的版本。终端输出仅保存在内存中。命令可访问应用能够访问的工作区和账户数据。</string>
-  <string name="terminal_status_checking">正在检查终端运行时…</string>
-  <string name="terminal_status_runtime_required">请先在设置中启动 Codex 运行时，再打开终端。</string>
-  <string name="terminal_status_starting">正在启动受限 PTY shell…</string>
-  <string name="terminal_status_running">终端正在运行 · 共享软件包环境。</string>
-  <string name="terminal_status_failed">终端出错：%1$s</string>
-  <string name="terminal_status_exited">终端已退出，退出码为 %1$d。</string>
-  <string name="terminal_status_stopped">终端已停止。</string>
-  <string name="terminal_start">启动</string>
-  <string name="terminal_package_diagnostics">软件包诊断</string>
-  <string name="terminal_stop">停止</string>
-  <string name="terminal_output_empty">终端输出将显示在此处。</string>
-  <string name="terminal_clear">清空</string>
-  <string name="terminal_control_c" translatable="false">Ctrl-C</string>
-  <string name="terminal_tab" translatable="false">Tab</string>
-  <string name="terminal_escape" translatable="false">Esc</string>
-  <string name="terminal_input_hint">命令…</string>
-  <string name="terminal_send">发送</string>
-  <string name="terminal_input_too_long">命令超过了终端输入长度限制。</string>
-  <string name="terminal_credential_warning">疑似凭据的输入已被拒绝并清除。请仅使用设置中专门的登录控件。</string>
-  <string name="terminal_send_failed">无法将输入发送到终端。</string>
-  <string name="terminal_start_failed">终端运行时已不再就绪。请在设置中重新启动。</string>
-  <string name="terminal_initialization_failed">AGENTCODI 无法初始化终端界面。</string>
-
   <string name="model_section">模型</string>
   <string name="reasoning_effort_section">推理强度</string>
   <string name="chat_reasoning_label">推理强度</string>
@@ -349,7 +323,7 @@
   <string name="language_simplified_chinese">简体中文</string>
 
   <string name="workspace_export_section">工作区和软件包文件</string>
-  <string name="workspace_export_description">在图形文件浏览器中选择工作区、APT 软件包或用户软件包。预览并导出已验证的文件或文件夹。将文件（包括 DEB 和归档文件）导入 workspace/imports；使用终端进行安装。软件包视图不显示账户存储和已知凭据路径。</string>
+  <string name="workspace_export_description">预览、编辑和导出工作区文件。以前的 APT 和用户软件包区域保留为只读，供导出旧数据。导入文件复制到 workspace/imports。请使用 Arch Terminal 和 pacman 管理当前开发环境。</string>
   <string name="workspace_export_ready">单个文件上限为 512 MiB。文件夹 ZIP 上限为 2,048 个普通文件、1 GiB 内容、65,536 个扫描条目和 64 层目录。不安全或不可用的子项会被单独跳过，不影响其他安全条目的使用。</string>
 
   <string name="account_section">登录</string>
@@ -752,8 +726,8 @@
   <string name="card_field_receiver">接收方</string>
   <string name="card_field_agent_status">智能体状态</string>
     <string name="browser_choose_scope">选择文件区域</string>
-    <string name="browser_managed_packages">APT 软件包</string>
-    <string name="browser_user_packages">用户软件包</string>
+    <string name="browser_managed_packages">以前的 APT 软件包</string>
+    <string name="browser_user_packages">以前的用户软件包</string>
     <string name="browser_import">导入文件</string>
     <string name="browser_workspace_scope_hint">文件（包括 DEB 和归档文件）将导入 workspace/imports。请使用终端进行安装。</string>
     <string name="browser_package_scope_hint">软件包文件仅可读取：可预览或导出文件和文件夹。不显示账户存储和已知凭据文件。ZIP 会跳过链接，不能用于恢复软件包安装。</string>
@@ -763,9 +737,6 @@
     <string name="browser_unavailable_credential">凭据路径：不允许预览或导出。</string>
   <string name="license_codex_dependencies_title">Codex 依赖项声明</string>
   <string name="license_codex_dependencies_summary">选择组件，阅读原始 Rust crate、Rust 标准库和 V8 源码声明，包括原生依赖项。构建和测试源码材料也从严收录，并标明其原始路径。</string>
-  <string name="license_bootstrap_title">APT/dpkg 引导环境</string>
-  <string name="license_bootstrap_summary">选择捆绑的软件包，阅读其原始许可证文件。此列表说明 APK 的引导环境；后续安装的软件包在其安装前缀下保留声明。</string>
-  <string name="license_bootstrap_missing">此软件包未提供单独的许可证文本。请查阅其源码和共享依赖项声明；构建报告记录了此缺失。</string>
   <string name="license_mpl_sources_title">MPL-2.0 源代码</string>
   <string name="license_mpl_show_sources">阅读 MPL 源码获取声明</string>
   <string name="license_mpl_sources_summary">此应用包含 MPL-2.0 组件的完整原始源码。无需账户或网络连接即可免费保存。原始版权声明和许可证条款均已保留。</string>

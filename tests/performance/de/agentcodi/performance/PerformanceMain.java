@@ -11,7 +11,6 @@ public final class PerformanceMain {
             throw new IllegalArgumentException("Warmups and samples must be positive");
         }
         switch (arguments[0]) {
-            case "terminal": TerminalBenchmarks.run(warmups, samples); break;
             case "chat": ChatBenchmarks.run(warmups, samples); break;
             case "protocol": ProtocolBenchmarks.run(warmups, samples); break;
             default: throw new IllegalArgumentException("Unknown performance suite");

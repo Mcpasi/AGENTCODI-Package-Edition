@@ -8,17 +8,19 @@ BUILD_DIR="$(mktemp -d "${RUNNER_TEMP:-/tmp}/agentcodi-android-compile.XXXXXX")"
 trap 'build_status=$?; if [ "$build_status" -ne 0 ] && [ -f "$BUILD_DIR/badging.txt" ]; then cat "$BUILD_DIR/badging.txt"; fi; rm -rf -- "$BUILD_DIR"; exit "$build_status"' EXIT
 
 : "${ANDROID_HOME:?The GitHub runner Android SDK is required}"
-ANDROID_JAR="$ANDROID_HOME/platforms/android-35/android.jar"
+ANDROID_PLATFORM_VERSION="${AGENTCODI_ANDROID_PLATFORM_VERSION:-35}"
+ANDROID_JAR="$ANDROID_HOME/platforms/android-$ANDROID_PLATFORM_VERSION/android.jar"
 AAPT2="$ANDROID_HOME/build-tools/35.0.0/aapt2"
 if [ ! -f "$ANDROID_JAR" ] || [ ! -x "$AAPT2" ]; then
   "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" \
-    "platforms;android-35" "build-tools;35.0.0" >/dev/null
+    "platforms;android-$ANDROID_PLATFORM_VERSION" "build-tools;35.0.0" >/dev/null
 fi
 mkdir -p "$BUILD_DIR/generated" "$BUILD_DIR/classes"
-"$AAPT2" compile --dir "$PROJECT_ROOT/app/src/main/res" -o "$BUILD_DIR/resources.zip"
+python3 -B "$PROJECT_ROOT/scripts/arch-terminal/prepare-resources.py" "$BUILD_DIR/resources"
+"$AAPT2" compile --dir "$BUILD_DIR/resources" -o "$BUILD_DIR/resources.zip"
 "$AAPT2" link -o "$BUILD_DIR/resources.apk" \
   --manifest "$PROJECT_ROOT/app/src/main/AndroidManifest.xml" \
-  --java "$BUILD_DIR/generated" --custom-package de.agentcodi.app --min-sdk-version 29 --target-sdk-version 28 \
+  --java "$BUILD_DIR/generated" --custom-package de.agentcodi.app --extra-packages de.archterminal:com.termux.view --min-sdk-version 29 --target-sdk-version 28 \
   -I "$ANDROID_JAR" "$BUILD_DIR/resources.zip"
 "$AAPT2" dump badging "$BUILD_DIR/resources.apk" > "$BUILD_DIR/badging.txt"
 grep -Fq "targetSdkVersion:'28'" "$BUILD_DIR/badging.txt"
@@ -28,9 +30,19 @@ grep -Fq "package: name='de.agentcodi.pkg'" "$BUILD_DIR/badging.txt"
 grep -Fq "launchable-activity: name='de.agentcodi.app.MainActivity'" "$BUILD_DIR/badging.txt"
 
 find "$PROJECT_ROOT/app/src/main/java" "$PROJECT_ROOT/modules" "$BUILD_DIR/generated" \
+  "$PROJECT_ROOT/third_party/arch-terminal/app/src/main/java" \
+  "$PROJECT_ROOT/third_party/arch-terminal/third_party/termux/emulator-src/main/java" \
+  "$PROJECT_ROOT/third_party/arch-terminal/third_party/termux/view-src/main/java" \
   -type f -name '*.java' -print | sort > "$BUILD_DIR/sources.txt"
 javac -encoding UTF-8 -source 8 -target 8 -Xlint:-options \
-  -bootclasspath "$ANDROID_JAR" -d "$BUILD_DIR/classes" @"$BUILD_DIR/sources.txt"
+  -bootclasspath "$ANDROID_JAR:$PROJECT_ROOT/third_party/android-lambda-stubs/core-lambda-stubs.jar" -classpath "$PROJECT_ROOT/third_party/androidx-annotation/annotation-1.3.0.jar" -d "$BUILD_DIR/classes" @"$BUILD_DIR/sources.txt"
+# Exercise Java 8 lambda desugaring for the unchanged upstream terminal sources.
+mkdir -p "$BUILD_DIR/dex"
+jar cf "$BUILD_DIR/classes.jar" -C "$BUILD_DIR/classes" .
+"$ANDROID_HOME/build-tools/35.0.0/d8" --min-api 29 --lib "$ANDROID_JAR" \
+  --lib "$PROJECT_ROOT/third_party/androidx-annotation/annotation-1.3.0.jar" \
+  --output "$BUILD_DIR/dex" "$BUILD_DIR/classes.jar"
+test -s "$BUILD_DIR/dex/classes.dex"
 # The installation ID differs from the Java namespace. Resolve every manifest
 # component against the compiled classes to catch an accidentally relative name.
 python3 - "$PROJECT_ROOT" "$BUILD_DIR" <<'PY'
@@ -84,10 +96,10 @@ tree.write(sys.argv[2], encoding="utf-8", xml_declaration=True)
 PY
 "$AAPT2" link -o "$BUILD_DIR/signing-upgrade.apk" \
   --manifest "$BUILD_DIR/signing-upgrade.xml" \
-  --custom-package de.agentcodi.app --min-sdk-version 29 --target-sdk-version 28 \
+  --custom-package de.agentcodi.app --extra-packages de.archterminal:com.termux.view --min-sdk-version 29 --target-sdk-version 28 \
   -I "$ANDROID_JAR" "$BUILD_DIR/resources.zip"
 python3 "$PROJECT_ROOT/.github/ci/test-debug-signing.py" \
   "$BUILD_DIR/resources.apk" "$BUILD_DIR/signing-upgrade.apk" \
   "$ANDROID_HOME/build-tools/35.0.0/apksigner"
 
-echo "Android sources and resources compiled for Package Edition (target 28, minimum 29)."
+echo "Android sources and resources compiled against API $ANDROID_PLATFORM_VERSION (target 28, minimum 29)."

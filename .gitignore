@@ -7,6 +7,10 @@
 # Local build products and downloaded toolchains
 /.build/
 /.cache/
+third_party/arch-terminal/.build/
+third_party/arch-terminal/.cache/
+third_party/arch-terminal/.gradle/
+third_party/arch-terminal/output/
 /output/
 build/
 *.class
@@ -15,6 +19,10 @@ build/
 *.so
 *.a
 *.jar
+!third_party/androidx-annotation/annotation-1.3.0.jar
+!third_party/android-lambda-stubs/core-lambda-stubs.jar
+!third_party/arch-terminal/gradle/wrapper/gradle-wrapper.jar
+__pycache__/
 *.dex
 *.apk
 *.apks

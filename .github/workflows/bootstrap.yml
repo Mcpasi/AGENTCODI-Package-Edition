@@ -1,200 +1,54 @@
-name: Package bootstrap
+# Preserve the reusable APK dependency, replacing the former APT bootstrap.
+name: Arch Terminal runtime
 on:
   workflow_call:
     inputs:
-      source_run_id:
-        description: 'Reuse a verified main source build only if recipe inputs are identical'
-        type: number
-        default: 0
+      rootfs_smoke:
+        description: 'Download and test the pinned Arch rootfs (about 791 MiB)'
+        type: boolean
+        default: false
+  workflow_dispatch:
+    inputs:
+      rootfs_smoke:
+        description: 'Download and test the pinned Arch rootfs (about 791 MiB)'
+        type: boolean
+        default: false
 permissions:
   contents: read
-  actions: read
 jobs:
   build:
-    name: Build ARM64 package bootstrap
-    if: github.ref == 'refs/heads/main'
+    name: Build pinned Arch Terminal ARM64 runtime
+    # TODO: Nach Abschluss der Integration nur refs/heads/main zulassen.
+    if: github.ref == 'refs/heads/main' || github.ref == 'refs/heads/Mcpasi/Fusion_Arch_Termux'
     runs-on: ubuntu-latest
-    timeout-minutes: 180
+    timeout-minutes: 60
     steps:
       - uses: actions/checkout@v4
-      - name: Check the prior source build and recipe inputs
-        id: reuse
-        if: inputs.source_run_id > 0
-        env:
-          GH_TOKEN: ${{ github.token }}
-          SOURCE_RUN_ID: ${{ inputs.source_run_id }}
-        run: |
-          set -euo pipefail
-          echo 'reuse=false' >> "$GITHUB_OUTPUT"
-          if ! gh api "repos/$GITHUB_REPOSITORY/actions/runs/$SOURCE_RUN_ID" > "$RUNNER_TEMP/source-run.json"; then
-            echo 'Previous source build unavailable; rebuilding.'
-            exit 0
-          fi
-          if ! jq -e --arg repo "$GITHUB_REPOSITORY" '.head_branch == "main" and (.event == "push" or .event == "workflow_dispatch") and .head_repository.full_name == $repo' "$RUNNER_TEMP/source-run.json" >/dev/null; then
-            echo 'Previous source build is not a trusted main build; rebuilding.'
-            exit 0
-          fi
-          source_sha="$(jq -r .head_sha "$RUNNER_TEMP/source-run.json")"
-          git fetch --depth=1 origin "$source_sha"
-          # The separate toolchain test fixture is not a bootstrap build input.
-          if ! git diff --quiet "$source_sha" HEAD -- scripts/package-edition/lock.json scripts/package-edition/overlay.json scripts/package-edition/prepare.py scripts/package-edition/installed-size.py scripts/package-edition/build-bootstrap.sh; then
-            echo 'Package source/build inputs changed; rebuilding.'
-            exit 0
-          fi
-          if ! gh api "repos/$GITHUB_REPOSITORY/actions/runs/$SOURCE_RUN_ID/jobs?per_page=100" | jq -e 'any(.jobs[]; (.name | endswith("Build ARM64 package bootstrap")) and .conclusion == "success")' >/dev/null; then
-            echo 'Previous source build did not pass; rebuilding.'
-            exit 0
-          fi
-          if ! gh api "repos/$GITHUB_REPOSITORY/actions/runs/$SOURCE_RUN_ID/artifacts?per_page=100" | jq -e 'any(.artifacts[]; .name == "agentcodi-package-bootstrap" and .expired == false)' >/dev/null; then
-            echo 'Previous bootstrap artifact unavailable; rebuilding.'
-            exit 0
-          fi
-          echo 'reuse=true' >> "$GITHUB_OUTPUT"
-          echo "source_sha=$source_sha" >> "$GITHUB_OUTPUT"
-      - name: Download the verified source-built bootstrap
-        if: steps.reuse.outputs.reuse == 'true'
-        uses: actions/download-artifact@v4
         with:
-          name: agentcodi-package-bootstrap
-          run-id: ${{ inputs.source_run_id }}
-          github-token: ${{ github.token }}
-          path: ${{ runner.temp }}/package-bootstrap/input
-      - name: Verify reused payloads and record source build provenance
-        if: steps.reuse.outputs.reuse == 'true'
-        env:
-          SOURCE_RUN_ID: ${{ inputs.source_run_id }}
-          SOURCE_SHA: ${{ steps.reuse.outputs.source_sha }}
-        run: |
-          cd "$RUNNER_TEMP/package-bootstrap/input"
-          sha256sum -c SHA256SUMS
-          python3 - "$GITHUB_WORKSPACE/scripts/package-edition/lock.json" <<'PY'
-          import json, os, sys
-          from pathlib import Path
-          if json.loads(Path("bootstrap-report.json").read_text())["lock"] != json.loads(Path(sys.argv[1]).read_text()):
-              raise SystemExit("Reused bootstrap lock differs")
-          Path("source-build.json").write_text(json.dumps({
-              "source_run_id": int(os.environ["SOURCE_RUN_ID"]),
-              "source_commit": os.environ["SOURCE_SHA"],
-              "consumer_commit": os.environ["GITHUB_SHA"],
-              "recipe_inputs_identical": True}, indent=2) + "\n")
-          PY
-          input="$RUNNER_TEMP/package-bootstrap/input"
-          output="$RUNNER_TEMP/package-bootstrap/output"
-          python3 "$GITHUB_WORKSPACE/scripts/package-edition/assemble-bootstrap.py" --debs "$input" --output "$output"
-          python3 "$GITHUB_WORKSPACE/scripts/package-edition/collect-bootstrap-sources.py" --reuse-from "$input" --output "$output"
-          cp source-build.json "$output/"
-          cd "$output"
-          sha256sum source-build.json >> SHA256SUMS
-      - name: Prepare the pinned source recipes
-        if: steps.reuse.outputs.reuse != 'true'
-        run: |
-          build_root="$RUNNER_TEMP/package-bootstrap"
-          mkdir -p "$build_root"
-          git init -q "$build_root/source"
-          git -C "$build_root/source" remote add origin https://github.com/termux/termux-packages.git
-          git -C "$build_root/source" fetch --depth=1 origin "$(jq -r .source.commit scripts/package-edition/lock.json)"
-          git -C "$build_root/source" checkout --detach FETCH_HEAD
-          python3 -B scripts/package-edition/prepare.py --source "$build_root/source" --output "$build_root/prepared"
-          mkdir -p "$build_root/output"
-          sudo chown -R 1001:1001 "$build_root/prepared" "$build_root/output"
-      - name: Build source dependencies and assemble the minimal bootstrap
-        if: steps.reuse.outputs.reuse != 'true'
-        run: |
-          build_root="$RUNNER_TEMP/package-bootstrap"
-          docker run --rm --platform linux/amd64 \
-            --device /dev/fuse --cap-add SYS_ADMIN --security-opt apparmor=unconfined \
-            -v "$GITHUB_WORKSPACE":/audit:ro \
-            -v "$build_root/prepared":/home/builder/termux-packages \
-            -v "$build_root/output":/bootstrap \
-            "$(jq -r .builder.image scripts/package-edition/lock.json)" \
-            bash /audit/scripts/package-edition/build-bootstrap.sh
-      - name: Build CI compatibility for the Android 9 reference image
-        run: |
-          compat="$RUNNER_TEMP/bootstrap-ci-compat"
-          mkdir -p "$compat"
-          sudo chown 1001:1001 "$compat"
-          docker run --rm --platform linux/amd64 \
-            -v "$GITHUB_WORKSPACE":/audit:ro \
-            -v "$compat":/ci-out \
-            "$(jq -r .builder.image scripts/package-edition/lock.json)" \
-            bash /audit/.github/ci/bootstrap-build-compat.sh /ci-out
-      - name: Upload the CI-only compatibility library
-        uses: actions/upload-artifact@v4
-        with:
-          name: agentcodi-bootstrap-ci-compat
-          path: ${{ runner.temp }}/bootstrap-ci-compat/
-          if-no-files-found: error
-      - name: Archive source-built DEBs for failure diagnosis
-        if: always()
-        run: |
-          build_root="$RUNNER_TEMP/package-bootstrap"
-          if [ -d "$build_root/prepared/output" ]; then
-            tar -C "$build_root/prepared" -cf "$build_root/build-debs.tar" output
-          fi
-      - name: Retain source-built DEBs for assembly failure diagnosis
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: agentcodi-package-build-debs
-          path: ${{ runner.temp }}/package-bootstrap/build-debs.tar
-          if-no-files-found: ignore
-      - name: Upload bootstrap and package evidence
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: agentcodi-package-bootstrap
-          path: ${{ runner.temp }}/package-bootstrap/output/
-          if-no-files-found: error
-  runtime:
-    name: Bootstrap ARM64 Bionic smoke
-    needs: build
-    runs-on: ubuntu-24.04-arm
-    timeout-minutes: 20
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/download-artifact@v4
-        with:
-          name: agentcodi-package-bootstrap
-          path: bootstrap
-      - uses: actions/download-artifact@v4
-        with:
-          name: agentcodi-bootstrap-ci-compat
-          path: bootstrap/ci-compat
+          persist-credentials: false
       - uses: actions/setup-java@v4
         with:
           distribution: temurin
           java-version: '17'
-      - name: Install with the app initializer and check recovery on the host
+      - name: Verify unchanged upstream sources and integration tests
+        run: python3 -B .github/ci/test-arch-terminal.py
+      - name: Install the pinned NDK for upstream native builds
         run: |
-          .github/ci/run-java-tests.sh
-          javac -cp "$RUNNER_TEMP/agentcodi-ci-java/classes" -d "$RUNNER_TEMP/agentcodi-ci-java/classes" .github/ci/BootstrapInstall.java
-          mkdir -p bootstrap/root
-          java -cp "$RUNNER_TEMP/agentcodi-ci-java/classes" BootstrapInstall bootstrap
-          cp .github/ci/bootstrap-smoke.sh bootstrap/smoke.sh
-          fixture="$RUNNER_TEMP/bootstrap-fixture"
-          prefix=/data/data/de.agentcodi.pkg/files/usr
-          mkdir -p "$fixture/DEBIAN" "$fixture$prefix/bin"
-          printf 'Package: bootstrap-fixture\nVersion: 1.0\nArchitecture: aarch64\nMaintainer: AGENTCODI\nDescription: Bootstrap lifecycle fixture\n' > "$fixture/DEBIAN/control"
-          printf '#!%s/bin/sh\nprintf "bootstrap-ok\\n"\n' "$prefix" > "$fixture$prefix/bin/bootstrap-fixture"
-          chmod 755 "$fixture$prefix/bin/bootstrap-fixture"
-          dpkg-deb --build "$fixture" bootstrap/bootstrap-fixture.deb
-          (cd bootstrap/ci-compat && sha256sum -c SHA256SUMS)
-          chmod 755 bootstrap/ci-compat/bootstrap-api29-compat-test
-          # The pinned image owns its Bionic system files as UID 1000.
-          sudo chown -R 1000:1000 bootstrap
-      - name: Configure and execute the actual Android bootstrap
-        run: |
-          docker run --rm --user 1000:1000 \
-            --entrypoint /data/data/de.agentcodi.pkg/files/usr/bin/dash \
-            -e LD_LIBRARY_PATH=/data/data/de.agentcodi.pkg/files/usr/lib \
-            -e LD_PRELOAD=/audit/ci-compat/libagentcodi-ci-api29.so \
-            -v "$GITHUB_WORKSPACE/bootstrap":/audit \
-            -v "$GITHUB_WORKSPACE/bootstrap/root":/data/data/de.agentcodi.pkg/files \
-            termux/termux-docker:aarch64@sha256:e19ea56dd687563849826cbda57da714ae23277ee463e21f39917dbc0a59bab4 \
-            /audit/smoke.sh
-      - name: Diagnose APT failures with the host debugger
-        if: failure()
+          "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" "ndk;28.2.13676358"
+          echo "ANDROID_NDK_HOME=$ANDROID_HOME/ndk/28.2.13676358" >> "$GITHUB_ENV"
+      - name: Build upstream runtime in an isolated source copy
+        run: bash scripts/arch-terminal/build-runtime.sh
+      - name: Test the actual Arch guest when requested
+        if: inputs.rootfs_smoke
         run: |
           sudo apt-get update
-          sudo apt-get install -y gdb
-          bash .github/ci/bootstrap-apt-debug.sh
+          sudo apt-get install -y libarchive-tools gnupg
+          bash scripts/arch-terminal/test-upstream.sh --rootfs
+      - name: Bundle complete combined application sources
+        run: python3 -B scripts/arch-terminal/source-bundle.py
+      - name: Upload runtime, license files and corresponding sources
+        uses: actions/upload-artifact@v4
+        with:
+          name: agentcodi-arch-terminal
+          path: output/arch-terminal/
+          if-no-files-found: error

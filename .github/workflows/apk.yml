@@ -16,17 +16,17 @@ on:
   push:
     branches:
       - 'main'
+      # TODO: Nach Abschluss der Arch-Integration auf main zurücksetzen.
+      - 'Mcpasi/Fusion_Arch_Termux'
     paths:
       - 'app/**'
       - 'modules/**'
       - 'scripts/**'
-      - 'third_party/libcxx/**'
-      - 'third_party/community-codex/**'
+      - 'third_party/**'
       - 'tests/**'
       - '.github/workflows/apk.yml'
       - '.github/workflows/bootstrap.yml'
-      - '.github/ci/bootstrap-*'
-      - '.github/ci/BootstrapInstall.java'
+      - '.github/ci/test-arch-terminal.py'
       - '.github/ci/Dockerfile'
       - '.github/ci/*build-inputs*'
       - '.github/ci/build-input-cache.py'
@@ -39,10 +39,6 @@ on:
         description: 'Only check the container, do not build'
         type: boolean
         default: true
-      source_run_id:
-        description: 'Successful bootstrap run in this repository; zero rebuilds from pinned sources'
-        type: number
-        default: 0
 
 permissions:
   contents: read
@@ -55,7 +51,8 @@ concurrency:
 jobs:
   build-inputs:
     name: Validate archived build-input access
-    if: github.ref == 'refs/heads/main'
+    # TODO: Nach Abschluss nur refs/heads/main zulassen.
+    if: github.ref == 'refs/heads/main' || github.ref == 'refs/heads/Mcpasi/Fusion_Arch_Termux'
     runs-on: ubuntu-latest
     timeout-minutes: 5
     steps:
@@ -68,11 +65,9 @@ jobs:
         run: bash .github/ci/check-build-inputs-access.sh
   bootstrap:
     needs: build-inputs
-    if: github.ref == 'refs/heads/main'
+    # TODO: Nach Abschluss nur refs/heads/main zulassen.
+    if: github.ref == 'refs/heads/main' || github.ref == 'refs/heads/Mcpasi/Fusion_Arch_Termux'
     uses: ./.github/workflows/bootstrap.yml
-    with:
-      # Reuse only this repository's verified builds; old repository runs are not portable.
-      source_run_id: ${{ fromJSON(format('{0}', inputs.source_run_id || 0)) }}
   apk:
     needs: bootstrap
     name: Debug APK
@@ -90,8 +85,8 @@ jobs:
       # Inputs that are still available upstream are fetched without it.
       - uses: actions/download-artifact@v4
         with:
-          name: agentcodi-package-bootstrap
-          path: output/package-bootstrap
+          name: agentcodi-arch-terminal
+          path: output/arch-terminal
 
       - name: Select the current edition cache paths
         id: cache-paths

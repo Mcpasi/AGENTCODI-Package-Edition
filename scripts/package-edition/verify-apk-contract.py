@@ -12,9 +12,6 @@ import zipfile
 
 HERE = Path(__file__).resolve().parent
 REPO = HERE.parents[1]
-legal_spec = importlib.util.spec_from_file_location("legal_files", HERE / "legal-files.py")
-legal_files = importlib.util.module_from_spec(legal_spec)
-legal_spec.loader.exec_module(legal_files)
 mpl_spec = importlib.util.spec_from_file_location("mpl_sources", REPO / ".github/ci/community-mpl-sources.py")
 mpl_sources = importlib.util.module_from_spec(mpl_spec)
 mpl_spec.loader.exec_module(mpl_sources)
@@ -33,65 +30,27 @@ def require(condition, message):
         raise ValueError(message)
 
 
-def bootstrap_evidence(archive_data, manifest_data, report_data):
-    report = json.loads(report_data)
-    require(digest(archive_data) == report["archive_sha256"], "Bootstrap archive checksum")
-    require(digest(manifest_data) == report["manifest_sha256"], "Bootstrap manifest checksum")
-    source = report.get("corresponding_sources", {})
-    require(re.fullmatch(r"[0-9a-f]{64}", source.get("sha256", "")) is not None
-            and source.get("archive", "").endswith(".tar.xz"), "Bootstrap corresponding sources missing")
-    records = manifest_data.decode().splitlines()
-    require(records and records[0] == "AGENTCODI_BOOTSTRAP_V1", "Bootstrap manifest format")
-    files = {}
-    links = {}
-    for record in records[1:]:
-        fields = record.split("\t")
-        require(fields[0] in ("F", "L"), "Unknown bootstrap manifest record")
-        if fields[0] == "L":
-            require(len(fields) == 3 and fields[2] not in links, "Invalid bootstrap link record")
-            links[fields[2]] = fields[1]
-        if fields[0] == "F":
-            require(len(fields) == 5 and fields[1] in ("600", "700"), "Invalid bootstrap file record")
-            require(fields[4] not in files, "Duplicate bootstrap manifest path")
-            files[fields[4]] = {"size": int(fields[2]), "sha256": fields[3]}
-    require(not set(files).intersection(links), "Conflicting bootstrap file/link record")
-    with zipfile.ZipFile(io.BytesIO(archive_data)) as archive:
-        names = archive.namelist()
-        require(len(names) == len(set(names)), "Duplicate bootstrap ZIP entry")
-        require(set(names) == set(files), "Bootstrap ZIP/manifest file set")
-        # Validate every file, including legal material and dpkg ownership.
-        for name, record in files.items():
-            require(name == PurePosixPath(name).as_posix() and
-                    not name.startswith("/") and ".." not in PurePosixPath(name).parts,
-                    "Unsafe bootstrap path")
-            data = archive.read(name)
-            require(len(data) == record["size"] and digest(data) == record["sha256"],
-                    "Bootstrap bytes differ: " + name)
-        inventory = report.get("licenses")
-        require(isinstance(inventory, dict) and set(inventory) == set(report["packages"]),
-                "Bootstrap package/license index differs")
-        covered = set()
-        gaps = []
-        for package, records in inventory.items():
-            listing = archive.read("var/lib/dpkg/info/" + package + ".list").decode().splitlines()
-            if not records and package not in report.get("license_exemptions", {}):
-                gaps.append("No package-local license text: " + package)
-            for record in records:
-                name = record["path"]
-                installed = record["installed_path"]
-                require(legal_files.is_legal(installed) and legal_files.is_legal(name) and name in files,
-                        "Missing bootstrap legal file: " + name)
-                require(legal_files.resolve(installed, files, links) == name,
-                        "Bootstrap legal link differs")
-                require(files[name] == {"size": record["size"], "sha256": record["sha256"]},
-                        "Bootstrap license checksum differs: " + name)
-                prefix = report["lock"]["target"]["prefix"]
-                require(prefix + "/" + installed in listing, "Bootstrap legal file has wrong package owner")
-                covered.add(name)
-        require(covered == {name for name in files if legal_files.is_legal(name)},
-                "Unindexed bootstrap legal material")
-    return {"packages": report["packages"], "licenses": inventory,
-            "corresponding_sources": source, "release_blockers": gaps}
+def arch_assets(project=REPO):
+    source = Path(project) / "third_party/arch-terminal"
+    assets = {"assets/rootfs.lock.json": source / "scripts/rootfs.lock.json",
+              "assets/third-party/arch-terminal/source-lock.json": Path(project) / "third_party/arch-terminal.lock.json"}
+    for path in (source / "third_party").iterdir():
+        if path.is_file() and (path.name.endswith("COPYING") or path.suffix == ".txt"):
+            assets["assets/licenses/" + path.name] = path
+    for name in ("APACHE-2.0.txt", "UPSTREAM-LICENSE.md"):
+        assets["assets/licenses/" + name] = source / "third_party/termux" / name
+    for name in ("LICENSE", "NOTICE.md"):
+        assets["assets/licenses/" + name] = source / name
+    return assets
+
+
+def arch_evidence(apk, project):
+    for name, source in arch_assets(project).items():
+        require(apk.read(name) == source.read_bytes(), "Arch Terminal asset differs: " + name)
+    lock = json.loads(apk.read("assets/third-party/arch-terminal/source-lock.json"))
+    require(lock["commit"] == "99fad098fe41e1a19b5a5e81351105bef4498a01", "Unreviewed Arch Terminal revision")
+    return {"version": lock["version"], "commit": lock["commit"],
+            "rootfs": json.loads(apk.read("assets/rootfs.lock.json"))}
 
 
 def community_evidence(archive_data, index_data, provenance_data, project):
@@ -196,21 +155,7 @@ def verify(apk_path, staged, project=REPO, release=False):
             *(apk.read(community_root + name) for name in mpl_sources.FILENAMES),
             json.loads(apk.read(community_root + "DEPENDENCY-LICENSE-INDEX.json")),
             (project / "third_party/community-codex/Cargo.lock").read_bytes())
-        bootstrap_root = "assets/third-party/package-bootstrap/"
-        evidence = bootstrap_evidence(
-            apk.read(bootstrap_root + "bootstrap-aarch64.zip"),
-            apk.read(bootstrap_root + "BOOTSTRAP-MANIFEST"),
-            apk.read(bootstrap_root + "bootstrap-report.json"))
-        index = json.loads(apk.read(bootstrap_root + "BOOTSTRAP-LICENSE-INDEX.json"))
-        require(index["format_version"] == 1, "Bootstrap legal index format")
-        require(index["packages"] == [
-            {"name": name, "version": metadata["Version"], "files": evidence["licenses"][name],
-             "notice": json.loads(apk.read(bootstrap_root + "bootstrap-report.json"))
-                 .get("license_exemptions", {}).get(name, "")}
-            for name, metadata in sorted(evidence["packages"].items())],
-            "Bootstrap UI license index differs")
-        report["bootstrap"] = evidence
-        report["release_blockers"].extend(evidence["release_blockers"])
+        report["arch_terminal"] = arch_evidence(apk, project)
         # The complete LLVM source texts supplement the verbatim distributor notice.
         require(apk.read("assets/third-party/libcxx/DISTRIBUTOR-LICENSE") ==
                 (project / "third_party/libcxx/DISTRIBUTOR-LICENSE").read_bytes(),
@@ -237,9 +182,9 @@ def check_sources():
     for source, label in ((local, "local"), (host, "host")):
         require(set(re.findall(r"\b[a-z_]+_test\.cpp", source)) == suites,
                 label + " C++ suite set differs from active tests")
-        require("package_shell_main.cpp" in source, label + " runner must use the Package shell")
-    require(len(spec["native_files"]) == len(set(spec["native_files"])) == 6,
-            "Minimal native contract must contain exactly six files")
+        require("host_shell_fixture.cpp" in source, label + " runner must use the host protocol fixture")
+    require(len(spec["native_files"]) == len(set(spec["native_files"])) == 11,
+            "Arch native contract must contain exactly eleven files")
     require("libcodex-codehost.so" in spec["native_files"], "Missing standalone code-mode host")
     for path in spec["resources"]:
         require((REPO / "app/src/main" / path).is_file(), "Missing legal resource: " + path)
