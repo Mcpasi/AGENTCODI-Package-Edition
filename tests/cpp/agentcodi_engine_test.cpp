@@ -2611,9 +2611,12 @@ int main(int argc, char* argv[]) {
            "remove image materialization proof directory");
     expect(rmdir(temporary.c_str()) == 0,
            "image materialization leaves private temporary directory empty");
+    expect(unlink(user_node.c_str()) == 0,
+           "remove Arch command fixture");
+    expect(rmdir((state + "/arch-bin").c_str()) == 0,
+           "Arch command fixture leaves adapter directory empty");
     expect(rmdir(state.c_str()) == 0,
-           "image materialization leaves only explicit private proof state");
-    unlink(user_node.c_str());
+           "image materialization and Arch fixtures leave private state empty");
     rmdir((package_prefix + "/bin").c_str());
     rmdir(package_prefix.c_str());
     unlink(legacy_node.c_str());
