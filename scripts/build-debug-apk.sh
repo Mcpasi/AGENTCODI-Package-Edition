@@ -668,9 +668,11 @@ echo "Compiling ARM64 JNI engine..."
 "$LLVM_STRIP" --strip-unneeded "$NATIVE_DIR/libagentcodi.so"
 
 echo "Compiling Arch command and workspace adapters..."
-"$CLANGXX" --target=aarch64-linux-android"$MIN_SDK" -fPIE -pie -std=c++17 -O2 -Wall -Wextra -Werror -pthread -Wl,-z,max-page-size=16384 "$PROJECT_ROOT/modules/native-engine/src/main/cpp/arch_shell_main.cpp" -o "$NATIVE_DIR/$TERMINAL_SHELL_NAME"
+# Arch Terminal supplies no LD_LIBRARY_PATH. Resolve the adapters' C++ runtime
+# beside each executable, including after Android relocates the installed APK.
+"$CLANGXX" --target=aarch64-linux-android"$MIN_SDK" -fPIE -pie -std=c++17 -O2 -Wall -Wextra -Werror -pthread -Wl,-z,max-page-size=16384 -Wl,--enable-new-dtags,-rpath,'$ORIGIN' "$PROJECT_ROOT/modules/native-engine/src/main/cpp/arch_shell_main.cpp" -o "$NATIVE_DIR/$TERMINAL_SHELL_NAME"
 "$LLVM_STRIP" --strip-unneeded "$NATIVE_DIR/$TERMINAL_SHELL_NAME"
-"$CLANGXX" --target=aarch64-linux-android"$MIN_SDK" -fPIE -pie -std=c++17 -O2 -Wall -Wextra -Werror -Wl,-z,max-page-size=16384 "$PROJECT_ROOT/modules/native-engine/src/main/cpp/arch_proot_main.cpp" -o "$NATIVE_DIR/libproot.so"
+"$CLANGXX" --target=aarch64-linux-android"$MIN_SDK" -fPIE -pie -std=c++17 -O2 -Wall -Wextra -Werror -Wl,-z,max-page-size=16384 -Wl,--enable-new-dtags,-rpath,'$ORIGIN' "$PROJECT_ROOT/modules/native-engine/src/main/cpp/arch_proot_main.cpp" -o "$NATIVE_DIR/libproot.so"
 "$CLANGXX" --target=aarch64-linux-android"$MIN_SDK" -shared -fPIC -std=c++17 -O2 -Wall -Wextra -Werror -Wl,-z,max-page-size=16384 "$PROJECT_ROOT/modules/native-engine/src/main/cpp/arch_shell_environment.cpp" -ldl -o "$NATIVE_DIR/libagentcodi-arch-env.so"
 "$LLVM_STRIP" --strip-unneeded "$NATIVE_DIR/libproot.so" "$NATIVE_DIR/libagentcodi-arch-env.so"
 
@@ -681,6 +683,24 @@ echo "Compiling Arch command and workspace adapters..."
 
 
 cp "$LIBCXX_SHARED" "$NATIVE_DIR/libc++_shared.so"
+# Reject missing loader search paths even when the CI toolchain's Termux
+# prefix happens to supply the runtime. Empty launches must reach adapter main
+# and reject their missing configuration with 126, without any loader env.
+for arch_adapter in "$NATIVE_DIR/libproot.so" "$NATIVE_DIR/$TERMINAL_SHELL_NAME"; do
+  adapter_runpath="$(readelf -dW "$arch_adapter" | sed -n 's/.*Library runpath: \[\([^]]*\)\].*/\1/p')"
+  case ":$adapter_runpath:" in
+    *':$ORIGIN:'*) ;;
+    *) echo "Arch adapter must resolve adjacent APK libraries: $arch_adapter" >&2; exit 1 ;;
+  esac
+  adapter_status=0
+  env -u LD_LIBRARY_PATH -u LD_PRELOAD -u AGENTCODI_ARCH_FILES \
+    "$arch_adapter" > "$WORK_DIR/arch-adapter-startup.log" 2>&1 || adapter_status=$?
+  if [ "$adapter_status" -ne 126 ]; then
+    cat "$WORK_DIR/arch-adapter-startup.log" >&2
+    echo "Arch adapter did not reach its entry point without loader environment: $arch_adapter" >&2
+    exit 1
+  fi
+done
 env LD_LIBRARY_PATH="$NATIVE_DIR" LD_PRELOAD="$NATIVE_DIR/libagentcodi-arch-env.so" \
   AGENTCODI_ARCH_SHELL=/agentcodi-test/arch-bin/bash "$WORK_DIR/arch-shell-probe"
 

@@ -5,8 +5,10 @@ import hashlib
 import json
 import os
 from pathlib import Path
+import shlex
 import shutil
 import signal
+from string import Template
 import subprocess
 import tempfile
 import tarfile
@@ -211,6 +213,41 @@ class ArchAdapterTest(unittest.TestCase):
         self.assertEqual(args[args.index("-w") + 1], str(self.workspace))
         self.assertIn(str(self.workspace) + ":/workspace", args)
         self.assertEqual(args[-5:], ["/usr/bin/env", "-i", "HOME=/root", "/bin/bash", "--login"])
+
+    def test_packaged_adapters_find_adjacent_libraries_without_loader_environment(self):
+        staging = self.root / "build-native"
+        staging.mkdir()
+        compiler = os.environ.get("CXX", "g++")
+        dependency = staging / "libadapter-runtime-fixture.so"
+        fixture = self.root / "runtime.cpp"
+        fixture.write_text('extern "C" int adapter_runtime_fixture() { return 0; }\n')
+        subprocess.run([compiler, "-shared", "-fPIC", "-Wl,-soname," + dependency.name,
+                        str(fixture), "-o", str(dependency)], check=True)
+        builder = (ROOT / "scripts/build-debug-apk.sh").read_text().splitlines()
+        variables = {"CLANGXX": compiler, "PROJECT_ROOT": str(ROOT), "NATIVE_DIR": str(staging),
+                     "MIN_SDK": "29", "TERMINAL_SHELL_NAME": "libagentcodi-shell.so"}
+        for source_name in ("arch_shell_main.cpp", "arch_proot_main.cpp"):
+            lines = [line for line in builder if line.startswith('"$CLANGXX" ')
+                     and "/" + source_name + '"' in line]
+            self.assertEqual(len(lines), 1)
+            # Use the APK's actual link commands with the host compiler; only
+            # remove its Android target. Force a unique adjacent dependency so
+            # globally installed C++ runtimes cannot hide a missing RUNPATH.
+            command = [Template(arg).safe_substitute(variables) for arg in shlex.split(lines[0])
+                       if not arg.startswith("--target=")]
+            subprocess.run(command + ["-Wl,--no-as-needed", str(dependency)], check=True)
+        installed = self.root / "installed apk libraries"
+        staging.rename(installed)
+        for name, message in (("libproot.so", "Unsupported Arch Terminal launch specification"),
+                              ("libagentcodi-shell.so", "Open Arch Terminal")):
+            with self.subTest(adapter=name):
+                executable = installed / name
+                dynamic = subprocess.check_output(["readelf", "-dW", str(executable)], text=True)
+                self.assertIn("Shared library: [" + dependency.name + "]", dynamic)
+                result = subprocess.run([str(executable)], env={"PATH": os.environ["PATH"]},
+                                        capture_output=True, text=True, timeout=10)
+                self.assertEqual(result.returncode, 126, result.stderr)
+                self.assertIn(message, result.stderr)
 
     def test_missing_arch_fails_before_running_any_command(self):
         (self.files / "arch/.arch-terminal-ready").unlink()
