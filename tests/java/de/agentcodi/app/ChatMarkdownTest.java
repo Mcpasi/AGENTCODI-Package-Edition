@@ -10,6 +10,7 @@ public final class ChatMarkdownTest {
         projectsNestedEmphasisAndEscapes();
         preservesCodeLiterally();
         preservesListMarkersInIndentedCode();
+        preservesTabIndentedCode();
         rendersHeadingsWithoutTreatingHashesInWordsAsMarkup();
         rendersListsTasksAndQuotes();
         rendersTablesWithEscapedAndCodePipes();
@@ -23,7 +24,7 @@ public final class ChatMarkdownTest {
         validatesEveryStreamingPrefix();
         boundsDeepAndDelimiterHeavyInput();
         validatesRandomizedUnicodeInput();
-        return 17;
+        return 18;
     }
 
     private static void preservesPlainTextAndUnicode() {
@@ -101,6 +102,20 @@ public final class ChatMarkdownTest {
             ChatMarkdown.parse("paragraph\n    - continuation").text,
             "an indented marker cannot interrupt an existing paragraph");
         valid(doc);
+    }
+
+    private static void preservesTabIndentedCode() {
+        String code = "**literal** [link](https://example.com) &amp;\n";
+        // Each prefix reaches column four; the spaces-only case is the control.
+        for (String prefix : new String[] { "    ", "\t", " \t", "  \t", "   \t" }) {
+            ChatMarkdown.Document doc = ChatMarkdown.parse(prefix + code + "After");
+            TestSupport.assertEquals(code + "After", doc.text,
+                "tab-indented code keeps Markdown markers and entities literal");
+            span(doc, ChatMarkdown.Style.CODE_BLOCK, code);
+            TestSupport.assertEquals(Integer.valueOf(1), Integer.valueOf(doc.spans.size()),
+                "tab-indented code cannot activate emphasis or links");
+            valid(doc);
+        }
     }
 
     private static void rendersListsTasksAndQuotes() {
