@@ -11,10 +11,54 @@ public final class CrashReportFormatterTest {
         formatsBoundedStackTrace();
         redactsNamedAndBearerSecrets();
         redactsJsonOauthAndJwtSecrets();
+        redactsQuotedSecretsWithEscapesAndUnfinishedValues();
+        redactsWholeQuotedPasswordsInReportsAndChat();
         redactsVisibleTextBeforeTruncation();
         handlesCauseCycles();
         keepsConcurrentRedactionIndependent();
-        return 6;
+        return 8;
+    }
+
+    private static void redactsQuotedSecretsWithEscapesAndUnfinishedValues() {
+        for (char quote : new char[] {'\"', '\''}) {
+            String prefix = "before client_secret=" + quote;
+            char otherQuote = quote == '\"' ? '\'' : '\"';
+            String secret = "fixture-first \\" + quote + " " + otherQuote + " fixture-tail,;&}\nlast\\\\";
+            String input = prefix + secret + quote + " after";
+            String expected = prefix + "<redacted>" + quote + " after";
+            TestSupport.assertEquals(expected, CrashReportFormatter.redactSecrets(input),
+                "escaped quotes and opposite quote characters cannot end a secret early");
+            TestSupport.assertEquals(expected, CrashReportFormatter.redactSecrets(expected),
+                "masking a quoted credential twice leaves its context intact");
+            TestSupport.assertEquals(prefix + "<redacted>",
+                CrashReportFormatter.redactSecrets(prefix + "fixture-first fixture-tail"),
+                "an unfinished quoted value stays masked to the end of the input");
+            TestSupport.assertEquals(prefix + "<redacted>\\",
+                CrashReportFormatter.redactSecrets(prefix + "fixture-first\\"),
+                "an unfinished escape retains only its escape state");
+        }
+        TestSupport.assertEquals("password=\"\" after", CrashReportFormatter.redactSecrets("password=\"\" after"),
+            "empty quoted placeholders remain readable");
+        StringBuilder longValue = new StringBuilder("password=\"");
+        for (int index = 0; index < 64 * 1024; index++) {
+            longValue.append('x');
+        }
+        longValue.append("\" after");
+        TestSupport.assertEquals("password=\"<redacted>\" after",
+            CrashReportFormatter.redactSecrets(longValue.toString()),
+            "long quoted values are masked without exhausting the regex stack");
+    }
+
+    private static void redactsWholeQuotedPasswordsInReportsAndChat() {
+        String input = "password=\"fixture-first fixture-tail,;&}\" operation=connect";
+        String expected = "password=\"<redacted>\" operation=connect";
+        String report = CrashReportFormatter.format("fixture", Thread.currentThread(),
+            new IllegalStateException(input));
+        TestSupport.assertContains(report, "Meldung: " + expected, "crash report masks the whole value");
+        TestSupport.assertFalse(report.contains("fixture-tail"), "report retains no password suffix");
+        de.agentcodi.core.ChatMessage message = new de.agentcodi.core.ChatMessage(
+            "fixture", de.agentcodi.core.ChatMessage.Role.ASSISTANT, input, false);
+        TestSupport.assertEquals(expected, message.getText(), "chat masks the whole quoted value");
     }
 
     private static void keepsConcurrentRedactionIndependent() {

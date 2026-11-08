@@ -26,6 +26,10 @@ public final class ArchCommandWrappers {
                 && !Files.isRegularFile(wrapper.toPath(), LinkOption.NOFOLLOW_LINKS))) {
                 throw new IOException("Invalid Arch command wrapper");
             }
+            if (wrapper.exists()) {
+                // Neither writing nor chmod may affect a file linked outside arch-bin.
+                WorkspaceFileBoundary.requireSingleLink(wrapper.toPath());
+            }
             String mode = "bash".equals(command) || "sh".equals(command) ? "" : "--command " + quote(command) + " ";
             String script = "#!/system/bin/sh\nexport AGENTCODI_ARCH_FILES=" + quote(appFiles.getCanonicalPath()) + "\n"
                 + (compatible ? "export PROOT_NO_SECCOMP=1\n" : "unset PROOT_NO_SECCOMP\n")

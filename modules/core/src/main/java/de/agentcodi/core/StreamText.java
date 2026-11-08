@@ -145,8 +145,12 @@ final class StreamText {
                 heading + output.substring(0, Math.min(output.length(), remaining)),
                 maximumCharacters));
         }
-        // The fixed German label followed by LF settles any pending secret in the base.
         String safeHeading = CrashReportFormatter.redactSecrets(heading);
+        if (!safeHeading.endsWith(marker)) {
+            // An unfinished quoted credential can span the heading and output.
+            return literal(CrashReportFormatter.redactVisibleText(
+                heading + stream.text(), maximumCharacters));
+        }
         boolean appendOnly = marker.equals(existing.sectionMarker)
             && existing.sectionOutputLength == stream.previousLength
             && stream.appendedDelta != null;

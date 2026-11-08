@@ -13,13 +13,35 @@ public final class StreamTextTest {
 
     public static int run() {
         matchesWholeTextRedactionAcrossEveryChunkBoundary();
+        redactsQuotedPasswordsAcrossEveryChunkBoundary();
         preservesWordBoundariesAndSplitUnicode();
         matchesBoundedStreamAndNullRemoval();
         matchesWholeToolSectionFormatting();
         keepsEarlierSnapshotsImmutableWithoutEagerRendering();
         handlesLongSingleCharacterStreams();
         releasesMatcherInputAfterRedactionAndBoundaryChecks();
-        return 7;
+        return 8;
+    }
+
+    private static void redactsQuotedPasswordsAcrossEveryChunkBoundary() {
+        for (char quote : new char[] {'\"', '\''}) {
+            char otherQuote = quote == '\"' ? '\'' : '\"';
+            String input = "before password=" + quote
+                + "fixture-first \\" + quote + " " + otherQuote + " fixture-tail,;&}\nlast\\\\" + quote + " after";
+            for (int chunk = 1; chunk <= input.length(); chunk++) {
+                for (boolean card : new boolean[] {false, true}) {
+                    StreamText stream = StreamText.empty();
+                    for (int start = 0; start < input.length(); start += chunk) {
+                        int end = Math.min(input.length(), start + chunk);
+                        stream = stream.append(input.substring(start, end), 4096, card);
+                        assertText(CrashReportFormatter.redactSecrets(input.substring(0, end)), stream,
+                            "quoted password chunk " + chunk + " ending at " + end);
+                    }
+                    assertText("before password=" + quote + "<redacted>" + quote + " after", stream,
+                        "the final snapshot hides every password part");
+                }
+            }
+        }
     }
 
     private static void releasesMatcherInputAfterRedactionAndBoundaryChecks() {
@@ -106,6 +128,7 @@ public final class StreamTextTest {
 
     private static void matchesWholeToolSectionFormatting() {
         for (String initial : new String[] {"", "cwd:\n/workspace", "password=", "Bearer ",
+            "password=\"", "password='", "password=\"fixture\\",
             "previous\n\nAusgabe:\nold output", "Argumente:\napiKey=fixture-secret"}) {
             for (String label : new String[] {"Ausgabe", "Fortschritt"}) {
                 for (int maximum : new int[] {3, 16, 64, 1024}) {

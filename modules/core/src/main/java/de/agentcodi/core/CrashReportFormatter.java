@@ -11,11 +11,13 @@ public final class CrashReportFormatter {
     private static final int MAX_MESSAGE_CHARS = 4 * 1024;
     private static final int MAX_CAUSES = 4;
     private static final int MAX_FRAMES_PER_CAUSE = 48;
+    // Quoted values end only at the matching unescaped quote or the current stream end.
     private static final Pattern NAMED_SECRET = Pattern.compile(
         "(?i)([\\\"']?(?:authorization|access[_-]?token|refresh[_-]?token|id[_-]?token|"
             + "(?:openai[_\\s-]*)?api[_\\s-]?key|client[_-]?secret|password)"
-            + "[\\\"']?\\s*[:=]\\s*[\\\"']?)"
-            + "[^\\\"'\\s,;&}]+"
+            + "[\\\"']?\\s*[:=]\\s*)"
+            + "(?:([\"'])(?:\\\\[\\s\\S]?|(?!\\2)[^\\\\])++(\\2|\\z)"
+            + "|[^\\\"'\\s,;&}]+)"
     );
     private static final Pattern BEARER_SECRET = Pattern.compile(
         "(?i)bearer\\s+[^\\s,;]+"
@@ -95,7 +97,7 @@ public final class CrashReportFormatter {
         }
         RedactionMatchers matchers = MATCHERS.get();
         try {
-            String redacted = matchers.named.reset(value).replaceAll("$1<redacted>");
+            String redacted = redactNamedSecrets(matchers.named, value);
             redacted = matchers.bearer.reset(redacted).replaceAll("Bearer <redacted>");
             redacted = matchers.query.reset(redacted).replaceAll("$1<redacted>");
             redacted = matchers.jwt.reset(redacted).replaceAll("<redacted-token>");
@@ -104,6 +106,34 @@ public final class CrashReportFormatter {
             // Reuse only matcher storage, never retain input on a long-lived thread.
             matchers.clear();
         }
+    }
+
+    private static String redactNamedSecrets(Matcher matcher, String value) {
+        matcher.reset(value);
+        if (!matcher.find()) {
+            return value;
+        }
+        StringBuffer output = new StringBuffer(value.length());
+        do {
+            String quote = matcher.group(2);
+            String closing = matcher.group(3);
+            String replacement = matcher.group(1) + (quote == null ? "" : quote)
+                + "<redacted>" + (closing == null ? "" : closing);
+            if (quote != null && closing.isEmpty()) {
+                int cursor = matcher.end();
+                while (cursor > matcher.end(2) && value.charAt(cursor - 1) == '\\') {
+                    cursor--;
+                }
+                if ((matcher.end() - cursor) % 2 != 0) {
+                    // Retain only the pending escape, so the next streamed quote
+                    // cannot prematurely expose the rest of this password.
+                    replacement += "\\";
+                }
+            }
+            matcher.appendReplacement(output, Matcher.quoteReplacement(replacement));
+        } while (matcher.find());
+        matcher.appendTail(output);
+        return output.toString();
     }
 
     public static String redactVisibleText(String value, int maximumCharacters) {
