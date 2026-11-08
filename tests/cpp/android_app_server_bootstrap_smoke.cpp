@@ -743,7 +743,7 @@ int main(int argc, char* argv[]) {
   const std::string initialize =
       "{\"method\":\"initialize\",\"id\":1,\"params\":{"
       "\"clientInfo\":{\"name\":\"agentcodi_android\","
-      "\"title\":\"AGENTCODI\",\"version\":\"0.1.8\"},"
+      "\"title\":\"AGENTCODI\",\"version\":\"0.1.9\"},"
       "\"capabilities\":{\"experimentalApi\":true,"
       "\"optOutNotificationMethods\":[\"rawResponseItem/completed\","
       "\"rawResponse/completed\",\"app/list/updated\"]}}}";
@@ -1045,7 +1045,7 @@ int main(int argc, char* argv[]) {
   const std::string probe_initialize =
       "{\"method\":\"initialize\",\"id\":30,\"params\":{"
       "\"clientInfo\":{\"name\":\"agentcodi_import_probe\","
-      "\"title\":\"AGENTCODI import probe\",\"version\":\"0.1.8\"},"
+      "\"title\":\"AGENTCODI import probe\",\"version\":\"0.1.9\"},"
       "\"capabilities\":{\"experimentalApi\":true}}}";
   if (!write_request(probe, probe_initialize, &error)
       || !read_response(probe, "\"id\":30", "\"codexHome\":", &error)

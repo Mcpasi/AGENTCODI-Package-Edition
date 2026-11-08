@@ -6,7 +6,7 @@
 namespace agentcodi {
 namespace {
 
-constexpr const char* kEngineVersion = "agentcodi-native/0.1.8";
+constexpr const char* kEngineVersion = "agentcodi-native/0.1.9";
 
 }  // namespace
 
