@@ -246,6 +246,46 @@ class ArchAdapterTest(unittest.TestCase):
         result = subprocess.run([str(self.build / "probe")], env=env, capture_output=True, text=True, check=True)
         self.assertNotEqual(result.stdout.strip(), "relative/path")
 
+    def test_termux_passwd_macro_preserves_the_native_preload_symbol_and_probe(self):
+        headers = self.root / "termux-headers"
+        headers.mkdir()
+        # Termux's patched pwd.h defines this wrapper and remaps getpwuid_r.
+        # A wrapper call also rewrites pw_shell after the libc lookup, so the
+        # APK probe must bypass the macro to test the real preloaded symbol.
+        (headers / "pwd.h").write_text('''#pragma once
+#include_next <pwd.h>
+extern "C" {
+static int android_polyfill_getpwuid_r(uid_t uid, passwd* entry, char* buffer,
+                                     size_t size, passwd** result) {
+    int status = getpwuid_r(uid, entry, buffer, size, result);
+    if (status == 0 && *result != nullptr)
+        entry->pw_shell = const_cast<char*>("/termux/polyfill/bash");
+    return status;
+}
+}
+#define getpwuid_r android_polyfill_getpwuid_r
+''')
+        compiler = os.environ.get("CXX", "g++")
+        flags = [compiler, "-std=c++17", "-O2", "-Wall", "-Wextra", "-Werror", "-isystem", str(headers)]
+        # LD_PRELOAD separates entries at whitespace; use the compiler staging
+        # directory for the library, while keeping quoted paths in the probe.
+        library = self.build / "termux-shell-env.so"
+        probe = self.native / "termux-shell-probe"
+        for command in (
+                flags + ["-shared", "-fPIC", str(NATIVE / "arch_shell_environment.cpp"), "-ldl", "-o", str(library)],
+                flags + [str(ROOT / "tests/cpp/arch_shell_probe.cpp"), "-o", str(probe)]):
+            result = subprocess.run(command, capture_output=True, text=True)
+            self.assertEqual(result.returncode, 0, result.stderr)
+        symbols = subprocess.check_output(["nm", "-D", "--defined-only", str(library)], text=True)
+        self.assertIn("getpwuid_r", {line.split()[-1] for line in symbols.splitlines()})
+        expected = str(self.files / "agentcodi/state/arch-bin/bash")
+        environment = {"PATH": os.environ["PATH"], "AGENTCODI_ARCH_SHELL": expected}
+        result = subprocess.run([str(probe)], env=environment, capture_output=True, text=True)
+        self.assertEqual(result.returncode, 1, "probe must reject an absent preload")
+        environment["LD_PRELOAD"] = str(library)
+        result = subprocess.run([str(probe)], env=environment, capture_output=True, text=True)
+        self.assertEqual(result.returncode, 0, result.stderr)
+
     def supervisor_environment(self, mode):
         for relative in ("files/agentcodi/codex-home", "files/agentcodi/home",
                          "files/agentcodi/state", "files/usr", "files/tmp"):

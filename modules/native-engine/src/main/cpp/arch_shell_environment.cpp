@@ -6,6 +6,12 @@
 #include <pwd.h>
 #include <unistd.h>
 
+// Termux remaps this name to a static header polyfill. Interposition must
+// export Bionic's real libc symbol, rather than redefine that polyfill.
+#ifdef getpwuid_r
+#undef getpwuid_r
+#endif
+
 extern "C" int getpwuid_r(uid_t uid, passwd* entry, char* buffer, size_t size, passwd** result) {
   using Lookup = int (*)(uid_t, passwd*, char*, size_t, passwd**);
   static const auto lookup = reinterpret_cast<Lookup>(dlsym(RTLD_NEXT, "getpwuid_r"));

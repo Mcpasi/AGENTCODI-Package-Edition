@@ -2,9 +2,12 @@
 // integration driver compiles the real supervisor with __ANDROID__ enabled.
 #include "app_server_process.h"
 
+#include <chrono>
+#include <climits>
 #include <cstdlib>
 #include <iostream>
 #include <string>
+#include <thread>
 
 int main(int argc, char* argv[]) {
   if (argc > 1 && (std::string(argv[1]) == "--environment-child"
@@ -51,5 +54,14 @@ int main(int argc, char* argv[]) {
     }
     std::cout << value << '\n';
   }
-  return process->Stop(500) == 0 ? 0 : 5;
+  // Receiving the last line does not mean the child has returned from main.
+  // Observe its natural exit before Stop can send a termination signal.
+  const auto deadline = std::chrono::steady_clock::now() + std::chrono::seconds(2);
+  int exit_code = process->PollExitCode();
+  while (exit_code == INT_MIN && std::chrono::steady_clock::now() < deadline) {
+    std::this_thread::sleep_for(std::chrono::milliseconds(10));
+    exit_code = process->PollExitCode();
+  }
+  process->Stop(500);
+  return exit_code == 0 ? 0 : 5;
 }

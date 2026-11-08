@@ -4,6 +4,12 @@
 #include <pwd.h>
 #include <unistd.h>
 
+// Probe the real preloaded symbol; Termux's header polyfill would overwrite
+// the shell selected by the shim after returning from the libc lookup.
+#ifdef getpwuid_r
+#undef getpwuid_r
+#endif
+
 int main() {
   passwd entry {}, *result = nullptr;
   char buffer[65536];
