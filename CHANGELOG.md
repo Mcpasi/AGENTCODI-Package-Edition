@@ -6,6 +6,9 @@
 
 ### Fixes
 
+- Fix file-change counts and highlighting for increment/decrement statements
+  such as `++counter;` and `--counter;`, whose diff lines were mistaken for file
+  headers. Retain the reproduction test confirmed to fail on GitHub.
 - Reject hard-linked Arch command launchers before writing their contents or
   changing their permissions. Runtime preparation preserves the linked original
   file and its permissions.
@@ -27,6 +30,8 @@
 
 ### Verification
 
+- Local verification of the diff-header fix: **393 Java host tests**, including
+  the unchanged diff reproduction test, and architecture/source contracts passed.
 - Local bug-fix verification before the release version bump: **392 Java host
   tests**, including both unchanged reproduction tests, **19 Arch integration
   tests**, and architecture/source contracts passed.

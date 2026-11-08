@@ -188,7 +188,8 @@ final class FileChangeDetail {
         if (line.startsWith("@@")) {
             return LineKind.HUNK;
         }
-        if (line.startsWith("+++") || line.startsWith("---")
+        // File headers separate the marker from the path with a space.
+        if (line.startsWith("+++ ") || line.startsWith("--- ")
             || line.startsWith("diff ")
             || line.startsWith("index ")
             || line.startsWith("new file")
