@@ -14,6 +14,8 @@
 
 </div>
 
+ <img src="screenshots/Banner.png">
+
 AGENTCODI Package Edition lets you work on code from your phone or tablet. Ask Codex to explain a project, change files or run commands, then follow its progress in the chat. You can also edit code yourself in the built-in editor, use the terminal and install tools such as Python, Node.js and Git.
 
 Package Edition **0.1.9 is in preparation**. It embeds
