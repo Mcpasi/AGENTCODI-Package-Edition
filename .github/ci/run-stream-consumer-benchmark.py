@@ -7,6 +7,7 @@ import importlib.util
 import json
 from pathlib import Path
 import subprocess
+import sys
 import tempfile
 import time
 
@@ -71,6 +72,8 @@ def main():
                                    "@" + str(sources)], text=True, capture_output=True,
                                   cwd=driver.ROOT, timeout=120)
         (output / "compile.log").write_text(compiled.stdout + compiled.stderr)
+        if compiled.returncode:
+            sys.stderr.write(compiled.stdout + compiled.stderr)
         compiled.check_returncode()
         for fork in range(1, args.forks + 1):
             forks.append(driver.run_jvm([java, *driver.JVM_FLAGS, "-cp", str(classes),

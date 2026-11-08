@@ -22,7 +22,7 @@ public final class StreamConsumerBenchmark {
     }
 
     private static final class Replay implements Benchmark.Workload {
-        private final ReplaySession session = new ReplaySession(false);
+        private final ReplaySession session = new ReplaySession();
         private final String kind;
         private final String expected;
         private final String[] frames;

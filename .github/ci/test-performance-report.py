@@ -1,9 +1,13 @@
 #!/usr/bin/env python3
-"""Numeric aggregation and comparison contracts for the standalone replay runner."""
+"""Replay compilation, diagnostics and numeric report contracts."""
 
 import copy
 import importlib.util
+import json
+import os
 from pathlib import Path
+import subprocess
+import sys
 import tempfile
 import unittest
 import xml.etree.ElementTree as ET
@@ -14,6 +18,7 @@ SPEC = importlib.util.spec_from_file_location("performance_runner",
                                             Path(__file__).with_name("run-performance-benchmarks.py"))
 RUNNER = importlib.util.module_from_spec(SPEC)
 SPEC.loader.exec_module(RUNNER)
+CONSUMER = Path(__file__).with_name("run-stream-consumer-benchmark.py").resolve()
 
 
 def raw(workload_id="fixture", elapsed=(1_000_000, 3_000_000), allocation=2048):
@@ -131,6 +136,44 @@ class PerformanceReportTest(unittest.TestCase):
             profile.write_text("<configuration/>")
             with self.assertRaises(ValueError):
                 RUNNER.profile_settings(str(root / "jdk/bin/java"), root, "fixture")
+
+
+class StreamConsumerRunnerTest(unittest.TestCase):
+    def run_consumer(self, output, environment=None):
+        return subprocess.run([sys.executable, "-B", str(CONSUMER), "--output", str(output),
+                               "--forks", "1", "--warmups", "1", "--samples", "1"],
+                              env=environment, text=True, capture_output=True, timeout=120)
+
+    def test_current_sources_compile_and_replay_all_consumer_scenarios(self):
+        with tempfile.TemporaryDirectory(prefix="consumer replay ") as temporary:
+            output = Path(temporary) / "measurements"
+            result = self.run_consumer(output)
+            self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
+            report = json.loads((output / "consumer.json").read_text())
+            self.assertEqual(report["suite"], "consumer")
+            self.assertEqual({entry["id"] for entry in report["workloads"]}, {
+                "consumer.assistant-64k-64b", "consumer.tool-32k-128b",
+                "consumer.reasoning-32k-128b", "consumer.reasoning-multipart-32k-128b"})
+            samples = [json.loads(line) for line in (output / "consumer-fork-1.jsonl").read_text().splitlines()]
+            for entry in samples:
+                self.assertEqual(entry["warmups"], 1)
+                self.assertEqual(len(entry["samples"]), 1)
+
+    def test_compiler_diagnostics_are_visible_and_preserved_in_artifacts(self):
+        with tempfile.TemporaryDirectory(prefix="consumer compiler ") as temporary:
+            root = Path(temporary)
+            jdk = root / "jdk"
+            (jdk / "bin").mkdir(parents=True)
+            _, java, _ = RUNNER.jdk()
+            (jdk / "bin/java").symlink_to(java)
+            compiler = jdk / "bin/javac"
+            compiler.write_text("#!/bin/sh\nprintf '%s\\n' 'consumer compiler diagnostic fixture' >&2\nexit 23\n")
+            compiler.chmod(0o700)
+            output = root / "measurements"
+            result = self.run_consumer(output, {**os.environ, "JAVA_HOME": str(jdk)})
+            self.assertNotEqual(result.returncode, 0)
+            self.assertIn("consumer compiler diagnostic fixture", result.stderr)
+            self.assertEqual((output / "compile.log").read_text(), "consumer compiler diagnostic fixture\n")
 
 
 if __name__ == "__main__":
