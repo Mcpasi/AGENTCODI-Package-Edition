@@ -148,7 +148,7 @@ final class ChatMarkdown {
                 flush(paragraph, output);
                 int prefix = listPrefix(trimmed);
                 String body = trimmed.substring(prefix).trim();
-                output.text.append(line, 0, indent);
+                output.text.append(line, 0, indentationEnd(line, indent));
                 char marker = trimmed.charAt(0);
                 output.text.append(Character.isDigit(marker)
                     ? trimmed.substring(0, prefix).trim() + " " : "• ");
@@ -161,7 +161,7 @@ final class ChatMarkdown {
                 inList = true;
             } else if (indent >= 4 && !inList && paragraph.length() == 0) {
                 int start = output.length();
-                output.text.append(line.substring(4)).append(newline);
+                output.text.append(line.substring(indentationEnd(line, 4))).append(newline);
                 output.span(Style.CODE_BLOCK, start, output.length());
             } else {
                 paragraph.append(line).append(newline);
@@ -574,8 +574,27 @@ final class ChatMarkdown {
     }
 
     private static int indentation(String line) {
+        int columns = 0;
+        for (int index = 0; index < line.length(); index++) {
+            char character = line.charAt(index);
+            if (character == ' ') { columns++; }
+            else if (character == '\t') { columns += 4 - columns % 4; }
+            else { break; }
+        }
+        return columns;
+    }
+
+    /** Maps indentation columns back to character offsets without expanding content tabs. */
+    private static int indentationEnd(String line, int columns) {
         int index = 0;
-        while (index < line.length() && line.charAt(index) == ' ') { index++; }
+        int column = 0;
+        while (index < line.length() && column < columns) {
+            char character = line.charAt(index);
+            if (character == ' ') { column++; }
+            else if (character == '\t') { column += 4 - column % 4; }
+            else { break; }
+            index++;
+        }
         return index;
     }
 

@@ -11,6 +11,9 @@ public final class ChatMarkdownTest {
         preservesCodeLiterally();
         preservesListMarkersInIndentedCode();
         preservesTabIndentedCode();
+        preservesAdditionalIndentationAndTabsInCode();
+        keepsTabIndentedBlockMarkersLiteral();
+        preservesTabsInListsParagraphsAndFences();
         rendersHeadingsWithoutTreatingHashesInWordsAsMarkup();
         rendersListsTasksAndQuotes();
         rendersTablesWithEscapedAndCodePipes();
@@ -24,7 +27,7 @@ public final class ChatMarkdownTest {
         validatesEveryStreamingPrefix();
         boundsDeepAndDelimiterHeavyInput();
         validatesRandomizedUnicodeInput();
-        return 18;
+        return 21;
     }
 
     private static void preservesPlainTextAndUnicode() {
@@ -115,6 +118,61 @@ public final class ChatMarkdownTest {
             TestSupport.assertEquals(Integer.valueOf(1), Integer.valueOf(doc.spans.size()),
                 "tab-indented code cannot activate emphasis or links");
             valid(doc);
+        }
+    }
+
+    private static void preservesAdditionalIndentationAndTabsInCode() {
+        String code = " \t**literal**\t[link](https://example.com) &amp;\n";
+        for (String prefix : new String[] { "    ", "\t", " \t", "  \t", "   \t" }) {
+            ChatMarkdown.Document doc = ChatMarkdown.parse(prefix + code + "After");
+            TestSupport.assertEquals(code + "After", doc.text,
+                "only the first four indentation columns are removed from code");
+            span(doc, ChatMarkdown.Style.CODE_BLOCK, code);
+            TestSupport.assertEquals(Integer.valueOf(1), Integer.valueOf(doc.spans.size()),
+                "remaining whitespace is literal code and cannot enable Markdown");
+            valid(doc);
+        }
+    }
+
+    private static void keepsTabIndentedBlockMarkersLiteral() {
+        for (String prefix : new String[] { "\t", " \t", "  \t", "   \t" }) {
+            for (String marker : new String[] { "# heading", "- **literal**",
+                "1. [link](https://example.com)", "+ [x] task", "> quote", "---", "```java", "~~~" }) {
+                String code = marker + "\n";
+                ChatMarkdown.Document doc = ChatMarkdown.parse(prefix + code + "After");
+                TestSupport.assertEquals(code + "After", doc.text,
+                    "tab-indented block markers remain code: " + marker);
+                span(doc, ChatMarkdown.Style.CODE_BLOCK, code);
+                TestSupport.assertEquals(Integer.valueOf(1), Integer.valueOf(doc.spans.size()),
+                    "block markers in code cannot create other formatting");
+                valid(doc);
+            }
+        }
+    }
+
+    private static void preservesTabsInListsParagraphsAndFences() {
+        for (String prefix : new String[] { "\t", " \t", "  \t", "   \t" }) {
+            ChatMarkdown.Document list = ChatMarkdown.parse("- outer\n" + prefix + "- **inner 👋**");
+            TestSupport.assertEquals("• outer\n" + prefix + "• inner 👋", list.text,
+                "nested lists retain their original indentation characters");
+            span(list, ChatMarkdown.Style.BOLD, "inner 👋");
+            valid(list);
+
+            String paragraph = "paragraph\n" + prefix + "- continuation";
+            TestSupport.assertEquals(paragraph, ChatMarkdown.parse(paragraph).text,
+                "tab-indented list markers cannot interrupt a paragraph");
+            String underline = "paragraph\n" + prefix + "---";
+            TestSupport.assertEquals(underline, ChatMarkdown.parse(underline).text,
+                "tab-indented underlines cannot turn a paragraph into a heading");
+
+            String code = prefix + "```\n**literal**\n";
+            ChatMarkdown.Document fence = ChatMarkdown.parse("```\n" + code + "```\nAfter");
+            TestSupport.assertEquals(code + "After", fence.text,
+                "a tab-indented fence cannot close an existing code block");
+            span(fence, ChatMarkdown.Style.CODE_BLOCK, code);
+            TestSupport.assertEquals(Integer.valueOf(1), Integer.valueOf(fence.spans.size()),
+                "premature fence closure cannot activate code contents");
+            valid(fence);
         }
     }
 

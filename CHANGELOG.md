@@ -6,6 +6,11 @@
 
 ### Fixes
 
+- Recognize tabs and mixed spaces/tabs as Markdown code indentation at
+  four-column tab stops. Preserve literal code, entities and additional tabs
+  without activating emphasis or links; keep nested list indentation and code
+  fences intact. Retain the reproduction test confirmed to fail on GitHub and
+  cover the surrounding indentation cases.
 - Fix file-change counts and highlighting for increment/decrement statements
   such as `++counter;` and `--counter;`, whose diff lines were mistaken for file
   headers. Retain the reproduction test confirmed to fail on GitHub.
@@ -30,6 +35,9 @@
 
 ### Verification
 
+- Local verification of the Markdown tab-indentation fix: **397 Java host
+  tests**, including the unchanged reproduction test and three additional
+  indentation regressions, and architecture/source contracts passed.
 - Local verification of the diff-header fix: **393 Java host tests**, including
   the unchanged diff reproduction test, and architecture/source contracts passed.
 - Local bug-fix verification before the release version bump: **392 Java host
