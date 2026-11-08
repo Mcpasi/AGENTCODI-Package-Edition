@@ -10,7 +10,7 @@ import java.nio.file.Files;
 
 final class RuntimeFiles {
     static String prepare(Context context) throws Exception {
-        String upgradeWarning = RootfsConfig.upgradeForLaunch(new File(context.getFilesDir(), "arch"), Native::repairDirectoryModes);
+        String upgradeWarning = RootfsConfig.upgradeForLaunch(new File(context.getFilesDir(), "arch"), Native::repairDirectoryModes, AppLanguage.get(context));
         if (upgradeWarning != null) android.util.Log.w("ArchTerminal", upgradeWarning);
         File runtime = new File(context.getFilesDir(), "runtime");
         Files.createDirectories(new File(runtime, "tmp").toPath());

@@ -38,7 +38,7 @@ final class SessionBar extends LinearLayout {
         scroll.addView(tabs);
         addView(scroll, new LayoutParams(0, -1, 1));
         add = button("+");
-        add.setContentDescription("Neue Sitzung");
+        add.setContentDescription(context.getString(R.string.new_session));
         add.setOnClickListener(view -> listener.create());
         addView(add, new LayoutParams(dp(48), -1));
         this.listener = listener;
@@ -64,8 +64,8 @@ final class SessionBar extends LinearLayout {
             String title = entry.terminal.getTitle();
             String label = "Terminal " + entry.number;
             if (title != null && !title.trim().isEmpty()) label += " · " + title;
-            if (entry.closing()) label += " · wird beendet";
-            else if (!entry.terminal.isRunning()) label += " · beendet";
+            if (entry.closing()) label += " · " + getContext().getString(R.string.session_closing);
+            else if (!entry.terminal.isRunning()) label += " · " + getContext().getString(R.string.session_ended);
             if (!TextUtils.equals(tab.getText(), label)) tab.setText(label);
             tab.setContentDescription(label + ". Zum Schließen lange drücken.");
             tab.setSelected(entry == selected);

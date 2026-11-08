@@ -13,6 +13,10 @@ final class LaunchSpec {
     final String[] environment;
 
     LaunchSpec(File files, File nativeLibraries, boolean disableSeccomp, String... command) {
+        this(files, nativeLibraries, disableSeccomp, TerminalLanguage.GERMAN, command);
+    }
+
+    LaunchSpec(File files, File nativeLibraries, boolean disableSeccomp, TerminalLanguage language, String... command) {
         File root = new File(files, "arch");
         File runtime = new File(files, "runtime");
         executable = new File(nativeLibraries, "libproot.so").getAbsolutePath();
@@ -24,7 +28,9 @@ final class LaunchSpec {
             "-b", new File(runtime, "resolv.conf").getAbsolutePath() + ":/etc/resolv.conf",
             "/usr/bin/env", "-i", "HOME=/root", "USER=root", "LOGNAME=root", "SHELL=/bin/bash",
             "PATH=/usr/local/sbin:/usr/local/bin:/usr/bin", "TERM=xterm-256color", "COLORTERM=truecolor",
-            "LANG=C.UTF-8", "TMPDIR=/tmp"));
+            "LANG=C.UTF-8", "LANGUAGE=" + language.code, "ARCH_TERMINAL_LANGUAGE=" + language.code, "TMPDIR=/tmp"));
+        // C.UTF-8 is provided by glibc without generating en_US.UTF-8 in the guest.
+        if (language == TerminalLanguage.ENGLISH) argv.add("LC_ALL=C.UTF-8");
         if (command.length == 0) argv.addAll(Arrays.asList("/bin/bash", "--login"));
         else argv.addAll(Arrays.asList(command));
         arguments = argv.toArray(new String[0]);

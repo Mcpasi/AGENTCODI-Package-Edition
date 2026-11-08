@@ -67,6 +67,10 @@ class ArchSourceTest(unittest.TestCase):
             self.assertEqual((ROOT / "app/src/main/res/values/styles.xml").read_bytes(),
                              (output / "values/styles.xml").read_bytes())
             self.assertIn("ArchTerminalTheme", (output / "values/arch_terminal.xml").read_text())
+            for qualifier in ("values", "values-en"):
+                self.assertEqual(
+                    (ROOT / "third_party/arch-terminal/app/src/main/res" / qualifier / "strings.xml").read_bytes(),
+                    (output / qualifier / "arch_terminal_strings.xml").read_bytes())
 
     def test_source_bundle_contains_the_inventory_and_portable_checksums(self):
         with tempfile.TemporaryDirectory() as temporary:
@@ -76,7 +80,7 @@ class ArchSourceTest(unittest.TestCase):
             (root / "LICENSE").write_text("original license")
             output = root / "output/arch-terminal"
             output.mkdir(parents=True)
-            upstream = output / "ArchTerminal-0.1.9-native-inputs.tar.gz"
+            upstream = output / "ArchTerminal-0.2.0-native-inputs.tar.gz"
             upstream.write_bytes(b"exact upstream inputs")
             with mock.patch.object(sources, "ROOT", root), mock.patch.object(
                     sources.subprocess, "check_output", return_value=b"LICENSE\0modules/source.java\0"):
@@ -115,6 +119,21 @@ class ArchAdapterTest(unittest.TestCase):
         for source_name, output in (("arch_shell_main.cpp", "shell"), ("arch_proot_main.cpp", "proot")):
             subprocess.run([compiler, "-std=c++17", "-O2", "-Wall", "-Wextra", "-Werror",
                             str(NATIVE / source_name), "-o", str(cls.build / output)], check=True)
+        launch_probe = cls.build / "LaunchProbe.java"
+        launch_probe.write_text('''package de.archterminal;
+import java.io.File;
+public final class LaunchProbe {
+    public static void main(String[] args) {
+        LaunchSpec spec = new LaunchSpec(new File(args[0]), new File(args[1]), false,
+            TerminalLanguage.valueOf(args[2]));
+        for (String argument : spec.arguments) System.out.println(argument);
+    }
+}
+''')
+        upstream = ROOT / "third_party/arch-terminal/app/src/main/java/de/archterminal"
+        subprocess.run(["javac", "--release", "8", "-encoding", "UTF-8", "-d", str(cls.build),
+                        str(upstream / "TerminalLanguage.java"), str(upstream / "LaunchSpec.java"),
+                        str(launch_probe)], check=True)
         subprocess.run([compiler, "-std=c++17", "-O2", "-Wall", "-Wextra", "-Werror", "-shared", "-fPIC",
                         str(NATIVE / "arch_shell_environment.cpp"), "-ldl", "-o", str(cls.build / "shell-env.so")], check=True)
         probe = cls.build / "probe.cpp"
@@ -206,13 +225,19 @@ class ArchAdapterTest(unittest.TestCase):
         self.assertEqual(guest[-2:], ["/bin/bash", "--login"])
 
     def test_upstream_terminal_launch_shares_codex_workspace(self):
-        result = json.loads(self.execute("libproot.so", "--kill-on-exit", "--link2symlink", "-0",
-                            "-r", str(self.files / "arch"), "-w", "/root", "-b", "/dev",
-                            "/usr/bin/env", "-i", "HOME=/root", "/bin/bash", "--login").stdout)
-        args = result["argv"]
-        self.assertEqual(args[args.index("-w") + 1], str(self.workspace))
-        self.assertIn(str(self.workspace) + ":/workspace", args)
-        self.assertEqual(args[-5:], ["/usr/bin/env", "-i", "HOME=/root", "/bin/bash", "--login"])
+        for language, code in (("GERMAN", "de"), ("ENGLISH", "en")):
+            with self.subTest(language=language):
+                launch = subprocess.check_output(
+                    ["java", "-cp", str(self.build), "de.archterminal.LaunchProbe",
+                     str(self.files), str(self.native), language], text=True).splitlines()
+                result = json.loads(self.execute("libproot.so", *launch[1:]).stdout)
+                args = result["argv"]
+                self.assertEqual(args[args.index("-w") + 1], str(self.workspace))
+                self.assertIn(str(self.workspace) + ":/workspace", args)
+                guest = args[args.index("/usr/bin/env"):]
+                self.assertEqual(guest, launch[launch.index("/usr/bin/env"):])
+                self.assertIn("ARCH_TERMINAL_LANGUAGE=" + code, guest)
+                self.assertEqual("LC_ALL=C.UTF-8" in guest, language == "ENGLISH")
 
     def test_packaged_adapters_find_adjacent_libraries_without_loader_environment(self):
         staging = self.root / "build-native"

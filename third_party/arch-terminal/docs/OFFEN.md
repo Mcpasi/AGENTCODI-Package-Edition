@@ -1,14 +1,14 @@
 # Offene Arbeiten und Geräteabnahme
 
-Stand: Version 0.1.9, 7. November 2026.
+Stand: Version 0.2.0, 8. November 2026.
 
 ## Vor einer belastbaren Smartphone-Freigabe
 
 Der erste Nutzer-Gerätetest mit 0.1.0 konnte Arch herunterladen, scheiterte beim Entpacken an der auf Android verbotenen Hardlink-Erstellung. Seit 0.1.1 werden dafür Dateikopien verwendet. Für 0.1.2 wurde der Tastaturfehler im Android-11-Emulator (AOSP x86_64) reproduziert und durch Aktivieren des Terminal-Touch-Fokus korrigiert. Der Emulator verwendet die echte Activity und JNI-PTY mit einer Android-Shell.
 
-**Laut Nutzerrückmeldung wurde der Arch-Ablauf mit 0.1.6 auf einem Redmi Note 14 und einem Redmi 14C erfolgreich getestet. Auch für 0.1.8 liegt eine erfolgreiche Hardware-Rückmeldung vor.** Diese Rückmeldungen bleiben gültig; die Korrekturen in 0.1.9 benötigen eine erneute Geräteprüfung.
+**Laut Nutzerrückmeldung wurde der Arch-Ablauf mit 0.1.6 auf einem Redmi Note 14 und einem Redmi 14C erfolgreich getestet. Auch für 0.1.8 liegt eine erfolgreiche Hardware-Rückmeldung vor.** Diese Rückmeldungen bleiben gültig; die Änderungen in 0.2.0 benötigen eine erneute Geräteprüfung.
 
-Für 0.1.9 mehrere parallele Arch-/PRoot-Sitzungen auf diesen Geräten erneut prüfen: getrennte Shellzustände und Ausgabe, Wechsel während laufender Befehle, gezieltes Schließen, gemeinsames Beenden, Hintergrund/Rückkehr und Wachhaltung bis zum letzten Prozess. Zusätzlich Tabs kurz nacheinander schließen sowie Schließen/Neustart bei ausstehender letzter Ausgabe prüfen. Die automatisierten Android-Regressionen verwenden temporäre Android-Shells und für die Stop-Tests echtes PRoot ohne Arch-Installation.
+Für 0.2.0 den Mirrorwechsel nach Update, `pacman -Syyu` und den Wechsel Deutsch/English bei laufenden Terminals auf diesen Geräten prüfen. Außerdem mehrere parallele Arch-/PRoot-Sitzungen erneut prüfen: getrennte Shellzustände und Ausgabe, Wechsel während laufender Befehle, gezieltes Schließen, gemeinsames Beenden, Hintergrund/Rückkehr und Wachhaltung bis zum letzten Prozess. Zusätzlich Tabs kurz nacheinander schließen sowie Schließen/Neustart bei ausstehender letzter Ausgabe prüfen. Die automatisierten Android-Regressionen verwenden temporäre Android-Shells und für die Stop-Tests echtes PRoot ohne Arch-Installation.
 
 - `scripts/test-device.sh` auf ARM64 Android ausführen; danach Arch in der App installieren und `scripts/test-device.sh --rootfs` ausführen.
 - Android 9/10, 13 sowie 15/16 prüfen, jeweils soweit Geräte verfügbar sind. Mindestens ein Gerät mit 16-KiB-Speicherseiten testen.
@@ -26,7 +26,7 @@ Für 0.1.9 mehrere parallele Arch-/PRoot-Sitzungen auf diesen Geräten erneut pr
 - Der GitHub-Actions-Workflow liegt vor, wurde in diesem neuen lokalen Repository noch nicht auf GitHub ausgeführt. Es wurde kein Remote angelegt und nichts gepusht.
 - Lokal wurden vorhandene SDK-/NDK-Caches wiederverwendet. Der vollständige SDK-Neuaufbau mit `setup-android.sh` auf einem Rechner ohne diese Caches steht noch aus.
 - Die veränderliche Arch-`latest`-URL ist auf die am 6. November geprüften Bytes gepinnt. Für dauerhafte Verfügbarkeit ist ein eigenes, unveränderliches, zulässig verteiltes Release-Artefakt oder ein Archivspiegel sinnvoll. Bis dahin meldet eine neue Upstream-Datei einen Prüfsummenfehler, und der Lock muss nach Signaturprüfung bewusst aktualisiert werden.
-- Der offizielle `mirror.archlinuxarm.org`-HTTPS-Endpunkt meldet weiterhin einen TLS-Hostnamefehler. pacman verwendet seit 0.1.3 die direkt geprüften HTTPS-Adressen von RWTH Aachen und dotsrc. Das SHA-256-gepinnte Bootstrap-Archiv bleibt bei Princeton. Erreichbarkeit und Fallback auf dem Zielgerät prüfen.
+- pacman verwendet seit 0.2.0 die direkt geprüften HTTPS-Adressen von `ca.us.mirror.archlinuxarm.org` und RWTH Aachen. Das SHA-256-gepinnte Bootstrap-Archiv bleibt bei Princeton. Erreichbarkeit und Fallback auf dem Zielgerät prüfen.
 - Maven-Inputs sind in `gradle/verification-metadata.xml` mit SHA-256 erfasst; native Archive, SDK/NDK-Versionen, Gradle und Arch-Image sind gepinnt. Für Byte-identische Builds sind zusätzlich der Signaturschlüssel und weitere Host-/Zeitstempelparameter zu vereinheitlichen.
 
 ## Aktuelle Grenzen

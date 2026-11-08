@@ -4,7 +4,7 @@ Native Android-Konsole für **Arch Linux ARM aarch64**, mit C++-PTY, PRoot und p
 
 Die App zeigt echte VT-Konsolen im Vollbild: ANSI/Truecolor, UTF-8, Cursorsteuerung, alternativer Bildschirm, Scrollback, Touch-Auswahl, Tastatur und Größenänderung der PTY. Die Zusatztasten können ausgeblendet werden. Die Sitzungen gehören einem Vordergrunddienst und bleiben beim Wechsel in andere Apps oder bei ausgeschaltetem Display bestehen, solange Android den Prozess laufen lässt.
 
-0.1.9 behebt zwei Fehler in der Sitzungsverwaltung: Schließen und Neustart warten auf die vollständige letzte PTY-Ausgabe. Werden mehrere Tabs kurz nacheinander geschlossen, beendet sich der Dienst nach dem letzten Exit-Callback zuverlässig und entfernt Benachrichtigung und CPU-Wachhaltung. Die PRoot-Bereinigung einschließlich abgekoppelter Jobs aus 0.1.8 bleibt enthalten.
+0.2.0 verwendet einen aktuellen direkten Arch-Linux-ARM-HTTPS-Mirror mit geprüftem Ausweichserver. Die neue Auswahl **Sprache / Language → English** stellt Oberfläche, Benachrichtigungen und die von der App erzeugten Konsolenhinweise auf Englisch um. Die Auswahl bleibt gespeichert; laufende Terminals bleiben erhalten, neue Shells übernehmen die Sprache. Die Auswahl ist auch vor der Arch-Installation erreichbar.
 
 Seit 0.1.7 können mehrere Terminals gleichzeitig laufen. **+** in der oberen Sitzungsleiste oder **Neue Sitzung** im Menü öffnet eine weitere Shell. Die Tabs wechseln zwischen den Sitzungen mit jeweils eigenem Prozess, Arbeitsverzeichnis, Shellzustand und Scrollback; alle verwenden dieselbe Arch-Installation. Langes Drücken auf einen Tab oder **Sitzung schließen** im Menü schließt nach Bestätigung nur diese Sitzung. **Alle Sitzungen beenden** und die Aktion in der Android-Benachrichtigung beenden sämtliche Sitzungen. Beendete Shells behalten ihre Ausgabe; Enter startet nur ihren Tab neu.
 
@@ -32,7 +32,7 @@ Gradle läuft standardmäßig ohne dauerhaften Daemon, mit maximal 1 GiB Java-He
 
 Ergebnisse:
 
-- `output/ArchTerminal-0.1.9-arm64-debug.apk` – installierbare, mit dem lokalen Android-Debugschlüssel signierte App.
+- `output/ArchTerminal-0.2.0-arm64-debug.apk` – installierbare, mit dem lokalen Android-Debugschlüssel signierte App.
 - `output/ArchTerminal-tests.apk` – eigener Android-Instrumentationstest.
 - `output/SHA256SUMS` – Prüfsummen der APKs.
 - `scripts/source-bundle.sh` – App-Quellen und exakte native Quellarchive zur Weitergabe mit einer APK.
@@ -42,14 +42,14 @@ Die CI in `.github/workflows/build.yml` führt Hosttests, Java-Tests, Lint, Buil
 ## Auf dem Smartphone
 
 ```bash
-adb install -r output/ArchTerminal-0.1.9-arm64-debug.apk
+adb install -r output/ArchTerminal-0.2.0-arm64-debug.apk
 ```
 
 App öffnen und **Arch installieren / fortsetzen** wählen. Der erste Download umfasst ungefähr 791 MiB; mindestens 5 GiB freien internen Speicher vorsehen. Das Arch-Archiv wird gegen den gepinnten SHA-256 geprüft, zunächst in ein separates Verzeichnis entpackt und erst nach vollständiger Konfiguration aktiviert. Unterbrochene Downloads lassen sich fortsetzen. Ein fehlgeschlagener Installationsversuch überschreibt kein vorhandenes Arch.
 
 Version 0.1.4 behebt einen Startfehler aus 0.1.3: Eine fehlgeschlagene optionale Rootfs-Aktualisierung darf den Start der vorhandenen Konsole nicht verhindern. Die Konsole zeigt dazu einen Hinweis; der Reparaturlauf bleibt für einen späteren Versuch offen. Als Update über die vorhandene App installieren; Arch-Dateisystem, Pakete und eigene Konfigurationen bleiben erhalten.
 
-Seit 0.1.3 verwendet die App den HTTPS-Paketmirror der RWTH Aachen mit dotsrc als Ausweichserver und bewahrt beim Entpacken die Verzeichnisrechte aus dem Arch-Archiv. Beim Konsolenstart wird ausschließlich der alte Princeton-Standard ersetzt; selbst gewählte Mirrors bleiben erhalten. Eine einmalige Reparatur gleicht betroffene Verzeichnisrechte mit der installierten pacman-Paketdatenbank ab. Nach einem Mirrorwechsel einmal `pacman -Syyu` ausführen, um auch zwischengespeicherte Paketlisten vollständig zu erneuern.
+Seit 0.2.0 verwendet pacman `https://ca.us.mirror.archlinuxarm.org` mit RWTH Aachen über HTTPS als Ausweichserver. Beim nächsten Sitzungsstart ersetzt die App sowohl ihren alten Princeton-Standard als auch die unveränderte RWTH-/dotsrc-Liste aus 0.1.3–0.1.9. Die Migration läuft unabhängig von der früheren Verzeichnisreparatur. Eigene Mirrorlisten, Symlinks und individuelle Shell-Konfigurationen bleiben erhalten; nur exakt erkannte App-Hinweistexte in regulären Profilen werden übersetzbar gemacht. **Nach dem Update eine neue Sitzung öffnen und einmal `pacman -Syyu` ausführen**, damit veraltete Paketlisten keine nicht mehr vorhandenen Paketversionen anfordern. Paketupdates werden dabei ausdrücklich durch den Nutzer gestartet.
 
 Die Tastaturkorrektur aus 0.1.2 bleibt enthalten: Die Konsole antippen oder im Menü **Tastatur ein / aus** wählen.
 
@@ -58,7 +58,7 @@ Der seit 0.1.1 enthaltene Fix für Archiv-Hardlinks bleibt enthalten. Nach einem
 Beim ersten Login richtet die Konsole den mitgelieferten Arch-Paketschlüsselbund ein. Danach:
 
 ```bash
-pacman -Syu
+pacman -Syyu
 pacman -S git vim base-devel
 ```
 
@@ -68,7 +68,8 @@ Die Daten liegen privat unter `files/arch` der App. Eine Deinstallation entfernt
 - ESC, TAB, CTRL, ALT und Pfeile stehen in der unteren Leiste bereit. CTRL/ALT werden durch erneutes Antippen ausgeschaltet.
 - **Lautstärke leiser gedrückt halten** wirkt als CTRL. **Lautstärke lauter** öffnet das Menü, auch bei ausgeblendeter Leiste.
 - Die obere Leiste bleibt auch bei ausgeblendeten Zusatztasten sichtbar; **+** öffnet eine weitere Sitzung, Antippen eines Tabs wechselt die Konsole.
-- Im Menü: neue Sitzung, einzelne Sitzung schließen, alle Sitzungen beenden, Tastatur, Ctrl-C, Schriftgröße, Zusatztasten, CPU-Wachhaltung, PRoot-Kompatibilität und Lizenzen.
+- Im Menü: neue Sitzung, einzelne Sitzung schließen, alle Sitzungen beenden, Tastatur, Ctrl-C, Schriftgröße, Zusatztasten, CPU-Wachhaltung, PRoot-Kompatibilität, Sprache und Lizenzen.
+- **Sprache / Language** bietet **Deutsch** und **English**, unabhängig von der Android-Systemsprache. Englisch verwendet im Guest `C.UTF-8`; `locale-gen` oder die Installation eines Sprachpakets ist dafür nicht nötig. Eigene Shellprofile und Programme können weiterhin eigene Spracheinstellungen setzen.
 - `exit` beendet ausschließlich die jeweilige Shell. Enter startet ihren Tab neu; die anderen Sitzungen laufen weiter.
 - Der Kompatibilitätsmodus setzt für die nächste Sitzung `PROOT_NO_SECCOMP=1`.
 - Androids Meldung über das ältere Target ist wegen Target 28 zu erwarten.
@@ -81,12 +82,13 @@ Die App hat **keine Befehls-, Leerlauf- oder Ausgabelaufzeitgrenze**. 10.000 Scr
 
 Der Arch-Installer hat einen 20-Sekunden-Verbindungsaufbauversuch und keinen Lese- oder Gesamtzeitdeckel. Ein Verbindungsfehler ist erneut versuchbar und betrifft keine laufende Konsole. Prüfsummenfehler verhindern die Aktivierung eines falschen Arch-Archivs.
 
-Vordergrunddienst und abschaltbarer, während der Arbeit gehaltener CPU-WakeLock unterstützen lange Sitzungen. Androids Prozessbeendigung, Hersteller-Energiesparregeln und Neustarts können eine unprivilegierte App weiterhin beenden. Erfolgreiche Geräte-Rückmeldungen für 0.1.6 und 0.1.8 sind dokumentiert; Langzeitverhalten unter Hersteller-Energiesparregeln und die Änderungen in 0.1.9 bleiben auf Geräten zu prüfen. Target 28 ist keine Google-Play-Veröffentlichungsstrategie. Siehe [offene Arbeiten](docs/OFFEN.md).
+Vordergrunddienst und abschaltbarer, während der Arbeit gehaltener CPU-WakeLock unterstützen lange Sitzungen. Androids Prozessbeendigung, Hersteller-Energiesparregeln und Neustarts können eine unprivilegierte App weiterhin beenden. Erfolgreiche Geräte-Rückmeldungen für 0.1.6 und 0.1.8 sind dokumentiert; Langzeitverhalten unter Hersteller-Energiesparregeln und die Änderungen in 0.2.0 bleiben auf Geräten zu prüfen. Target 28 ist keine Google-Play-Veröffentlichungsstrategie. Siehe [offene Arbeiten](docs/OFFEN.md).
 
 ## Tests
 
 ```bash
 scripts/test.sh                   # C++-Integration, neue Java-Tests, originale Emulator-Tests, Lint
+python3 scripts/test-mirrors.py   # sequenziell: alle ARM64-Repositories, Paketdateien und Signaturen beider Mirrors
 scripts/test-rootfs.sh            # ca. 791 MiB, GPG+SHA, Entpacken, echtes ARM64-Bash/pacman unter PRoot/QEMU
 scripts/test-rootfs.sh --network  # wegwerfbares Test-Rootfs: git, mc, nodejs, npm, tree installieren und prüfen
 scripts/test-device.sh            # eigenes Test-APK auf verbundenem ARM64-Android

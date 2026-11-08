@@ -1,6 +1,6 @@
 # Komponenten und Herkunft
 
-Arch Terminal 0.1.9 ist eine neue Android-App. Eigene Implementierungen sind unter GPL-3.0-or-later lizenziert; siehe LICENSE. Die Lizenzen der eingebundenen Komponenten gelten zusätzlich. Arch Linux ARM und Termux sind eigenständige Projekte; diese App wird von ihnen nicht herausgegeben.
+Arch Terminal 0.2.0 ist eine neue Android-App. Eigene Implementierungen sind unter GPL-3.0-or-later lizenziert; siehe LICENSE. Die Lizenzen der eingebundenen Komponenten gelten zusätzlich. Arch Linux ARM und Termux sind eigenständige Projekte; diese App wird von ihnen nicht herausgegeben.
 
 | Komponente | Herkunft | Lizenz / lokale Texte |
 | --- | --- | --- |
@@ -16,7 +16,7 @@ Arch Terminal 0.1.9 ist eine neue Android-App. Eigene Implementierungen sind unt
 
 Das Startlogo in `app/src/main/res/drawable/ic_arch_linux.xml` isoliert das Symbol der offiziellen SVG-Vorlage als Android-Vektor mit beibehaltenen Proportionen und Originalfarbe; die TM-Kennzeichnung ist als Pfad umgesetzt. Die App animiert ausschließlich die Deckkraft. Diese Artwork-Anpassung steht wie die Vorlage unter CC-BY-NC-SA-3.0, getrennt vom eigenen GPL-App-Code. Der SHA-256 des Quellarchivs ist `9c6e7faea0ed66bf6ed64b134fad6316161cf146779e4e2f4cd95c644066aab2`. Name und Logo sind Marken von Arch Linux; siehe [offizielle Artwork-Seite](https://archlinux.org/art/) und [Markenrichtlinie](https://terms.archlinux.org/docs/trademark-policy/).
 
-Die Emulator-/View-Dateien tragen die ursprünglichen Hinweise. Änderungen hier: eigene C++-JNI-Bibliothek, ersetzter `TerminalSession` mit getrennten Dateideskriptoren, nicht blockierender Eingabequeue, vollständigem Ausgabedrain vor Exit und wählbarem Beendigungssignal (für PRoot: SIGQUIT); neue `InputQueue` und Tests; explizite Zwischenablageaktionen in der Textauswahl. Originale unbenutzte JNI-C-Dateien sind nur als Herkunftsreferenz enthalten und werden nicht gebaut.
+Die Emulator-/View-Dateien tragen die ursprünglichen Hinweise. Änderungen hier: eigene C++-JNI-Bibliothek, ersetzter `TerminalSession` mit getrennten Dateideskriptoren, nicht blockierender Eingabequeue, vollständigem Ausgabedrain vor Exit und wählbarem Beendigungssignal (für PRoot: SIGQUIT); vom Host übersetzbare Prozessende-/Eingabehinweise; neue `InputQueue` und Tests; explizite Zwischenablageaktionen in der Textauswahl. Originale unbenutzte JNI-C-Dateien sind nur als Herkunftsreferenz enthalten und werden nicht gebaut.
 
 `AGENTCODI-Package-Edition` wurde auf wiederverwendbare Bestandteile untersucht. Übernommen wurde der dort bereits verwendete Architekturansatz für `targetSdk 28`, private ausführbare Pakete und langlebige Sitzungen. Weder Codex- noch Agent-Laufzeit oder deren Paketarchiv werden eingebunden. Die PTY, Installation, App und Buildskripte dieses Projekts sind eigenständig.
 

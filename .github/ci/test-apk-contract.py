@@ -96,7 +96,7 @@ class ApkContractTest(unittest.TestCase):
     def test_exact_payload_and_legal_bytes_pass_with_complete_notices(self):
         report = self.verify()
         self.assertTrue(report["license_release_ready"])
-        self.assertEqual("0.1.9", report["arch_terminal"]["version"])
+        self.assertEqual("0.2.0", report["arch_terminal"]["version"])
 
     def test_changed_arch_rootfs_pin_is_rejected(self):
         self.entries["assets/rootfs.lock.json"] = b"{}"

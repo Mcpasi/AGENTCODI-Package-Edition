@@ -21,6 +21,12 @@ def prepare(destination):
             shutil.copy2(source, target)
     shutil.copy2(upstream / "third_party/termux/view-src/main/res/values/strings.xml",
                  destination / "values/arch_terminal_selection.xml")
+    for source in sorted((upstream / "app/src/main/res").glob("values*/strings.xml")):
+        target = destination / source.parent.name / "arch_terminal_strings.xml"
+        target.parent.mkdir(parents=True, exist_ok=True)
+        if target.exists():
+            raise ValueError("Resource collision: " + str(target.relative_to(destination)))
+        shutil.copy2(source, target)
 
 
 if __name__ == "__main__":

@@ -1,0 +1,59 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="console_description">Arch Linux ARM console</string>
+    <string name="console_menu">Console menu</string>
+    <string name="connecting">Connecting to the app …</string>
+    <string name="starting_console">Starting console …</string>
+    <string name="install_arch">Install / resume Arch</string>
+    <string name="retry_console">Retry console</string>
+    <string name="pause_download">Pause download</string>
+    <string name="installation_help">%1$s\n\nArch ARM64 is downloaded once (about 791 MiB). Allow at least 5 GiB of free internal storage.\n\nLong and silent commands stay active. Volume down = CTRL; volume up = menu.</string>
+    <string name="toggle_keyboard">Show / hide keyboard</string>
+    <string name="new_session">New session</string>
+    <string name="proot_compatibility">PRoot compatibility</string>
+    <string name="toggle_wake">Enable / disable CPU wake lock</string>
+    <string name="smaller_font">Smaller font</string>
+    <string name="larger_font">Larger font</string>
+    <string name="licenses">Licenses</string>
+    <string name="close_session">Close session</string>
+    <string name="toggle_extra_keys">Show / hide extra keys</string>
+    <string name="stop_all_sessions">Stop all sessions</string>
+    <string name="language">Language / Sprache</string>
+    <string name="language_applied">Language saved. The shell language applies to new sessions; running sessions are preserved.</string>
+    <string name="compatibility_enabled">Compatibility mode enabled · applies to new sessions</string>
+    <string name="compatibility_disabled">Compatibility mode disabled · applies to new sessions</string>
+    <string name="wake_enabled">CPU wake lock enabled</string>
+    <string name="wake_disabled">CPU wake lock disabled</string>
+    <string name="confirm_stop_all">Stop all sessions and their running processes?</string>
+    <string name="back">Back</string>
+    <string name="stop_all">Stop all</string>
+    <string name="confirm_close_session">Stop terminal %1$s and its running processes?</string>
+    <string name="close">Close</string>
+    <string name="session_closing">stopping</string>
+    <string name="session_ended">exited</string>
+    <string name="notification_channel">Arch console</string>
+    <string name="ready_to_install">Arch Linux ARM is ready to install.</string>
+    <string name="closing_session_status">Stopping session %1$s …</string>
+    <string name="ended_session_status">Session %1$s exited · status %2$d · press Enter to restart</string>
+    <plurals name="running_sessions">
+        <item quantity="one">%d session running · aarch64</item>
+        <item quantity="other">%d sessions running · aarch64</item>
+    </plurals>
+    <string name="preparing_download">Preparing Arch download …</string>
+    <string name="download_progress">Downloading Arch · %1$.0f / %2$.0f MiB · %3$.0f %%</string>
+    <string name="installation_failed">Installation failed: %1$s</string>
+    <string name="installed">Arch installed. Start the console.</string>
+    <string name="pausing_installation">Pausing installation …</string>
+    <string name="start_failed">Start failed: %1$s · Retry or enable compatibility mode.</string>
+    <string name="not_installed">Arch is not installed yet.</string>
+    <string name="notice">Notice: %1$s</string>
+    <string name="process_ended">Process exited · %1$d · press Enter for a new session</string>
+    <string name="input_ended">Input closed: %1$s</string>
+    <string name="input_buffer_full">Input buffer full; session remains active.</string>
+    <string name="installation_cancelled">Installation cancelled; the download can be resumed.</string>
+    <string name="checking_archive">Verifying Arch archive …</string>
+    <string name="checksum_failed">Arch checksum mismatch. Restart the download; the existing Arch installation is preserved.</string>
+    <string name="extracting_archive">Extracting Arch … This may take a few minutes.</string>
+    <string name="rootfs_exists">An Arch filesystem already exists; it will be preserved.</string>
+    <string name="manifest_too_large">Manifest too large</string>
+</resources>

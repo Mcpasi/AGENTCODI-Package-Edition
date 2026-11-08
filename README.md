@@ -17,7 +17,7 @@
 AGENTCODI Package Edition lets you work on code from your phone or tablet. Ask Codex to explain a project, change files or run commands, then follow its progress in the chat. You can also edit code yourself in the built-in editor, use the terminal and install tools such as Python, Node.js and Git.
 
 The integration branch embeds [Arch Terminal](https://github.com/Mcpasi/Arch_Terminal)
-0.1.9 unchanged and replaces the former APT bootstrap, package catalog and terminal.
+0.2.0 unchanged and replaces the former APT bootstrap, package catalog and terminal.
 Published 0.1.6 APKs predate this migration; the Arch instructions below apply to
 new builds from this source branch.
 
@@ -160,7 +160,7 @@ The published 0.1.6 APK and current source use Android `versionCode 9`.
 <summary>Arch Terminal integration</summary>
 
 The unchanged upstream snapshot is pinned at
-`99fad098fe41e1a19b5a5e81351105bef4498a01` and checked with SHA-256 per file.
+`5c51fdfcec0bf55349b61b6dc3fc49d1923438c3` and checked with SHA-256 per file.
 PRoot runs Arch Linux ARM aarch64 under Android without requiring a separate app
 or root access. Rootfs downloads retain upstream's pinned size, SHA-256 and
 installation transaction. PRoot is not a separate security boundary.

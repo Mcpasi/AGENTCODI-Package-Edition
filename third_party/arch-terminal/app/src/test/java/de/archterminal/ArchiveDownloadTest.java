@@ -41,7 +41,7 @@ public class ArchiveDownloadTest {
             if (failure != null) throw new AssertionError(failure);
         }
     }
-    private ArchiveDownload downloader() { return new ArchiveDownload(new AtomicBoolean(), text -> {}); }
+    private ArchiveDownload downloader() { return new ArchiveDownload(new AtomicBoolean(), (downloaded, expected) -> {}); }
     private File file(String content) throws Exception {
         File file = Files.createTempFile("arch-transfer-test", ".part").toFile();
         Files.write(file.toPath(), content.getBytes(StandardCharsets.US_ASCII));
@@ -85,8 +85,26 @@ public class ArchiveDownloadTest {
     }
     @Test public void cancellationPreservesPartialDownload() throws Exception {
         File file = file("abc");
-        ArchiveDownload transfer = new ArchiveDownload(new AtomicBoolean(true), text -> {});
+        ArchiveDownload transfer = new ArchiveDownload(new AtomicBoolean(true), (downloaded, expected) -> {});
         try { transfer.download("http://127.0.0.1:9/unreachable", file, 6); fail("cancelled transfer started"); }
         catch (IOException expected) { assertTrue(expected.getMessage().contains("abgebrochen")); assertEquals("abc", read(file)); }
+    }
+    @Test public void downloadFailureUsesTheCurrentLanguage() throws Exception {
+        File file = file("abc");
+        java.util.concurrent.atomic.AtomicReference<TerminalLanguage> language = new java.util.concurrent.atomic.AtomicReference<>(TerminalLanguage.GERMAN);
+        ArchiveDownload transfer = new ArchiveDownload(new AtomicBoolean(true), (downloaded, expected) -> {}, language::get);
+        language.set(TerminalLanguage.ENGLISH);
+        try { transfer.download("http://127.0.0.1:9/unreachable", file, 6); fail("cancelled transfer started"); }
+        catch (IOException expected) { assertEquals("Installation cancelled; the download can be resumed.", expected.getMessage()); }
+        assertEquals("abc", read(file));
+    }
+    @Test public void progressReportsBytesForLocalizedPresentation() throws Exception {
+        File file = file("");
+        long[] reported = {0, 0};
+        ArchiveDownload transfer = new ArchiveDownload(new AtomicBoolean(), (downloaded, expected) -> { reported[0] = downloaded; reported[1] = expected; });
+        try (Server server = new Server("HTTP/1.1 200 OK\r\nContent-Length: 6\r\nConnection: close\r\n\r\nabcdef")) {
+            transfer.download(server.url(), file, 6);
+            assertArrayEquals(new long[]{6, 6}, reported);
+        }
     }
 }

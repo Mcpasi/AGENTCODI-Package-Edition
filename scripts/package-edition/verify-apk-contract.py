@@ -48,7 +48,7 @@ def arch_evidence(apk, project):
     for name, source in arch_assets(project).items():
         require(apk.read(name) == source.read_bytes(), "Arch Terminal asset differs: " + name)
     lock = json.loads(apk.read("assets/third-party/arch-terminal/source-lock.json"))
-    require(lock["commit"] == "99fad098fe41e1a19b5a5e81351105bef4498a01", "Unreviewed Arch Terminal revision")
+    require(lock["commit"] == "5c51fdfcec0bf55349b61b6dc3fc49d1923438c3", "Unreviewed Arch Terminal revision")
     return {"version": lock["version"], "commit": lock["commit"],
             "rootfs": json.loads(apk.read("assets/rootfs.lock.json"))}
 

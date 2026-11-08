@@ -39,12 +39,100 @@ public class RootfsConfigTest {
     }
     @Test public void upgradePreservesCustomMirrorsAndFallbacks() throws Exception {
         for (String content : new String[]{"Server = https://chosen.example/$arch/$repo\n",
-                RootfsConfig.LEGACY_MIRROR + "\nServer = https://chosen.example/$arch/$repo\n"}) {
+                RootfsConfig.LEGACY_MIRROR + "\nServer = https://chosen.example/$arch/$repo\n",
+                RootfsConfig.PREVIOUS_MIRRORLIST + "Server = https://chosen.example/$arch/$repo\n",
+                "Include = /etc/pacman.d/custom\n" + RootfsConfig.LEGACY_MIRROR + "\n"}) {
             Path root = fixture();
             Path mirror = root.resolve("etc/pacman.d/mirrorlist");
             Files.write(mirror, content.getBytes(StandardCharsets.UTF_8));
             RootfsConfig.upgrade(root.toFile(), path -> {});
             assertEquals(content, read(mirror));
+        }
+    }
+    @Test public void previousDefaultMigratesEvenAfterDirectoryRepairHasCompleted() throws Exception {
+        for (String previous : new String[]{RootfsConfig.PREVIOUS_MIRRORLIST, RootfsConfig.LEGACY_MIRROR + "\n"}) {
+            Path root = fixture();
+            Path mirror = root.resolve("etc/pacman.d/mirrorlist");
+            Files.write(root.resolve(RootfsConfig.DIRECTORY_MODES_MARKER), new byte[0]);
+            Files.write(mirror, ("# previous app default\n\n" + previous).getBytes(StandardCharsets.UTF_8));
+            RootfsConfig.upgrade(root.toFile(), path -> fail("directory repair repeated"));
+            assertEquals(RootfsConfig.DEFAULT_MIRRORLIST, read(mirror));
+            assertTrue(Files.isRegularFile(root.resolve(RootfsConfig.MIRRORS_MARKER)));
+            // A later manual choice must survive all subsequent launches.
+            Files.write(mirror, previous.getBytes(StandardCharsets.UTF_8));
+            RootfsConfig.upgrade(root.toFile(), path -> fail("directory repair repeated"));
+            assertEquals(previous, read(mirror));
+        }
+    }
+    @Test public void defaultMigrationAcceptsWhitespaceAndKeepsPackageConfiguration() throws Exception {
+        Path root = fixture();
+        Path mirror = root.resolve("etc/pacman.d/mirrorlist");
+        String config = read(root.resolve("etc/pacman.conf"));
+        Files.write(mirror, RootfsConfig.PREVIOUS_MIRRORLIST.replace("Server = ", "  Server\t=\t").getBytes(StandardCharsets.UTF_8));
+        RootfsConfig.upgrade(root.toFile(), path -> {});
+        assertEquals(RootfsConfig.DEFAULT_MIRRORLIST, read(mirror));
+        assertEquals(config, read(root.resolve("etc/pacman.conf")));
+        assertTrue(RootfsConfig.DEFAULT_MIRRORLIST.startsWith("Server = https://ca.us.mirror.archlinuxarm.org/"));
+    }
+    @Test public void oldManagedShellMessagesAreLocalizedWithoutOverwritingCustomizations() throws Exception {
+        Path root = fixture();
+        Path bashrc = root.resolve("root/.bashrc");
+        Path profile = root.resolve("root/.bash_profile");
+        Files.write(root.resolve(RootfsConfig.DIRECTORY_MODES_MARKER), new byte[0]);
+        Files.write(bashrc, ("export CUSTOM=preserved\n# custom alias\n"
+            + "printf 'Pakete aktualisieren: pacman -Syu\\n'\n").getBytes(StandardCharsets.UTF_8));
+        Files.write(profile, ("# custom login\n"
+            + "printf 'Arch-Paketschlüssel werden eingerichtet …\\n'\n"
+            + "printf 'Schlüssel noch nicht bereit. Erneut ausführen: pacman-key --init && pacman-key --populate archlinuxarm\\n'\n")
+            .getBytes(StandardCharsets.UTF_8));
+        RootfsConfig.upgrade(root.toFile(), path -> fail("directory repair repeated"));
+        String migrated = read(bashrc);
+        String migratedProfile = read(profile);
+        assertTrue(migrated.startsWith("export CUSTOM=preserved\n# custom alias\n"));
+        assertTrue(migratedProfile.startsWith("# custom login\n"));
+        assertTrue(migratedProfile.contains("Initializing Arch package signing keys"));
+        assertTrue(migratedProfile.contains("Keys are not ready. Retry:"));
+        assertShellLanguage(bashrc);
+        RootfsConfig.upgrade(root.toFile(), path -> fail("directory repair repeated"));
+        assertEquals(migrated, read(bashrc));
+        assertEquals(migratedProfile, read(profile));
+    }
+    @Test public void freshProfilesAreValidBashAndUseTheSelectedLanguage() throws Exception {
+        Path root = fixture();
+        RootfsConfig.configure(root.toFile());
+        for (String name : new String[]{"root/.bashrc", "root/.bash_profile"})
+            assertEquals("Invalid shell profile: " + name, 0, new ProcessBuilder("/bin/bash", "-n", root.resolve(name).toString()).start().waitFor());
+        assertShellLanguage(root.resolve("root/.bashrc"));
+    }
+    @Test public void shellProfileSymlinksRemainUnchangedDuringUpgrade() throws Exception {
+        Path root = fixture();
+        Path target = root.resolve("custom-profile");
+        String original = "printf 'Pakete aktualisieren: pacman -Syu\\n'\n";
+        Files.write(target, original.getBytes(StandardCharsets.UTF_8));
+        for (String name : new String[]{"root/.bashrc", "root/.bash_profile"}) Files.createSymbolicLink(root.resolve(name), target);
+        RootfsConfig.upgrade(root.toFile(), path -> {});
+        assertEquals(original, read(target));
+        assertTrue(Files.isSymbolicLink(root.resolve("root/.bashrc")));
+        assertTrue(Files.isSymbolicLink(root.resolve("root/.bash_profile")));
+    }
+    @Test public void optionalUpgradeWarningUsesEnglishWhenSelected() throws Exception {
+        Path root = fixture();
+        String warning = RootfsConfig.upgradeForLaunch(root.toFile(), path -> { throw new java.io.IOException("repair denied"); }, TerminalLanguage.ENGLISH);
+        assertEquals("Optional rootfs update deferred: repair denied", warning);
+    }
+    private void assertShellLanguage(Path bashrc) throws Exception {
+        for (TerminalLanguage language : TerminalLanguage.values()) {
+            ProcessBuilder builder = new ProcessBuilder("/bin/bash", "--noprofile", "--norc", bashrc.toString()).redirectErrorStream(true);
+            builder.environment().put("ARCH_TERMINAL_LANGUAGE", language.code);
+            Process process = builder.start();
+            java.io.ByteArrayOutputStream output = new java.io.ByteArrayOutputStream();
+            byte[] buffer = new byte[4096]; int count;
+            while ((count = process.getInputStream().read(buffer)) != -1) output.write(buffer, 0, count);
+            assertEquals(0, process.waitFor());
+            String text = new String(output.toByteArray(), StandardCharsets.UTF_8);
+            assertTrue(text, text.contains("pacman -Syyu"));
+            assertEquals(text, language == TerminalLanguage.ENGLISH, text.contains("Refresh package lists and update packages:"));
+            assertEquals(text, language == TerminalLanguage.GERMAN, text.contains("Paketlisten erneuern und Pakete aktualisieren:"));
         }
     }
     @Test public void upgradeDoesNotFollowACustomMirrorSymlink() throws Exception {

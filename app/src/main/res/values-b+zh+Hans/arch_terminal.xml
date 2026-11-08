@@ -1,4 +1,4 @@
 <resources>
     <string name="license_arch_title">Arch Terminal</string>
-    <string name="license_arch_summary">Arch Terminal 0.1.9，含 PRoot、libarchive、talloc 和 Termux 终端模拟器。合并后的 APK 按 GPL-3.0-or-later 分发，源代码归档随构建产物提供。</string>
+    <string name="license_arch_summary">Arch Terminal 0.2.0，含 PRoot、libarchive、talloc 和 Termux 终端模拟器。合并后的 APK 按 GPL-3.0-or-later 分发，源代码归档随构建产物提供。</string>
 </resources>

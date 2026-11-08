@@ -52,6 +52,8 @@ public final class MainActivity extends Activity {
     private float accumulatedScale = 1f;
     private final TerminalService.Listener sessionListener = this::render;
 
+    @Override protected void attachBaseContext(Context base) { super.attachBaseContext(AppLanguage.wrap(base)); }
+
     private final ServiceConnection connection = new ServiceConnection() {
         @Override public void onServiceConnected(ComponentName name, IBinder binder) {
             service = ((TerminalService.LocalBinder) binder).service();
@@ -79,8 +81,8 @@ public final class MainActivity extends Activity {
         terminal.setTerminalViewClient(viewClient);
         terminal.setTextSize(sp(textSize));
         terminal.setTypeface(Typeface.MONOSPACE);
-        terminal.setContentDescription("Arch Linux ARM Konsole");
-        terminal.setOnCreateContextMenuListener((menu, view, info) -> menu.add("Konsole-Menü").setOnMenuItemClickListener(item -> { menu(); return true; }));
+        terminal.setContentDescription(getString(R.string.console_description));
+        terminal.setOnCreateContextMenuListener((menu, view, info) -> menu.add(R.string.console_menu).setOnMenuItemClickListener(item -> { menu(); return true; }));
         root.addView(terminal, new LinearLayout.LayoutParams(-1, 0, 1));
         setup = new LinearLayout(this);
         setup.setOrientation(LinearLayout.VERTICAL);
@@ -103,18 +105,21 @@ public final class MainActivity extends Activity {
         TextView heading = text("ARCH\nTERMINAL", 28, Color.rgb(84, 200, 232));
         headingRow.addView(heading);
         setup.addView(headingRow);
-        message = text("App wird verbunden …", 14, Color.LTGRAY);
+        message = text(getString(R.string.connecting), 14, Color.LTGRAY);
         message.setTextIsSelectable(true);
         LinearLayout.LayoutParams messageParams = new LinearLayout.LayoutParams(-1, -2);
         messageParams.topMargin = dp(24);
         setup.addView(message, messageParams);
-        action = button("Arch installieren");
+        action = button(getString(R.string.install_arch));
         action.setVisibility(View.GONE);
         action.setOnClickListener(view -> { if (service != null) { if (service.ready()) service.startSession(); else service.install(); } });
         setup.addView(action);
-        cancel = button("Download anhalten");
+        cancel = button(getString(R.string.pause_download));
         cancel.setOnClickListener(view -> { if (service != null) service.cancelInstall(); });
         setup.addView(cancel);
+        Button language = button(getString(R.string.language));
+        language.setOnClickListener(view -> chooseLanguage());
+        setup.addView(language);
         root.addView(setup, new LinearLayout.LayoutParams(-1, 0, 1));
         keys = new HorizontalScrollView(this);
         keys.setHorizontalScrollBarEnabled(false);
@@ -222,10 +227,10 @@ public final class MainActivity extends Activity {
     private void renderSetup(boolean connected, boolean ready, boolean installing, boolean failed, String status) {
         boolean installAction = connected && !ready && !installing;
         boolean retryAction = connected && ready && failed;
-        if (!connected) status = ready ? "Konsole wird gestartet …" : "App wird verbunden …";
-        else if (ready && !failed) status = "Konsole wird gestartet …";
-        message.setText(status + (installAction ? "\n\nArch ARM64 wird einmalig geladen (ca. 791 MiB). Mindestens 5 GiB freien internen Speicher vorsehen.\n\nLange und stille Befehle bleiben aktiv. Lautstärke leiser = CTRL; Lautstärke lauter = Menü." : ""));
-        action.setText(retryAction ? "Konsole erneut starten" : "Arch installieren / fortsetzen");
+        if (!connected) status = getString(ready ? R.string.starting_console : R.string.connecting);
+        else if (ready && !failed) status = getString(R.string.starting_console);
+        message.setText(installAction ? getString(R.string.installation_help, status) : status);
+        action.setText(retryAction ? R.string.retry_console : R.string.install_arch);
         action.setVisibility(installAction || retryAction ? View.VISIBLE : View.GONE);
         action.setEnabled(installAction || retryAction);
         cancel.setVisibility(connected && installing ? View.VISIBLE : View.GONE);
@@ -237,31 +242,47 @@ public final class MainActivity extends Activity {
         ((InputMethodManager)getSystemService(INPUT_METHOD_SERVICE)).toggleSoftInput(InputMethodManager.SHOW_FORCED, 0);
     }
     private void menu() {
-        String[] options = {"Tastatur ein / aus", "CTRL-C", "Neue Sitzung", "PRoot-Kompatibilität", "CPU-Wachhaltung ein / aus", "Schrift kleiner", "Schrift größer", "Lizenzen", "Sitzung schließen", "Zusatztasten ein / aus", "Alle Sitzungen beenden"};
+        String[] options = {getString(R.string.toggle_keyboard), "CTRL-C", getString(R.string.new_session), getString(R.string.language), getString(R.string.proot_compatibility),
+            getString(R.string.toggle_wake), getString(R.string.smaller_font), getString(R.string.larger_font), getString(R.string.licenses),
+            getString(R.string.close_session), getString(R.string.toggle_extra_keys), getString(R.string.stop_all_sessions)};
         new AlertDialog.Builder(this).setTitle("Arch Terminal").setItems(options, (dialog, which) -> {
             switch (which) {
                 case 0: keyboard(); break;
                 case 1: send("\003"); break;
                 case 2: if (service != null) service.startSession(); break;
-                case 3:
+                case 3: chooseLanguage(); break;
+                case 4:
                     boolean old = getSharedPreferences("terminal", MODE_PRIVATE).getBoolean("no_seccomp", false);
                     getSharedPreferences("terminal", MODE_PRIVATE).edit().putBoolean("no_seccomp", !old).apply();
-                    Toast.makeText(this, "Kompatibilitätsmodus " + (!old ? "an" : "aus") + " · gilt ab der nächsten Sitzung", Toast.LENGTH_LONG).show(); break;
-                case 4: if (service != null) { service.setWakeEnabled(!service.wakeEnabled()); Toast.makeText(this, "CPU-Wachhaltung " + (service.wakeEnabled() ? "an" : "aus"), Toast.LENGTH_SHORT).show(); } break;
-                case 5: font(-1); break;
-                case 6: font(1); break;
-                case 7: licenses(); break;
-                case 8: if (service != null) closeSession(service.selectedSession()); break;
-                case 9: getPreferences(MODE_PRIVATE).edit().putBoolean("keys", !getPreferences(MODE_PRIVATE).getBoolean("keys", true)).apply(); render(); break;
-                case 10: if (service != null) new AlertDialog.Builder(this).setMessage("Alle Sitzungen und ihre laufenden Prozesse beenden?")
-                    .setNegativeButton("Zurück", null).setPositiveButton("Alle beenden", (d, w) -> { if (service != null) service.stopAllSessions(); }).show(); break;
+                    Toast.makeText(this, !old ? R.string.compatibility_enabled : R.string.compatibility_disabled, Toast.LENGTH_LONG).show(); break;
+                case 5: if (service != null) { service.setWakeEnabled(!service.wakeEnabled()); Toast.makeText(this, service.wakeEnabled() ? R.string.wake_enabled : R.string.wake_disabled, Toast.LENGTH_SHORT).show(); } break;
+                case 6: font(-1); break;
+                case 7: font(1); break;
+                case 8: licenses(); break;
+                case 9: if (service != null) closeSession(service.selectedSession()); break;
+                case 10: getPreferences(MODE_PRIVATE).edit().putBoolean("keys", !getPreferences(MODE_PRIVATE).getBoolean("keys", true)).apply(); render(); break;
+                case 11: if (service != null) new AlertDialog.Builder(this).setMessage(R.string.confirm_stop_all)
+                    .setNegativeButton(R.string.back, null).setPositiveButton(R.string.stop_all, (d, w) -> { if (service != null) service.stopAllSessions(); }).show(); break;
             }
         }).show();
     }
+    private void chooseLanguage() {
+        TerminalLanguage[] languages = TerminalLanguage.values();
+        new AlertDialog.Builder(this).setTitle(R.string.language)
+            .setSingleChoiceItems(new String[]{"Deutsch", "English"}, AppLanguage.get(this).ordinal(), (dialog, which) -> {
+                dialog.dismiss();
+                if (languages[which] != AppLanguage.get(this)) {
+                    AppLanguage.set(this, languages[which]);
+                    if (service != null) service.languageChanged();
+                    Toast.makeText(this, AppLanguage.text(this, R.string.language_applied), Toast.LENGTH_LONG).show();
+                    recreate();
+                }
+            }).setNegativeButton(R.string.back, null).show();
+    }
     private void closeSession(SessionManager.Entry<TerminalSession> entry) {
         if (service == null || entry == null || entry.closing()) return;
-        new AlertDialog.Builder(this).setMessage("Terminal " + entry.number + " und seine laufenden Prozesse beenden?")
-            .setNegativeButton("Zurück", null).setPositiveButton("Schließen", (dialog, which) -> { if (service != null) service.closeSession(entry); }).show();
+        new AlertDialog.Builder(this).setMessage(getString(R.string.confirm_close_session, Integer.toString(entry.number)))
+            .setNegativeButton(R.string.back, null).setPositiveButton(R.string.close, (dialog, which) -> { if (service != null) service.closeSession(entry); }).show();
     }
     private void licenses() {
         try {
@@ -277,7 +298,7 @@ public final class MainActivity extends Activity {
             }
             TextView text = text(content.toString(), 12, Color.LTGRAY); text.setTextIsSelectable(true); text.setPadding(dp(16), dp(16), dp(16), dp(16));
             ScrollView scroll = new ScrollView(this); scroll.addView(text);
-            new AlertDialog.Builder(this).setTitle("Lizenzen").setView(scroll).setPositiveButton("Schließen", null).show();
+            new AlertDialog.Builder(this).setTitle(R.string.licenses).setView(scroll).setPositiveButton(R.string.close, null).show();
         } catch (Exception error) { Toast.makeText(this, error.toString(), Toast.LENGTH_LONG).show(); }
     }
     private void font(int delta) {

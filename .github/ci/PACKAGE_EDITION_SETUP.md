@@ -13,7 +13,7 @@ on all branches and pull requests.
 ## Runtime and APK artifacts
 
 `bootstrap.yml` keeps the reusable dependency used by the APK workflows. It now
-builds the unchanged pinned Arch Terminal 0.1.9 native runtime on an x86_64
+builds the unchanged pinned Arch Terminal 0.2.0 native runtime on an x86_64
 runner with NDK r28c (`28.2.13676358`). The ARM64 APK job downloads
 `agentcodi-arch-terminal` into `output/arch-terminal` and continues through the
 existing build-input verification, container, Codex checks and signing steps.

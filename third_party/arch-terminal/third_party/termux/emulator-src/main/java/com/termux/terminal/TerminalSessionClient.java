@@ -7,6 +7,12 @@ package com.termux.terminal;
  */
 public interface TerminalSessionClient {
 
+    default String getProcessExitMessage(int status) { return "Prozess beendet · " + status + " · Enter für neue Sitzung"; }
+
+    default String getInputErrorMessage(String detail) { return "Eingabe beendet: " + detail; }
+
+    default String getInputBufferFullMessage() { return "Eingabepuffer voll; Sitzung bleibt aktiv."; }
+
     void onTextChanged(TerminalSession changedSession);
 
     void onTitleChanged(TerminalSession changedSession);

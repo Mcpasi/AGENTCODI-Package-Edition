@@ -87,7 +87,7 @@ public final class TerminalSession extends TerminalOutput {
                 byte[] bytes;
                 while ((bytes = input.take()) != null) JNI.write(writer, bytes, bytes.length);
             } catch (IOException error) {
-                main.post(() -> client.logWarn("PTY", "Eingabe beendet: " + error.getMessage()));
+                main.post(() -> client.logWarn("PTY", client.getInputErrorMessage(error.getMessage())));
             } finally { input.close(); JNI.close(writer); }
         }, "arch-pty-write").start();
         new Thread(() -> {
@@ -113,7 +113,7 @@ public final class TerminalSession extends TerminalOutput {
             output.close();
             JNI.close(master);
             master = -1;
-            byte[] ending = ("\r\n[Prozess beendet · " + exitStatus + " · Enter für neue Sitzung]\r\n").getBytes(StandardCharsets.UTF_8);
+            byte[] ending = ("\r\n[" + client.getProcessExitMessage(exitStatus) + "]\r\n").getBytes(StandardCharsets.UTF_8);
             emulator.append(ending, ending.length);
             client.onTextChanged(this);
             client.onSessionFinished(this);
@@ -122,7 +122,7 @@ public final class TerminalSession extends TerminalOutput {
     @Override public void write(byte[] data, int offset, int count) {
         if (pid <= 0 || count <= 0) return;
         if (!input.offer(data, offset, count)) {
-            client.logWarn("PTY", "Eingabepuffer voll; Sitzung bleibt aktiv.");
+            client.logWarn("PTY", client.getInputBufferFullMessage());
             client.onBell(this);
         }
     }

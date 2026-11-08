@@ -42,13 +42,23 @@ import java.util.function.BooleanSupplier;
 /** Runs on real ARM64 Android. Every deadline here belongs only to the test harness. */
 public final class TerminalInstrumentation extends Instrumentation {
     private Bundle arguments;
+    private volatile Activity latestActivity;
     private final StringBuilder passed = new StringBuilder();
+    @Override public void callActivityOnCreate(Activity activity, Bundle state) {
+        super.callActivityOnCreate(activity, state);
+        latestActivity = activity;
+    }
     @Override public void onCreate(Bundle arguments) { super.onCreate(arguments); this.arguments = arguments; start(); }
     @Override public void onStart() {
         Bundle result = new Bundle();
+        TerminalLanguage savedLanguage = AppLanguage.get(getTargetContext());
         try {
+            // Legacy menu/setup regressions use German labels; keep the user's preference intact.
+            AppLanguage.set(getTargetContext(), TerminalLanguage.GERMAN);
             if ("overlapping-close".equals(arguments.getString("sessionRegression"))) {
                 testSessionStopActions(false, true);
+            } else if ("true".equals(arguments.getString("languageRegression"))) {
+                testLanguageSelection();
             } else if ("drain-close".equals(arguments.getString("sessionRegression"))) {
                 testDeferredSessionOutput(true);
             } else if ("drain-restart".equals(arguments.getString("sessionRegression"))) {
@@ -68,15 +78,17 @@ public final class TerminalInstrumentation extends Instrumentation {
                 testStartupLogo();
                 testKeyboard();
                 testMultipleSessions();
+                testLanguageSelection();
             }
             result.putString("stream", "\nPASS\n" + passed);
             result.putBoolean("archterminal.success", true);
-            finish(Activity.RESULT_OK, result);
         } catch (Throwable error) {
             result.putString("stream", "\nFAIL: " + error + "\nPassed:\n" + passed);
             result.putBoolean("archterminal.success", false);
-            finish(Activity.RESULT_CANCELED, result);
+        } finally {
+            AppLanguage.set(getTargetContext(), savedLanguage);
         }
+        finish(result.getBoolean("archterminal.success") ? Activity.RESULT_OK : Activity.RESULT_CANCELED, result);
     }
     private void testExtraction() throws Exception {
         Path test = Files.createTempDirectory(getTargetContext().getCacheDir().toPath(), "arch-extract-test-");
@@ -142,6 +154,9 @@ public final class TerminalInstrumentation extends Instrumentation {
         volatile int exit = Integer.MIN_VALUE;
         TerminalSession session;
         SessionCallbacks delegate;
+        @Override public String getProcessExitMessage(int status) {
+            return delegate == null ? super.getProcessExitMessage(status) : delegate.getProcessExitMessage(status);
+        }
         @Override public void onTextChanged(TerminalSession session) {
             text = session.getEmulator().getScreen().getTranscriptText();
             if (delegate != null) delegate.onTextChanged(session);
@@ -558,6 +573,77 @@ public final class TerminalInstrumentation extends Instrumentation {
         for (android.service.notification.StatusBarNotification notification : getTargetContext().getSystemService(android.app.NotificationManager.class).getActiveNotifications())
             if (notification.getId() == 1) return notification.getNotification();
         return null;
+    }
+    private void testLanguageSelection() throws Exception {
+        TerminalLanguage savedLanguage = AppLanguage.get(getTargetContext());
+        Activity activity = null;
+        TerminalService owner = null;
+        SessionManager<TerminalSession> previous = null;
+        Probe probe = shell("export value=preserved; printf 'LANGUAGE_READY\\n'; exec /system/bin/sh");
+        try {
+            AppLanguage.set(getTargetContext(), TerminalLanguage.GERMAN);
+            activity = startActivitySync(new Intent(getTargetContext(), MainActivity.class).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK));
+            Activity original = activity;
+            awaitUi(() -> field(original, "service") != null && original.hasWindowFocus(), "Language Activity did not connect");
+            owner = (TerminalService) field(original, "service");
+            TerminalService connected = owner;
+            previous = manager(connected);
+            probe.delegate = (SessionCallbacks) field(connected, "callbacks");
+            SessionManager<TerminalSession> isolated = new SessionManager<>(new SessionManager.Backend<TerminalSession>() {
+                @Override public TerminalSession create() { return probe.session; }
+                @Override public boolean isRunning(TerminalSession session) { return session.isRunning(); }
+                @Override public void finish(TerminalSession session) { session.finishIfRunning(); }
+            });
+            runOnMainSync(() -> { field(connected, "sessions", isolated); connected.startSession(); render(original); });
+            probe.awaitText("LANGUAGE_READY");
+            int pid = probe.session.getPid();
+            sendKeyDownUpSync(KeyEvent.KEYCODE_VOLUME_UP);
+            clickVisibleText("Sprache / Language");
+            clickVisibleText("English");
+            awaitUi(() -> latestActivity != original && field(latestActivity, "service") == connected
+                && latestActivity.hasWindowFocus(), "Language change did not recreate and reconnect the Activity");
+            Activity english = latestActivity;
+            activity = english;
+            runOnMainSync(() -> {
+                if (AppLanguage.get(getTargetContext()) != TerminalLanguage.ENGLISH
+                    || !"New session".equals(english.getString(R.string.new_session))
+                    || !"Install / resume Arch".equals(english.getString(R.string.install_arch)))
+                    throw new AssertionError("English preference or resources were not applied");
+                if (connected.session() != probe.session || probe.session.getPid() != pid
+                    || field(english, "attached") != probe.session)
+                    throw new AssertionError("Language change replaced the running PTY");
+                android.app.Notification notification = terminalNotification();
+                if (notification == null || !"Stop all".contentEquals(notification.actions[0].title))
+                    throw new AssertionError("Service notification did not change language");
+                probe.session.write("printf 'AFTER_LANGUAGE_%s_%s\\n' OK \"$value\"\n");
+            });
+            probe.awaitText("AFTER_LANGUAGE_OK_preserved");
+            runOnMainSync(() -> probe.session.write("exit\n"));
+            probe.awaitExit();
+            if (!probe.text.contains("Process exited · 0 · press Enter for a new session") || probe.text.contains("Prozess beendet"))
+                throw new AssertionError("Process exit message was not translated\n" + probe.text);
+            sendKeyDownUpSync(KeyEvent.KEYCODE_VOLUME_UP);
+            clickVisibleText("Language / Sprache");
+            clickVisibleText("Deutsch");
+            awaitUi(() -> latestActivity != english && field(latestActivity, "service") == connected
+                && latestActivity.hasWindowFocus(), "Switching back to German did not reconnect");
+            activity = latestActivity;
+            if (!"Neue Sitzung".equals(activity.getString(R.string.new_session))
+                || AppLanguage.get(getTargetContext()) != TerminalLanguage.GERMAN)
+                throw new AssertionError("German selection was not restored");
+            passed.append("Language: actual menu, persisted English/German preference, Activity recreation, same PTY/PID/scrollback, live notification and English exit message\n");
+        } finally {
+            Activity current = latestActivity == null ? activity : latestActivity;
+            TerminalService connected = owner;
+            SessionManager<TerminalSession> saved = previous;
+            runOnMainSync(() -> {
+                AppLanguage.set(getTargetContext(), savedLanguage);
+                probe.delegate = null;
+                probe.session.finishIfRunning();
+                if (connected != null && saved != null) { field(connected, "sessions", saved); connected.languageChanged(); }
+                if (current != null) current.finish();
+            });
+        }
     }
     private void testMultipleSessions() throws Exception {
         Activity activity = null;

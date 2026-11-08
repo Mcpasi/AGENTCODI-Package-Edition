@@ -1,8 +1,8 @@
 # Arch integration test contract
 
 Installation ID remains `de.agentcodi.pkg`, minimum API 29, target SDK 28 and
-Full access. Arch Terminal 0.1.9 is imported unchanged at
-`99fad098fe41e1a19b5a5e81351105bef4498a01`. The retired APT/catalog and custom
+Full access. Arch Terminal 0.2.0 is imported unchanged at
+`5c51fdfcec0bf55349b61b6dc3fc49d1923438c3`. The retired APT/catalog and custom
 PTY renderer/session implementation are excluded from this build.
 
 | Layer | Coverage |

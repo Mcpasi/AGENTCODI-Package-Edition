@@ -1,6 +1,6 @@
 # Roadmap: AGENTCODI Package Edition
 
-Current integration: `Mcpasi/Fusion_Arch_Termux` replaces the APT/catalog and custom terminal with unchanged Arch Terminal 0.1.9. See [the integration guide](scripts/arch-terminal/README.md). Builds are temporarily enabled for this branch with reset-to-main comments; the records below describe earlier releases.
+Current integration: `Mcpasi/Fusion_Arch_Termux` replaces the APT/catalog and custom terminal with unchanged Arch Terminal 0.2.0. See [the integration guide](scripts/arch-terminal/README.md). Builds are temporarily enabled for this branch with reset-to-main comments; the records below describe earlier releases.
 
 Status: 2026-10-18. Development and releases use `main` in
 `Mcpasi/AGENTCODI-Package-Edition`. Repository operation and workflow inputs

@@ -27,7 +27,7 @@ and legal asset against its staged bytes, including the exact ABI/file set.
 | Community Codex app-server and code-mode host | Verbatim, SHA-256-pinned assets/third-party/codex/LICENSE and NOTICE; dependency texts/index/provenance supplement the original material, with release/source pins above. |
 | LLVM libc++ shared runtime from Termux libc++ 29 | Verbatim distributor copyright at assets/third-party/libcxx/DISTRIBUTOR-LICENSE, supplemented with complete upstream LLVM libc++/libc++abi/libunwind texts at LLVM-LICENSES. See third_party/libcxx/README.md for the separate legal-source pin. |
 | zlib 1.3.2 for the PNG validator | Verbatim copyright from the pinned zlib DEB at assets/third-party/zlib/ZLIB-LICENSE. |
-| Arch Terminal 0.1.9 and its PRoot/talloc/libarchive/terminal components | Unchanged upstream notices and license texts in assets/licenses; rootfs and source revision pins in the APK; exact upstream/native source archives accompany the build artifact. |
+| Arch Terminal 0.2.0 and its PRoot/talloc/libarchive/terminal components | Unchanged upstream notices and license texts in assets/licenses; rootfs and source revision pins in the APK; exact upstream/native source archives accompany the build artifact. |
 
 Node.js, npm, Python, ripgrep, their exclusive APK libraries/archives and
 activation guards are not shipped. Users install tools with pacman inside Arch;
@@ -141,8 +141,8 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 
 ## Arch Terminal integration
 
-The combined APK includes the unchanged Arch Terminal 0.1.9 source snapshot at
-`99fad098fe41e1a19b5a5e81351105bef4498a01` from
+The combined APK includes the unchanged Arch Terminal 0.2.0 source snapshot at
+`5c51fdfcec0bf55349b61b6dc3fc49d1923438c3` from
 https://github.com/Mcpasi/Arch_Terminal. Each original file is pinned in
 `third_party/arch-terminal.lock.json`. Its GPL-3.0-or-later terms apply to the
 combined application; original Apache-2.0 AGENTCODI files retain their notices.

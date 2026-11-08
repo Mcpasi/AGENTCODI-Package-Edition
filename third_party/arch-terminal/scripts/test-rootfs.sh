@@ -14,7 +14,7 @@ if [ ! -f "$test_root/usr/bin/pacman" ]; then
 fi
 scripts/build-host-proot.sh
 mkdir -p .build/rootfs-config
-javac -encoding UTF-8 -d .build/rootfs-config app/src/main/java/de/archterminal/RootfsConfig.java tests/java/de/archterminal/ConfigureRootfs.java
+javac -encoding UTF-8 -d .build/rootfs-config app/src/main/java/de/archterminal/TerminalLanguage.java app/src/main/java/de/archterminal/RootfsConfig.java tests/java/de/archterminal/ConfigureRootfs.java
 if [ ! -f "$test_root/.configured-for-test-0.1.3" ]; then
   if [ -f "$test_root/.configured-for-test" ]; then
     .build/host/extract_test --repair-modes "$test_root"
@@ -22,6 +22,7 @@ if [ ! -f "$test_root/.configured-for-test-0.1.3" ]; then
   java -cp .build/rootfs-config de.archterminal.ConfigureRootfs "$test_root"
   touch "$test_root/.configured-for-test-0.1.3"
 fi
+java -cp .build/rootfs-config de.archterminal.ConfigureRootfs "$test_root" --upgrade
 if [ "$(uname -m)" != aarch64 ]; then
   archive=.cache/tools/qemu-user-static_7.2.deb
   mkdir -p .cache/tools .build/qemu

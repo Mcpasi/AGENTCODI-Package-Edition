@@ -1,12 +1,16 @@
 # Arch Terminal integration
 
-AGENTCODI embeds the unchanged Arch Terminal 0.1.9 snapshot at
-`99fad098fe41e1a19b5a5e81351105bef4498a01`. The snapshot is verified against
+AGENTCODI embeds the unchanged Arch Terminal 0.2.0 snapshot at
+`5c51fdfcec0bf55349b61b6dc3fc49d1923438c3`. The snapshot is verified against
 `third_party/arch-terminal.lock.json`; integration code lives outside it.
 
 Open **Terminal** and install Arch before starting the Codex runtime. Arch's
 download, extraction, pacman configuration, sessions, PTY and terminal renderer
 come from the upstream project. No separate Arch Terminal APK is required.
+
+Version 0.2.0 includes the terminal's persistent German/English language selector
+and the updated pacman mirror migration. Both upstream translations are included
+unchanged in the combined APK; running sessions survive a language change.
 
 The adapters bind AGENTCODI's workspace at its original absolute path and at
 `/workspace`. Both interactive terminals and Codex use the same installation,

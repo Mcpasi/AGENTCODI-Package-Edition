@@ -9,5 +9,5 @@
         <item name="android:statusBarColor">#090d12</item>
     </style>
     <string name="license_arch_title">Arch Terminal</string>
-    <string name="license_arch_summary">Arch Terminal 0.1.9, PRoot, libarchive, talloc and the Termux terminal emulator. The combined APK is distributed under GPL-3.0-or-later. Source bundles accompany the APK build.</string>
+    <string name="license_arch_summary">Arch Terminal 0.2.0, PRoot, libarchive, talloc and the Termux terminal emulator. The combined APK is distributed under GPL-3.0-or-later. Source bundles accompany the APK build.</string>
 </resources>

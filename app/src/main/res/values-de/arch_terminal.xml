@@ -1,4 +1,4 @@
 <resources>
     <string name="license_arch_title">Arch Terminal</string>
-    <string name="license_arch_summary">Arch Terminal 0.1.9 mit PRoot, libarchive, talloc und Termux-Terminalemulator. Die gemeinsame APK wird unter GPL-3.0-or-later verteilt. Quellarchive liegen den Build-Artefakten bei.</string>
+    <string name="license_arch_summary">Arch Terminal 0.2.0 mit PRoot, libarchive, talloc und Termux-Terminalemulator. Die gemeinsame APK wird unter GPL-3.0-or-later verteilt. Quellarchive liegen den Build-Artefakten bei.</string>
 </resources>

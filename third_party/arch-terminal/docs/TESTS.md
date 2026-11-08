@@ -1,6 +1,6 @@
 # Testkonzept und Stand
 
-Stand: Version 0.1.9, 7. November 2026. Die Host-Prüfungen liefen auf Linux x86_64 mit JDK 17, Android SDK 36 und NDK r28c. Ein Android-11-Emulator (API 30, AOSP x86_64) dient den Start-/JNI-, Tastatur- und Mehrsitzungsregressionen. Diese Prüfungen ersetzen keine ARM64-/PRoot-Geräteabnahme.
+Stand: Version 0.2.0, 8. November 2026. Die Host-Prüfungen verwenden Linux x86_64 mit JDK 17, Android SDK 36 und NDK r28c. Ein Android-11-Emulator (API 30, AOSP x86_64) dient den Start-/JNI-, Tastatur-, Sprach- und Mehrsitzungsregressionen. Diese Prüfungen ersetzen keine ARM64-/PRoot-Geräteabnahme.
 
 ## Wiederholbare Suite
 
@@ -16,10 +16,22 @@ Stand: Version 0.1.9, 7. November 2026. Die Host-Prüfungen liefen auf Linux x86
 | Sitzungsverwaltung, JUnit | unabhängiger Shellzustand und Auswahl; Start-/Neustartfehler; stabile Terminalnummern; gezieltes Schließen und benachbarte Auswahl; Hintergrundende mit erhaltenem Transcript; Neustart nur des beendeten Tabs; verspätete Callbacks; unveränderliche Listensnapshots; gemeinsame Bereinigung; Prozessende vor vollständigem Ausgabedrain beim Schließen, Neustart und gemeinsamen Beenden |
 | Eingabequeue, JUnit | kopierte Eingabedaten und FIFO; voller Puffer blockiert/beendet die Sitzung nicht; Writer wird beim Schließen geweckt |
 | Upstream-Emulator, JUnit | vorhandene VT-/Unicode-/Cursor-/Farb-/Scroll-/Escape-Sequenz-Regressionssuite |
-| Python | gepinnte native Inputs, Rootfs-Architektur/Schlüssel/Hash und Gradle-Prüfsumme |
+| Python | gepinnte native Inputs, Rootfs-Architektur/Schlüssel/Hash und Gradle-Prüfsumme; vollständige deutsche/englische Ressourcen und identische Formatargumente |
 | Android Lint | API-Verwendung, Ressourcen und App-Code |
 
-Die Java-Suite enthält 180 Tests (145 ursprüngliche Emulator-Tests und 35 zusätzliche Tests, davon 14 für mehrere Sitzungen); dazu kommen 3 Python-Tests und 3 CTest-Läufe mit zwei Testprogrammen und mehreren Integrationsfällen. Das Test-APK ist eine weitere, separat auf einem Android-Gerät auszuführende Suite.
+Das Test-APK ist eine weitere, separat auf einem Android-Gerät auszuführende Suite. Die dokumentierten Zählungen und Ergebnisse früherer Versionen stehen in den jeweiligen Abschnitten.
+
+## Mirror und Sprache 0.2.0
+
+Die Java-Regressionen decken die Migration der früheren RWTH-/dotsrc- und Princeton-Standards bei bereits vorhandenem Verzeichnis-Erfolgsmarker ab. Eigene Server, zusätzliche Include-Anweisungen, Symlinks, unveränderte Paket-Signaturkonfiguration und nachträgliche manuelle Einstellungen bleiben erhalten. Die Shell-Migration erhält eigene Profilinhalte, ist idempotent und folgt keinen Profilsymlinks. Die erzeugten Profile werden mit `bash -n` geprüft; die Begrüßung wird tatsächlich in beiden Sprachen ausgeführt und muss `pacman -Syyu` nennen. Weitere Fälle prüfen gespeicherte Sprachcodes, ungültige Präferenzen, englische UTF-8-Guest-Variablen, laufzeitabhängige Download-Fehlersprache und sprachunabhängige Fortschrittswerte.
+
+`python3 scripts/test-mirrors.py` prüft die in der App definierten HTTPS-Mirrors nacheinander. Für beide lädt es `core`, `extra`, `alarm` und `aur` für aarch64, liest die tatsächlichen Dateinamen von `bash`, `pacman`, `git`, `mc`, `nodejs`, `npm` und `tree` aus den Datenbanken und erwartet HTTP 200 für jedes Paket und seine Signatur. Es führt keinen Git-Befehl und keine Pakettransaktion auf dem Host aus.
+
+Die Android-Instrumentation prüft über das tatsächliche Menü den Wechsel Deutsch → English → Deutsch. Nach dem Activity-Neuaufbau müssen die gespeicherte Präferenz, Oberfläche und Dienstbenachrichtigung übereinstimmen; derselbe PTY-Prozess mit identischer PID, Shell-Variable und Scrollback muss weiterarbeiten. Anschließend wird der englische Prozessende-Hinweis geprüft. Der Fall lässt sich mit `adb shell am instrument -w -r -e languageRegression true de.archterminal.test/de.archterminal.TerminalInstrumentation` einzeln ausführen.
+
+Die vollständige Host-Suite besteht mit 192 Java-Tests (44 App-Tests und 148 Emulator-/Eingabequeue-Tests), 4 Python-Tests und 3 nativen CTest-Läufen. Die abschließenden App-Tests und Lint sind in `output/tests/0.2.0/app-java-lint-final.txt` protokolliert: keine Fehler, drei bekannte Lint-Warnungen. Der Live-Mirrortest bestätigt beide Server einschließlich aller geprüften Paketdateien und Signaturen (`output/tests/0.2.0/mirrors.txt`). Die vollständige Android-Instrumentation besteht einschließlich des Sprachwechsels (`output/tests/0.2.0/final-stable/android.txt`). Der Test-Runner setzt für seine bisherigen deutschen Menüprüfungen vorübergehend Deutsch und stellt anschließend die ursprüngliche Präferenz wieder her. Der abschließende ARM64-Build samt APK-Prüfung ist erfolgreich (`output/tests/0.2.0/build-final.txt`).
+
+Die Prüfungen, Gradle-Builds und Emulatorläufe wurden nacheinander auf CPU 0 ausgeführt: `ARCH_BUILD_JOBS=1`, `CMAKE_BUILD_PARALLEL_LEVEL=1`, `CTEST_PARALLEL_LEVEL=1`, ein Gradle-Worker und `-XX:ActiveProcessorCount=1 -XX:+UseSerialGC`. Der Emulator verwendet einen virtuellen Kern; tatsächliche Host-Affinität, Gastkerne und Speicherverbrauch stehen unter `output/tests/0.2.0/final-stable/`. Ein Zwischenlauf wurde durch einen schon vor Testbeginn sichtbaren Android-System-ANR-Dialog am Fensterfokus gehindert (`final/preflight.xml`, `final/failure-logcat.txt`). Die Wiederholung verwendet unveränderte APKs und unveränderte Prüfkriterien; die Emulatorvorbereitung bestätigt ausschließlich die Systemdialoge „System UI isn't responding“ und „Process system isn't responding“ mit „Wait“. Der erste erfolgreiche Gesamtlauf bleibt unter `after/` erhalten. Die Smartphone-Abnahme von 0.2.0 bleibt offen.
 
 ## Sitzungslebenszyklus 0.1.9
 
@@ -168,8 +180,8 @@ scripts/test-device.sh --rootfs
 
 Die Skripte prüfen zuerst, ob ein autorisiertes ARM64-Gerät verbunden ist. Ohne Gerät brechen sie mit Exitcode 2 und klarer Meldung ab; es wird kein Bestehen vorgetäuscht. Die zweite Variante setzt ein in der App bereits installiertes Arch voraus.
 
-Der eigene Runner testet seit 0.1.1 zuerst einen kleinen Archiv-Entpackvorgang mit Hardlink-Kette, Dateiinhalten, eigenen Inodes und Ausführungsrechten direkt in der Android-App. Danach folgen JNI-PTY, TTY-Dateideskriptoren, UTF-8, Resize, stille Sitzung, 256 KiB Ausgabe einschließlich letzter Zeilen vor Exit und Ctrl-C. Seit 0.1.2 prüft er außerdem die tatsächliche Activity samt Bildschirmtastatur und Befehlseingabe. `--rootfs` ergänzt PRoot, den glibc-Loader und pacman auf dem Android-Kernel. Ergebnisse landen in `output/tests/device.txt`. Die automatisierte Instrumentationssuite für 0.1.9 wurde noch nicht auf ARM64-Hardware ausgeführt. Frühere erfolgreiche Nutzer-Gerätetests für 0.1.6 und 0.1.8 sind in [OFFEN.md](OFFEN.md) dokumentiert.
+Der eigene Runner testet seit 0.1.1 zuerst einen kleinen Archiv-Entpackvorgang mit Hardlink-Kette, Dateiinhalten, eigenen Inodes und Ausführungsrechten direkt in der Android-App. Danach folgen JNI-PTY, TTY-Dateideskriptoren, UTF-8, Resize, stille Sitzung, 256 KiB Ausgabe einschließlich letzter Zeilen vor Exit und Ctrl-C. Seit 0.1.2 prüft er außerdem die tatsächliche Activity samt Bildschirmtastatur und Befehlseingabe. `--rootfs` ergänzt PRoot, den glibc-Loader und pacman auf dem Android-Kernel. Ergebnisse landen in `output/tests/device.txt`. Die automatisierte Instrumentationssuite für 0.2.0 wurde noch nicht auf ARM64-Hardware ausgeführt. Frühere erfolgreiche Nutzer-Gerätetests für 0.1.6 und 0.1.8 sind in [OFFEN.md](OFFEN.md) dokumentiert.
 
 ## Lint-Hinweise
 
-Keine Lint-Fehler. Bekannte Hinweise: neuere Gradle-Version erhältlich, kein ChromeOS-x86_64-ABI, absichtlich zeitlich unbegrenzter WakeLock und noch nicht durchgängig in Ressourcen ausgelagerte deutsche UI-Texte. Der WakeLock wird bei Ende/Abbruch/Service-Zerstörung freigegeben und kann im Menü deaktiviert werden.
+Keine Lint-Fehler. Bekannte Hinweise betreffen eine neuere Gradle-Plugin-Version, das fehlende ChromeOS-x86_64-ABI und den absichtlich zeitlich unbegrenzten WakeLock. Der WakeLock wird bei Ende/Abbruch/Service-Zerstörung freigegeben und kann im Menü deaktiviert werden. Deutsch und Englisch sind in Ressourcen ausgelagert und bleiben auch bei App-Bundle-Installationen gemeinsam verfügbar.

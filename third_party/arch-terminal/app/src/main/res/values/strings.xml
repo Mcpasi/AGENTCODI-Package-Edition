@@ -1,0 +1,59 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="console_description">Arch Linux ARM Konsole</string>
+    <string name="console_menu">Konsole-Menü</string>
+    <string name="connecting">App wird verbunden …</string>
+    <string name="starting_console">Konsole wird gestartet …</string>
+    <string name="install_arch">Arch installieren / fortsetzen</string>
+    <string name="retry_console">Konsole erneut starten</string>
+    <string name="pause_download">Download anhalten</string>
+    <string name="installation_help">%1$s\n\nArch ARM64 wird einmalig geladen (ca. 791 MiB). Mindestens 5 GiB freien internen Speicher vorsehen.\n\nLange und stille Befehle bleiben aktiv. Lautstärke leiser = CTRL; Lautstärke lauter = Menü.</string>
+    <string name="toggle_keyboard">Tastatur ein / aus</string>
+    <string name="new_session">Neue Sitzung</string>
+    <string name="proot_compatibility">PRoot-Kompatibilität</string>
+    <string name="toggle_wake">CPU-Wachhaltung ein / aus</string>
+    <string name="smaller_font">Schrift kleiner</string>
+    <string name="larger_font">Schrift größer</string>
+    <string name="licenses">Lizenzen</string>
+    <string name="close_session">Sitzung schließen</string>
+    <string name="toggle_extra_keys">Zusatztasten ein / aus</string>
+    <string name="stop_all_sessions">Alle Sitzungen beenden</string>
+    <string name="language">Sprache / Language</string>
+    <string name="language_applied">Sprache gespeichert. Die Shell-Sprache gilt ab der nächsten Sitzung; laufende Sitzungen bleiben erhalten.</string>
+    <string name="compatibility_enabled">Kompatibilitätsmodus an · gilt ab der nächsten Sitzung</string>
+    <string name="compatibility_disabled">Kompatibilitätsmodus aus · gilt ab der nächsten Sitzung</string>
+    <string name="wake_enabled">CPU-Wachhaltung an</string>
+    <string name="wake_disabled">CPU-Wachhaltung aus</string>
+    <string name="confirm_stop_all">Alle Sitzungen und ihre laufenden Prozesse beenden?</string>
+    <string name="back">Zurück</string>
+    <string name="stop_all">Alle beenden</string>
+    <string name="confirm_close_session">Terminal %1$s und seine laufenden Prozesse beenden?</string>
+    <string name="close">Schließen</string>
+    <string name="session_closing">wird beendet</string>
+    <string name="session_ended">beendet</string>
+    <string name="notification_channel">Arch-Konsole</string>
+    <string name="ready_to_install">Arch Linux ARM ist bereit zur Installation.</string>
+    <string name="closing_session_status">Sitzung %1$s wird beendet …</string>
+    <string name="ended_session_status">Sitzung %1$s beendet · Status %2$d · Enter startet neu</string>
+    <plurals name="running_sessions">
+        <item quantity="one">%d Sitzung läuft · aarch64</item>
+        <item quantity="other">%d Sitzungen laufen · aarch64</item>
+    </plurals>
+    <string name="preparing_download">Arch-Download wird vorbereitet …</string>
+    <string name="download_progress">Arch herunterladen · %1$.0f / %2$.0f MiB · %3$.0f %%</string>
+    <string name="installation_failed">Installation fehlgeschlagen: %1$s</string>
+    <string name="installed">Arch installiert. Konsole starten.</string>
+    <string name="pausing_installation">Installation wird angehalten …</string>
+    <string name="start_failed">Start fehlgeschlagen: %1$s · Erneut versuchen oder Kompatibilitätsmodus wählen.</string>
+    <string name="not_installed">Arch ist noch nicht installiert.</string>
+    <string name="notice">Hinweis: %1$s</string>
+    <string name="process_ended">Prozess beendet · %1$d · Enter für neue Sitzung</string>
+    <string name="input_ended">Eingabe beendet: %1$s</string>
+    <string name="input_buffer_full">Eingabepuffer voll; Sitzung bleibt aktiv.</string>
+    <string name="installation_cancelled">Installation abgebrochen; Download bleibt fortsetzbar.</string>
+    <string name="checking_archive">Arch-Archiv wird geprüft …</string>
+    <string name="checksum_failed">Arch-Prüfsumme stimmt nicht. Download erneut starten; vorhandenes Arch bleibt erhalten.</string>
+    <string name="extracting_archive">Arch wird entpackt … Das kann einige Minuten dauern.</string>
+    <string name="rootfs_exists">Ein Arch-Dateisystem ist bereits vorhanden; es wird nicht überschrieben.</string>
+    <string name="manifest_too_large">Manifest zu groß</string>
+</resources>

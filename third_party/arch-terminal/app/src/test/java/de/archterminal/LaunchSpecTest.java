@@ -35,4 +35,19 @@ public class LaunchSpecTest {
         assertFalse(Arrays.asList(standard.environment).contains("PROOT_NO_SECCOMP=1"));
         assertTrue(Arrays.asList(compatible.environment).contains("PROOT_NO_SECCOMP=1"));
     }
+    @Test public void englishGuestUsesUtf8WithoutRequiringGeneratedLocales() {
+        LaunchSpec launch = new LaunchSpec(new File("/files"), new File("/lib"), false, TerminalLanguage.ENGLISH, "/bin/bash", "-c", "printf 'hello world'");
+        List<String> argv = Arrays.asList(launch.arguments);
+        assertTrue(argv.contains("LANG=C.UTF-8"));
+        assertTrue(argv.contains("LC_ALL=C.UTF-8"));
+        assertTrue(argv.contains("LANGUAGE=en"));
+        assertTrue(argv.contains("ARCH_TERMINAL_LANGUAGE=en"));
+        assertEquals("printf 'hello world'", argv.get(argv.size() - 1));
+        assertFalse(Arrays.asList(launch.environment).contains("ARCH_TERMINAL_LANGUAGE=en"));
+    }
+    @Test public void defaultGuestKeepsGermanManagedMessagesAndUtf8() {
+        LaunchSpec launch = new LaunchSpec(new File("/files"), new File("/lib"), false);
+        assertTrue(Arrays.asList(launch.arguments).contains("ARCH_TERMINAL_LANGUAGE=de"));
+        assertTrue(Arrays.asList(launch.arguments).contains("LANG=C.UTF-8"));
+    }
 }

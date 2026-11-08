@@ -8,8 +8,8 @@ android {
         minSdk 28
         // Required for execve() of pacman-installed ELF files in private storage.
         targetSdk 28
-        versionCode 10
-        versionName '0.1.9'
+        versionCode 11
+        versionName '0.2.0'
         ndk { abiFilters 'arm64-v8a' }
         testInstrumentationRunner 'de.archterminal.TerminalInstrumentation'
     }
@@ -17,6 +17,8 @@ android {
         main { jniLibs.srcDirs = ["$buildDir/generated/jniLibs"]; assets.srcDirs += ["$buildDir/generated/assets"] }
     }
     packaging { jniLibs { useLegacyPackaging = true; keepDebugSymbols += ['**/libproot*.so'] } }
+    // Both selectable languages must also be available offline in bundle installations.
+    bundle { language { enableSplit = false } }
     compileOptions { sourceCompatibility JavaVersion.VERSION_1_8; targetCompatibility JavaVersion.VERSION_1_8 }
     lint { disable 'ExpiredTargetSdkVersion', 'OldTargetApi' }
 }

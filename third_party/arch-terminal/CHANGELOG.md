@@ -1,5 +1,13 @@
 # Änderungen
 
+## 0.2.0 · versionCode 11
+
+- Pacman-Standard auf den direkten HTTPS-Mirror `ca.us.mirror.archlinuxarm.org` umgestellt, mit RWTH Aachen über HTTPS als Fallback. Eine separate Migration erfasst auch die alte RWTH-/dotsrc-Liste nach bereits abgeschlossener Verzeichnisreparatur; eigene Listen und Symlinks bleiben erhalten. Der Konsolenhinweis nennt `pacman -Syyu`, damit auch veraltete Paketlisten erneuert werden.
+- Dauerhafte Auswahl **Deutsch / English** in Startansicht und Konsolenmenü ergänzt. Oberfläche, Installation, Benachrichtigungen, Prozessende-/Eingabehinweise und verwaltete Shell-Texte sind übersetzbar. Der Sprachwechsel erhält laufende PTYs und deren Zustand; neue englische Shells verwenden `C.UTF-8` ohne zusätzliches Sprachpaket.
+- Exakt erkannte frühere App-Texte in regulären Shellprofilen werden idempotent übersetzbar gemacht; individuelle Inhalte und Profilsymlinks bleiben erhalten.
+- Regressionstests für Bestandsmigration, eigene Konfigurationen, Bash-Syntax und beide Shell-Sprachen, Guest-Umgebung, Downloadsprache und vollständige Übersetzungen ergänzt. Android-Instrumentation prüft Auswahl, Speicherung, Activity-Neuaufbau, weiterlaufende PTY, Benachrichtigung und englischen Exit-Hinweis. Ein separater sequenzieller Netzwerktest prüft beide Mirrors einschließlich der referenzierten Paketdateien und Signaturen.
+- Version, APK-/Quellarchivnamen, Geräte-Testskript und Lizenzhinweis auf 0.2.0 angehoben. Tests und Builds bleiben nacheinander auf einen CPU-Kern und einen Worker begrenzt.
+
 ## 0.1.9 · versionCode 10
 
 - Vorzeitiges Entfernen oder Ersetzen einer Sitzung zwischen Prozessende und vollständigem PTY-Ausgabedrain behoben. Der Sitzungsmanager merkt sich den abschließenden Exit-Callback; Schließen und gemeinsames Beenden behalten den Eintrag bis dahin, ein Neustart ist erst danach möglich.

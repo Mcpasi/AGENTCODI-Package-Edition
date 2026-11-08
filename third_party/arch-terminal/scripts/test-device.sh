@@ -12,7 +12,7 @@ if ! "$adb_bin" shell getprop ro.product.cpu.abilist | tr -d '\r' | grep -q arm6
   exit 2
 fi
 scripts/build.sh
-"$adb_bin" install -r output/ArchTerminal-0.1.9-arm64-debug.apk
+"$adb_bin" install -r output/ArchTerminal-0.2.0-arm64-debug.apk
 "$adb_bin" install -r output/ArchTerminal-tests.apk
 args=()
 if [ "${1:-}" = --rootfs ]; then args=(-e rootfs true); fi

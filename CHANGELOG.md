@@ -2,7 +2,8 @@
 
 ## Unreleased — Arch Terminal integration
 
-- Replace the APT bootstrap, package catalog and custom terminal with the unchanged Arch Terminal 0.1.9 snapshot. Preserve legacy user data for export.
+- Replace the APT bootstrap, package catalog and custom terminal with the unchanged Arch Terminal 0.2.0 snapshot. Preserve legacy user data for export.
+- Include Arch Terminal's German/English language selection and updated pacman mirrors; stage both upstream translations and verify the actual launch arguments in both languages.
 - Share one Arch installation and workspace between terminal sessions, Codex commands and stdio MCP tools; install development tools with pacman.
 - Retain the existing ARM64 APK/signing pipeline and replace its reusable bootstrap job with an upstream native-runtime build. Temporarily enable `Mcpasi/Fusion_Arch_Termux` with reset-to-main TODO comments.
 - Add source-integrity, command-quoting, workspace, environment, default-shell, cancellation and Android navigation/DEX checks; retain upstream terminal tests and corresponding-source artifacts.

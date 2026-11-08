@@ -9,41 +9,90 @@ import java.nio.file.Path;
 import java.util.List;
 
 final class RootfsConfig {
-    static final String DEFAULT_MIRRORLIST = "Server = https://ftp.halifax.rwth-aachen.de/archlinux-arm/$arch/$repo\n"
+    static final String DEFAULT_MIRRORLIST = "Server = https://ca.us.mirror.archlinuxarm.org/$arch/$repo\n"
+        + "Server = https://ftp.halifax.rwth-aachen.de/archlinux-arm/$arch/$repo\n";
+    static final String PREVIOUS_MIRRORLIST = "Server = https://ftp.halifax.rwth-aachen.de/archlinux-arm/$arch/$repo\n"
         + "Server = https://mirrors.dotsrc.org/archlinuxarm/$arch/$repo\n";
     static final String LEGACY_MIRROR = "Server = https://mirror.math.princeton.edu/pub/archlinuxarm/$arch/$repo";
     static final String DIRECTORY_MODES_MARKER = ".arch-terminal-directory-modes-v1";
+    static final String MIRRORS_MARKER = ".arch-terminal-mirrors-v2";
     interface DirectoryRepair { void repair(String rootfs) throws IOException; }
 
     /** Maintenance failure must not prevent an already installed guest from starting. */
     static String upgradeForLaunch(File installed, DirectoryRepair repair) {
+        return upgradeForLaunch(installed, repair, TerminalLanguage.GERMAN);
+    }
+
+    static String upgradeForLaunch(File installed, DirectoryRepair repair, TerminalLanguage language) {
         try {
             upgrade(installed, repair);
             return null;
         } catch (IOException | RuntimeException error) {
             String detail = error.getMessage();
             if (detail == null || detail.isEmpty()) detail = error.getClass().getSimpleName();
-            return "Optionale Rootfs-Aktualisierung verschoben: " + detail;
+            return language.text("Optionale Rootfs-Aktualisierung verschoben: %s", "Optional rootfs update deferred: %s", detail);
         }
     }
 
     /** Upgrade app defaults once without replacing a user's chosen mirror or shell profiles. */
     static void upgrade(File installed, DirectoryRepair repair) throws IOException {
         Path root = installed.toPath();
+        upgradeMirrors(root);
+        upgradeShellMessages(root);
         Path marker = root.resolve(DIRECTORY_MODES_MARKER);
+        if (Files.exists(marker, LinkOption.NOFOLLOW_LINKS)) return;
+        repair.repair(installed.getAbsolutePath());
+        Files.write(marker, new byte[0], java.nio.file.StandardOpenOption.CREATE_NEW);
+    }
+
+    private static void upgradeMirrors(Path root) throws IOException {
+        Path marker = root.resolve(MIRRORS_MARKER);
         if (Files.exists(marker, LinkOption.NOFOLLOW_LINKS)) return;
         Path mirror = root.resolve("etc/pacman.d/mirrorlist");
         if (Files.isRegularFile(mirror, LinkOption.NOFOLLOW_LINKS)) {
             List<String> servers = new java.util.ArrayList<>();
             for (String line : Files.readAllLines(mirror, StandardCharsets.UTF_8)) {
                 String value = line.trim();
-                if (value.matches("Server\\s*=.*")) servers.add(value);
+                if (!value.isEmpty() && !value.startsWith("#")) servers.add(value.replaceFirst("^Server\\s*=\\s*", "Server = "));
             }
-            if (servers.size() == 1 && servers.get(0).equals(LEGACY_MIRROR))
+            String active = String.join("\n", servers) + "\n";
+            if (active.equals(LEGACY_MIRROR + "\n") || active.equals(PREVIOUS_MIRRORLIST))
                 Files.write(mirror, DEFAULT_MIRRORLIST.getBytes(StandardCharsets.UTF_8));
         }
-        repair.repair(installed.getAbsolutePath());
         Files.write(marker, new byte[0], java.nio.file.StandardOpenOption.CREATE_NEW);
+    }
+
+    /** Replace only exact messages shipped by the app; keep all other profile contents. */
+    private static void upgradeShellMessages(Path root) throws IOException {
+        for (String name : new String[]{"root/.bashrc", "root/.bash_profile"}) {
+            Path profile = root.resolve(name);
+            if (!Files.isRegularFile(profile, LinkOption.NOFOLLOW_LINKS)) continue;
+            String before = new String(Files.readAllBytes(profile), StandardCharsets.UTF_8);
+            String after = before
+                .replace("printf 'Pakete aktualisieren: pacman -Syu\\n'\n", packageMessage())
+                .replace("printf 'Arch-Paketschlüssel werden eingerichtet …\\n'\n", keySetupMessage())
+                .replace("printf 'Schlüssel noch nicht bereit. Erneut ausführen: pacman-key --init && pacman-key --populate archlinuxarm\\n'\n", keyFailureMessage());
+            if (!before.equals(after)) Files.write(profile, after.getBytes(StandardCharsets.UTF_8));
+        }
+    }
+
+    private static String localizedPrint(String german, String english) {
+        return "if [ \"${ARCH_TERMINAL_LANGUAGE:-de}\" = en ]; then\n"
+            + "  printf '%s\\n' '" + english + "'\nelse\n  printf '%s\\n' '" + german + "'\nfi\n";
+    }
+
+    private static String packageMessage() {
+        return localizedPrint("Paketlisten erneuern und Pakete aktualisieren: pacman -Syyu",
+            "Refresh package lists and update packages: pacman -Syyu");
+    }
+
+    private static String keySetupMessage() {
+        return localizedPrint("Arch-Paketschlüssel werden eingerichtet …", "Initializing Arch package signing keys …");
+    }
+
+    private static String keyFailureMessage() {
+        return localizedPrint("Schlüssel noch nicht bereit. Erneut ausführen: pacman-key --init && pacman-key --populate archlinuxarm",
+            "Keys are not ready. Retry: pacman-key --init && pacman-key --populate archlinuxarm");
     }
 
     static void configure(File staging) throws IOException {
@@ -86,23 +135,24 @@ final class RootfsConfig {
         String welcome = "\n# Arch Terminal\nexport PS1='\\[\\e[1;36m\\]arch\\[\\e[0m\\]:\\w \\$ '\n"
             + "alias ll='ls -lah --color=auto'\n"
             + "printf '\\033[1;36mArch Linux ARM\\033[0m · aarch64 · PRoot\\n'\n"
-            + "printf 'Pakete aktualisieren: pacman -Syu\\n'\n";
+            + packageMessage();
         if (Files.isSymbolicLink(bashrc)) Files.delete(bashrc);
         Files.write(bashrc, welcome.getBytes(StandardCharsets.UTF_8), java.nio.file.StandardOpenOption.CREATE, java.nio.file.StandardOpenOption.APPEND);
         Path profile = root.resolve("root/.bash_profile");
         if (Files.isSymbolicLink(profile)) Files.delete(profile);
         String firstLogin = "# Arch Terminal: initialize shipped signing keys once, without a command deadline.\n"
             + "if [ ! -f /etc/pacman.d/gnupg/.arch-terminal-ready ]; then\n"
-            + "  printf 'Arch-Paketschlüssel werden eingerichtet …\\n'\n"
+            + keySetupMessage()
             + "  if pacman-key --init && pacman-key --populate archlinuxarm; then\n"
             + "    touch /etc/pacman.d/gnupg/.arch-terminal-ready\n"
             + "  else\n"
-            + "    printf 'Schlüssel noch nicht bereit. Erneut ausführen: pacman-key --init && pacman-key --populate archlinuxarm\\n'\n"
+            + keyFailureMessage()
             + "  fi\n"
             + "fi\n[ -f ~/.bashrc ] && . ~/.bashrc\n";
         Files.write(profile, firstLogin.getBytes(StandardCharsets.UTF_8));
         // Fresh extractions already preserve directory modes and need no legacy repair.
         Files.write(root.resolve(DIRECTORY_MODES_MARKER), new byte[0], java.nio.file.StandardOpenOption.CREATE_NEW);
+        Files.write(root.resolve(MIRRORS_MARKER), new byte[0], java.nio.file.StandardOpenOption.CREATE_NEW);
     }
     private RootfsConfig() {}
 }

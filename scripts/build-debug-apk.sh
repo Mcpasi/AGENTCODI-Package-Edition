@@ -367,8 +367,8 @@ python3 -B "$PROJECT_ROOT/scripts/arch-terminal/verify-source.py"
   cd "$ARCH_INPUT"
   sha256sum -c SHA256SUMS
   test -f AGENTCODI-Arch-Terminal-source.tar.gz
-  test -f ArchTerminal-0.1.9-source.tar.gz
-  test -f ArchTerminal-0.1.9-native-inputs.tar.gz
+  test -f ArchTerminal-0.2.0-source.tar.gz
+  test -f ArchTerminal-0.2.0-native-inputs.tar.gz
   sha256sum -c SOURCE-SHA256SUMS
 )
 cp -a "$ARCH_INPUT/assets/." "$ADDITIONS/assets/"
