@@ -1,5 +1,8 @@
 # Arch Terminal integration
 
+This guide covers **Package Edition 0.1.9 (in preparation)**. Version metadata
+and the GitHub APK build are separate release steps.
+
 AGENTCODI embeds the unchanged Arch Terminal 0.2.0 snapshot at
 `5c51fdfcec0bf55349b61b6dc3fc49d1923438c3`. The snapshot is verified against
 `third_party/arch-terminal.lock.json`; integration code lives outside it.
@@ -18,6 +21,8 @@ pacman packages and guest `/root`. The Android Codex process and file APIs remai
 native; commands and stdio MCP tools enter Arch through generated launchers.
 The small app-server preload redirects Bionic passwd shell discovery to the Arch
 Bash launcher. Loader environment variables are removed before entering Arch.
+Generated launchers reject symbolic links and hardlinks before writing or
+changing permissions, preserving the linked original file.
 
 The former APT bootstrap/catalog is retired. Existing `files/usr` and HOME data
 are preserved for export; they are absent from the active command/library paths.

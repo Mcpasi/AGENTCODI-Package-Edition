@@ -2,12 +2,17 @@
 
 # Signed Package Edition release APK
 
-The [APK Release](../workflows/apk-release.yml) workflow runs exclusively
-on this repository's `main`. It uses the same container, pinned build inputs
-and verified Arch runtime as the debug build and invokes
+The [APK Release](../workflows/apk-release.yml) workflow runs on `main` and,
+during integration, `Mcpasi/Fusion_Arch_Termux`. It uses the same container,
+pinned build inputs and verified Arch runtime as the debug build and invokes
 `scripts/build-release-apk.sh`.
 
-The current release is [AGENTCODI Package Edition V0.1.5](https://github.com/Mcpasi/AGENTCODI-Package-Edition/releases/tag/V.0.1.5-package),
+**Package Edition 0.1.9 is in preparation.** The maintainer updates the Android
+version metadata before running the APK build on GitHub. The expected versioned
+release asset after that bump is `AGENTCODI-Package-0.1.9-arm64-v8a-release.apk`;
+its checksum and build evidence come from the successful release run.
+
+A historical signed release is [AGENTCODI Package Edition V0.1.5](https://github.com/Mcpasi/AGENTCODI-Package-Edition/releases/tag/V.0.1.5-package),
 published on 2026-10-14 as an experimental prerelease, tagged
 `V.0.1.5-package` (Android `versionCode 8`). The signed release asset is
 `AGENTCODI-Package-0.1.5-arm64-v8a-release.apk`; GitHub reports its SHA-256 as

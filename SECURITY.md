@@ -49,9 +49,15 @@ backported.
 Install released APKs only from the official
 [Package Edition GitHub Releases](https://github.com/Mcpasi/AGENTCODI-Package-Edition/releases) page and
 update to the latest release before reporting an issue that may already be fixed.
-The latest published Package Edition release and current source version are
-**0.1.6** (Android `versionCode 9`), published on 2026-10-18 as an
-experimental prerelease:
+**Package Edition 0.1.9 is in preparation.** It fixes writes and permission
+changes through hard-linked Arch launchers and incomplete masking of quoted
+credentials in crash reports and chat. Both bugs were reproduced on GitHub
+against unchanged production code before their fixes. Local regression tests
+pass; the release version bump, GitHub APK build and physical Android
+validation remain separate steps.
+
+For historical release evidence, **0.1.6** (Android `versionCode 9`) was
+published on 2026-10-18 as an experimental prerelease:
 [AGENTCODI Package Edition V0.1.6](https://github.com/Mcpasi/AGENTCODI-Package-Edition/releases/tag/v.0.1.6.package.3).
 Physical Android device tests for version 0.1.6 passed.
 The first Package Edition release was published on 2026-10-06 as
@@ -170,6 +176,9 @@ staging. It verifies the unchanged Arch snapshot, rootfs download pin, original
 license assets and corresponding-source artifacts. See [the test contract](scripts/package-edition/TEST_CONTRACT.md).
 Java and native tests check argument-preserving Arch command wrappers, shared
 paths, loader-environment cleanup, shell discovery and PRoot command cancellation.
+The 0.1.9 fixes reject hard-linked generated launchers before content or
+permission changes and mask complete quoted credential values, including escaped quotes and
+unfinished streamed output. These checks preserve the documented Full-access model.
 Legacy user data remains separate from the active Arch installation.
 
 Hosted Linux and ARM64/Bionic containers cannot validate Android installation,

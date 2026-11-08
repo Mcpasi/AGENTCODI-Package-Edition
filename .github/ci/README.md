@@ -1,5 +1,8 @@
 # CI and portable checks
 
+Release documentation targets **Package Edition 0.1.9 (in preparation)**.
+The version bump is a separate release step; APKs are built on GitHub.
+
 AGENTCODI keeps its existing Android identity, ARM64/Bionic APK container, Codex
 runtime pins and signing paths. Arch Terminal replaces the former custom PTY,
 APT bootstrap and package catalog. The unchanged upstream snapshot is checked
@@ -8,7 +11,7 @@ against `third_party/arch-terminal.lock.json` before use.
 | Job or driver | Checks |
 | --- | --- |
 | `scripts/check-architecture.sh` | Module boundaries, app identity/security contracts, pinned upstream and compile-only inputs, retired APT/PTY code and final APK source contract. |
-| `run-java-tests.sh` | Portable Java chat/protocol/approval/file suites plus actual Arch command-wrapper execution and quoting. Uses JDK 17. |
+| `run-java-tests.sh` | Portable Java chat/protocol/approval/file suites, complete quoted-credential masking across streamed chunks and tool sections, plus actual Arch command-wrapper execution, quoting and hardlink rejection. Uses JDK 17. |
 | `run-cpp-tests.sh` | Seven native supervisor, framing, lifecycle and file suites. Uses `host_shell_fixture.cpp` only as a protocol peer. |
 | `test-arch-terminal.py` | Native adapter argv/binds/environment, shared workspace, missing installation, shell lookup, cancellation, immutable upstream sources and temporary branch gates. |
 | `compile-android-sources.sh` | Combined resources and three Java namespaces, every manifest component, Java 8 lambda DEX desugaring and stable APK update signer. CI uses API 35; an installed local platform can be selected with `AGENTCODI_ANDROID_PLATFORM_VERSION`. |

@@ -1,18 +1,38 @@
 # Roadmap: AGENTCODI Package Edition
 
-Current integration: `Mcpasi/Fusion_Arch_Termux` replaces the APT/catalog and custom terminal with unchanged Arch Terminal 0.2.0. See [the integration guide](scripts/arch-terminal/README.md). Builds are temporarily enabled for this branch with reset-to-main comments; the records below describe earlier releases.
+Package Edition **0.1.9 is in preparation** on `Mcpasi/Fusion_Arch_Termux`. The integration replaces the APT/catalog and custom terminal with unchanged Arch Terminal 0.2.0. See [the integration guide](scripts/arch-terminal/README.md). Builds are temporarily enabled for this branch with reset-to-main comments.
 
-Status: 2026-10-18. Development and releases use `main` in
+Status: 2026-11-08. The default development and release branch is `main` in
 `Mcpasi/AGENTCODI-Package-Edition`. Repository operation and workflow inputs
 are documented in the [setup guide](.github/ci/PACKAGE_EDITION_SETUP.md).
 
 The dated records below retain historical CI links and branch names from the
 original AGENTCODI repository.
 
+### Package Edition 0.1.9: Arch integration and reproduced bug fixes (in preparation)
+
+- Share Arch Terminal 0.2.0, pacman packages and the workspace between terminal
+  sessions, Codex commands and stdio MCP tools. Preserve legacy package data for
+  export and retain the existing APK/signing pipeline.
+- Reject hard-linked generated launchers before any write or permission change,
+  preserving the linked original file.
+- Mask complete quoted credentials in crash reports and chat, including escaped
+  quotes, unfinished values and values split across streamed output chunks or
+  tool-output headings.
+
+Both bugs were reproduced against unchanged production code on GitHub before
+their fixes. Local verification before the release version bump passed **392
+Java host tests**, **19 Arch integration tests** and architecture/source
+contracts. The original reproduction tests remain unchanged and pass.
+
+The version bump is a separate release step; the APK is built on GitHub.
+Physical Android validation of the Arch integration remains pending. See the
+[0.1.9 changelog](CHANGELOG.md) and [test contract](scripts/package-edition/TEST_CONTRACT.md).
+
 ### Package Edition 0.1.6: native Markdown and inline images (published)
 
-Current source and release identity: `0.1.6`, Android `versionCode 9`, application ID
-`de.agentcodi.pkg`. The latest published experimental prerelease is
+Release identity at this milestone: `0.1.6`, Android `versionCode 9`, application ID
+`de.agentcodi.pkg`. The published experimental prerelease is
 [AGENTCODI Package Edition V0.1.6](https://github.com/Mcpasi/AGENTCODI-Package-Edition/releases/tag/v.0.1.6.package.3),
 published on 2026-10-18, tagged `v.0.1.6.package.3`, with asset
 `AGENTCODI-Package-0.1.6-arm64-v8a-release.apk`. Physical Android device

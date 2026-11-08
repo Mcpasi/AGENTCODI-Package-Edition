@@ -8,7 +8,7 @@
 
 ![Android](https://img.shields.io/badge/Android-10%2B-3DDC84?logo=android&logoColor=white)
 ![Architecture](https://img.shields.io/badge/Architecture-ARM64-555555)
-![Release](https://img.shields.io/badge/Published-0.1.6-blue)
+![Next release](https://img.shields.io/badge/Next%20release-0.1.9-blue)
 ![Status](https://img.shields.io/badge/Status-experimental%20prerelease-orange)
 ![License](https://img.shields.io/badge/License-Apache%202.0-blue)
 
@@ -16,8 +16,9 @@
 
 AGENTCODI Package Edition lets you work on code from your phone or tablet. Ask Codex to explain a project, change files or run commands, then follow its progress in the chat. You can also edit code yourself in the built-in editor, use the terminal and install tools such as Python, Node.js and Git.
 
-The integration branch embeds [Arch Terminal](https://github.com/Mcpasi/Arch_Terminal)
-0.2.0 unchanged and replaces the former APT bootstrap, package catalog and terminal.
+Package Edition **0.1.9 is in preparation**. It embeds
+[Arch Terminal](https://github.com/Mcpasi/Arch_Terminal) 0.2.0 unchanged and
+replaces the former APT bootstrap, package catalog and terminal.
 Published 0.1.6 APKs predate this migration; the Arch instructions below apply to
 new builds from this source branch.
 
@@ -60,7 +61,7 @@ You need **Android 10 or newer**, an **ARM64 (arm64-v8a) device**, and an intern
 
 ## Get started
 
-1. For Arch integration, download the APK from a successful **APK** or **APK Release** Actions run on `Mcpasi/Fusion_Arch_Termux`. The [published 0.1.6 release](https://github.com/Mcpasi/AGENTCODI-Package-Edition/releases/tag/v.0.1.6.package.3) still uses the earlier APT environment.
+1. For an Arch integration build, download the APK from a successful **APK** or **APK Release** Actions run on `Mcpasi/Fusion_Arch_Termux`. The [earlier 0.1.6 release](https://github.com/Mcpasi/AGENTCODI-Package-Edition/releases/tag/v.0.1.6.package.3) uses the former APT environment.
 2. Open the APK on your device and install it. If Android asks, allow installation from the app you used to download or open it.
 3. For an Arch integration build, open **Terminal** and choose **Arch installieren / fortsetzen**. The pinned first download is about 791 MiB; allow at least 5 GiB of free internal storage. Then go to **Settings** and tap **Start Codex runtime**. Terminal sessions also work independently of Codex.
 4. In **Settings**, use **Sign in with ChatGPT** and finish in your browser, or enter an OpenAI API key using the dedicated account controls.
@@ -72,8 +73,10 @@ Android may show an installation warning because the app targets an older Androi
 
 ## Versions
 
-- **Available to download: 0.1.6.** Published on October 18, 2026 as an experimental prerelease, tagged `v.0.1.6.package.3`. Device tests passed on physical Android hardware.
-- **New in 0.1.6:** selectable native Markdown for answers, reasoning and plan cards, plus inline previews of generated images and image-view results.
+- **0.1.9 (in preparation):** Arch Terminal 0.2.0 with a shared Arch environment for terminal sessions, Codex and stdio MCP tools. Development tools are installed with pacman.
+- **Fixed in 0.1.9:** generated Arch launchers reject hardlinks before changing another file's contents or permissions. Quoted passwords are fully masked in crash reports and chat, including streamed output and escaped quotes.
+- **Verification:** 392 Java host tests, 19 Arch integration tests and architecture checks passed locally before the version bump. The 0.1.9 APK build and physical Android validation are pending.
+- **Included since 0.1.6:** selectable native Markdown for answers, reasoning and plan cards, plus inline previews of generated images and image-view results.
 - **Included since 0.1.5:** the workspace editor described below, a separate Package Edition icon and an Android freedom page in Settings.
 
 The [changelog](CHANGELOG.md) has the full release notes. The [roadmap](ROADMAP-package-edition.md) tracks ongoing work and benchmark results.
@@ -152,7 +155,8 @@ Package Edition uses the application ID `de.agentcodi.pkg` and separate private 
 
 It uses `targetSdk 28` to allow execution from its writable package directory. The minimum supported version is Android 10 / API 29.
 
-The published 0.1.6 APK and current source use Android `versionCode 9`.
+The 0.1.9 release is being prepared. Android version metadata is updated
+separately before the GitHub APK build.
 
 </details>
 

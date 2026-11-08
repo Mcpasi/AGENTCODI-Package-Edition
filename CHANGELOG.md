@@ -1,12 +1,38 @@
 # Package Edition
 
-## Unreleased — Arch Terminal integration
+## 0.1.9 — Package Edition — In preparation
+
+**Experimental prerelease in preparation. Version metadata and the GitHub APK build are separate release steps.**
+
+### Fixes
+
+- Reject hard-linked Arch command launchers before writing their contents or
+  changing their permissions. Runtime preparation preserves the linked original
+  file and its permissions.
+- Mask complete quoted passwords and other named credentials in crash reports
+  and chat, including spaces, punctuation, escaped quotes and unfinished streamed
+  values. Preserve escape state across chunks and apply masking when a quoted
+  value spans a tool-output heading.
+- Retain both reproduction tests, confirmed to fail against unchanged production
+  code on GitHub. Add coverage for escaped and unfinished values, long quoted
+  secrets, crash/chat output and streaming chunk boundaries.
+
+### Arch Terminal integration
 
 - Replace the APT bootstrap, package catalog and custom terminal with the unchanged Arch Terminal 0.2.0 snapshot. Preserve legacy user data for export.
 - Include Arch Terminal's German/English language selection and updated pacman mirrors; stage both upstream translations and verify the actual launch arguments in both languages.
 - Share one Arch installation and workspace between terminal sessions, Codex commands and stdio MCP tools; install development tools with pacman.
 - Retain the existing ARM64 APK/signing pipeline and replace its reusable bootstrap job with an upstream native-runtime build. Temporarily enable `Mcpasi/Fusion_Arch_Termux` with reset-to-main TODO comments.
 - Add source-integrity, command-quoting, workspace, environment, default-shell, cancellation and Android navigation/DEX checks; retain upstream terminal tests and corresponding-source artifacts.
+
+### Verification
+
+- Local bug-fix verification before the release version bump: **392 Java host
+  tests**, including both unchanged reproduction tests, **19 Arch integration
+  tests**, and architecture/source contracts passed.
+- The 0.1.9 APK build runs on GitHub after the maintainer's version bump.
+  Physical Android validation of the Arch integration remains pending;
+  historical device results below apply to their respective releases.
 
 
 ## 0.1.6 — Package Edition (Android versionCode 9) — 2026-10-18
