@@ -43,6 +43,7 @@ public final class TestMain {
         passed += WorkspaceFileEditorTest.run();
         passed += WorkspaceSyntaxTest.run();
         passed += WorkspaceFileScopeTest.run();
+        passed += StorageAndRedactionRegressionTest.run();
         System.out.println("Java tests passed: " + passed);
     }
 }
