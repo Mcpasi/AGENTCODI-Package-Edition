@@ -2094,9 +2094,12 @@ std::vector<std::string> child_environment(const ProcessConfig& config) {
   environment.push_back("CODEX_CODE_MODE_HOST_PATH=" + config.code_mode_host_executable);
 #if defined(__ANDROID__)
   // The Community runtime uses getpwuid_r to discover the user's default shell.
-  // Its dynamic Bionic lookup is redirected only in this app-server process.
-  environment.push_back("AGENTCODI_ARCH_SHELL=" + config.state_directory + "/arch-bin/bash");
-  environment.push_back("LD_PRELOAD=" + config.library_directory + "/libagentcodi-arch-env.so");
+  // Only Codex app-server launches need the APK preload. Explicit supervisor
+  // fixtures also run on Bionic, without this library in their native directory.
+  if (!config.arguments.empty() && config.arguments.front() == "app-server") {
+    environment.push_back("AGENTCODI_ARCH_SHELL=" + config.state_directory + "/arch-bin/bash");
+    environment.push_back("LD_PRELOAD=" + config.library_directory + "/libagentcodi-arch-env.so");
+  }
 #endif
   return environment;
 }

@@ -1881,8 +1881,8 @@ int main(int argc, char* argv[]) {
           const long parsed = read_grandchild
               ? std::strtol(grandchild_line.c_str(), &end, 10)
               : -1;
-          const bool valid_grandchild = errno == 0
-              && end != grandchild_line.c_str() && *end == '\0'
+          const bool valid_grandchild = read_grandchild && errno == 0
+              && end != nullptr && end != grandchild_line.c_str() && *end == '\0'
               && parsed > 0 && parsed <= INT_MAX;
           expect(valid_grandchild, "validate process-tree grandchild PID");
           if (valid_grandchild) {

@@ -121,6 +121,13 @@ class ArchAdapterTest(unittest.TestCase):
                          'if (getpwuid_r(getuid(), &entry, buffer, sizeof(buffer), &result) || !result) return 1; '
                          'std::puts(result->pw_shell); }\n')
         subprocess.run([compiler, str(probe), "-o", str(cls.build / "probe")], check=True)
+        # The ordinary Linux C++ jobs do not compile the Android-only preload
+        # branch. Exercise it through real supervisor child processes as well.
+        subprocess.run([compiler, "-std=c++17", "-O2", "-Wall", "-Wextra", "-Werror", "-pthread",
+                        "-D__ANDROID__", "-I" + str(NATIVE),
+                        str(NATIVE / "app_server_process.cpp"), str(NATIVE / "png_validator.cpp"),
+                        str(NATIVE / "sha256.cpp"), str(ROOT / "tests/cpp/app_server_environment_probe.cpp"),
+                        "-lz", "-o", str(cls.build / "environment-probe")], check=True)
 
     @classmethod
     def tearDownClass(cls):
@@ -238,6 +245,28 @@ class ArchAdapterTest(unittest.TestCase):
         env["AGENTCODI_ARCH_SHELL"] = "relative/path"
         result = subprocess.run([str(self.build / "probe")], env=env, capture_output=True, text=True, check=True)
         self.assertNotEqual(result.stdout.strip(), "relative/path")
+
+    def supervisor_environment(self, mode):
+        for relative in ("files/agentcodi/codex-home", "files/agentcodi/home",
+                         "files/agentcodi/state", "files/usr", "files/tmp"):
+            (self.root / relative).mkdir(mode=0o700, parents=True, exist_ok=True)
+        executable = self.native / "environment-probe"
+        shutil.copy2(self.build / "environment-probe", executable)
+        result = subprocess.run([str(executable), str(self.root), mode],
+                                env=self.environment, capture_output=True, text=True, check=True, timeout=10)
+        return result.stdout.splitlines()
+
+    def test_android_supervisor_fixture_does_not_require_the_apk_preload(self):
+        self.assertFalse((self.native / "libagentcodi-arch-env.so").exists())
+        self.assertEqual(self.supervisor_environment("custom"), ["unset", "unset"])
+
+    def test_android_codex_launches_keep_the_arch_shell_preload(self):
+        preload = self.native / "libagentcodi-arch-env.so"
+        shutil.copy2(self.build / "shell-env.so", preload)
+        expected = [str(preload), str(self.files / "agentcodi/state/arch-bin/bash")]
+        for mode in ("managed", "explicit-app-server"):
+            with self.subTest(mode=mode):
+                self.assertEqual(self.supervisor_environment(mode), expected)
 
 
 if __name__ == "__main__":
