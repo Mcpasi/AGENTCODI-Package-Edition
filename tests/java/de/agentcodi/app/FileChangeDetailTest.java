@@ -17,6 +17,7 @@ public final class FileChangeDetailTest {
         splitsEveryReportedFileIntoItsOwnSection();
         keepsRenamedTargetsWithTheirChange();
         countsOnlyRealDiffLines();
+        countsIncrementAndDecrementStatementsAsChangedLines();
         keepsUnrelatedSectionsVerbatim();
         keepsBlankAndHeadingLikeDiffLinesInsideTheirChange();
         keepsDetailsWithoutFileSectionsUnchanged();
@@ -27,7 +28,7 @@ public final class FileChangeDetailTest {
         readsTheDetailFormatTheCardBuilderWrites();
         rendersEveryChangeThroughTheSharedCard();
         reportsMissingDiffsAsEmptySoTheViewCanLocaliseThem();
-        return 13;
+        return 14;
     }
 
     private static void splitsEveryReportedFileIntoItsOwnSection() {
@@ -120,6 +121,43 @@ public final class FileChangeDetailTest {
             Integer.valueOf(1),
             Integer.valueOf(projection.getRemovedLines()),
             "file headers never count as removed lines"
+        );
+    }
+
+    private static void countsIncrementAndDecrementStatementsAsChangedLines() {
+        // The first sign is the diff marker; the next two belong to the source code.
+        FileChangeDetail.Projection projection = FileChangeDetail.parse(
+            "ÄNDERN · /workspace/counter.cpp:\n"
+                + "--- a/counter.cpp\n"
+                + "+++ b/counter.cpp\n"
+                + "@@ -1 +1 @@\n"
+                + "---counter;\n"
+                + "+++counter;"
+        );
+        FileChangeDetail.FileChange change = projection.getChanges().get(0);
+        TestSupport.assertEquals(
+            Integer.valueOf(1), Integer.valueOf(change.getAddedLines()),
+            "adding ++counter; counts as one added source line, excluding the file header"
+        );
+        TestSupport.assertEquals(
+            Integer.valueOf(1), Integer.valueOf(change.getRemovedLines()),
+            "removing --counter; counts as one removed source line, excluding the file header"
+        );
+        TestSupport.assertEquals(
+            Integer.valueOf(1), Integer.valueOf(projection.getAddedLines()),
+            "the total includes the added increment statement"
+        );
+        TestSupport.assertEquals(
+            Integer.valueOf(1), Integer.valueOf(projection.getRemovedLines()),
+            "the total includes the removed decrement statement"
+        );
+        TestSupport.assertEquals(
+            FileChangeDetail.LineKind.ADDED, FileChangeDetail.lineKind("+++counter;"),
+            "the increment statement receives added-line formatting"
+        );
+        TestSupport.assertEquals(
+            FileChangeDetail.LineKind.REMOVED, FileChangeDetail.lineKind("---counter;"),
+            "the decrement statement receives removed-line formatting"
         );
     }
 
