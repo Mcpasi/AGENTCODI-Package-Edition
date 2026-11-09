@@ -41,6 +41,9 @@ and renderer come from the unchanged Arch Terminal snapshot.
 
 Arch Terminal 0.2.0, source commit 5c51fdfcec0bf55349b61b6dc3fc49d1923438c3:
 https://github.com/Mcpasi/Arch_Terminal
+Main application code by Mcpasi, licensed under GPL-3.0-or-later.
+Includes PRoot, talloc, libarchive and the Termux terminal emulator/view,
+which retain their original authorship, licenses and copyright notices.
 The combined APK is distributed under GPL-3.0-or-later. Original AGENTCODI
 files retain their Apache-2.0 notices. Upstream Arch and component license
 texts are available in assets/licenses and in the Arch Terminal legal card.

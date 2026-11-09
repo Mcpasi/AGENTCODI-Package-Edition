@@ -41,7 +41,18 @@ tests run in CI. The large rootfs test is available through manual workflow inpu
 Physical Android installation, keyboard and long-running session behavior still
 need device validation.
 
-The combined APK is distributed under GPL-3.0-or-later, while original AGENTCODI
-files retain their Apache-2.0 license. The workflow supplies combined application
-sources and upstream native input archives with the APK. Include these source
-artifacts when distributing the binary. See the bundled Arch Terminal notices.
+Arch Terminal's main application code is authored by Mcpasi and licensed under
+GPL-3.0-or-later. Its PRoot, talloc, libarchive and Termux terminal emulator/view
+components retain their original authorship, licenses and copyright notices.
+The original component attributions are preserved in
+[`third_party/arch-terminal/NOTICE.md`](../../third_party/arch-terminal/NOTICE.md).
+The license texts accompany the unchanged source snapshot, including Arch
+Terminal's [`LICENSE`](../../third_party/arch-terminal/LICENSE), and are bundled
+in the APK's `assets/licenses/`.
+
+AGENTCODI remains licensed under Apache 2.0 for its original code, tests,
+resources, build automation and documentation. Integrating Arch Terminal does
+not change that license. The combined APK is distributed under
+GPL-3.0-or-later. The workflow supplies combined application sources and upstream
+native input archives with the APK. Include these source artifacts when
+distributing the binary.

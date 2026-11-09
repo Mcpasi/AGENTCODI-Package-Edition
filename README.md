@@ -213,7 +213,11 @@ APK builds run on `main` and temporarily on `Mcpasi/Fusion_Arch_Termux`, with TO
 
 AGENTCODI is an independent open-source project, with no affiliation with or endorsement by OpenAI.
 
-Original AGENTCODI code, tests, resources, build automation and documentation are copyright 2026 Pascal (Mc Pasi), licensed under [Apache 2.0](LICENSE). The combined APK including Arch Terminal is distributed under GPL-3.0-or-later; Arch Terminal and native input source bundles accompany the build artifacts. Third-party components retain their own licenses and copyright notices. See [NOTICE.md](NOTICE.md) and the notices in the app.
+AGENTCODI remains licensed under [Apache 2.0](LICENSE) for its original code, tests, resources, build automation and documentation, copyright 2026 Pascal (Mc Pasi). Integrating Arch Terminal does not change this license for the original AGENTCODI work.
+
+Arch Terminal's main application code is authored by Mcpasi and licensed under [GPL-3.0-or-later](third_party/arch-terminal/LICENSE). It incorporates third-party components, including PRoot, talloc, libarchive and the Termux terminal emulator/view, which retain their own authorship, licenses and copyright notices.
+
+The combined APK including Arch Terminal is distributed under GPL-3.0-or-later; the combined application source bundle, Arch Terminal sources and native input archives accompany the build artifacts. See [NOTICE.md](NOTICE.md), [Arch Terminal's original component notices](third_party/arch-terminal/NOTICE.md) and the notices in the app.
 
 Complete original sources for the Codex runtime's MPL-2.0 components are included in the APK. Export them without an account or internet connection:
 

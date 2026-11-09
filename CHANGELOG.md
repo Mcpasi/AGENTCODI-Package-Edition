@@ -37,6 +37,7 @@
 - Share one Arch installation and workspace between terminal sessions, Codex commands and stdio MCP tools; install development tools with pacman.
 - Retain the existing ARM64 APK/signing pipeline and replace its reusable bootstrap job with an upstream native-runtime build. Temporarily enable `Mcpasi/Fusion_Arch_Termux` with reset-to-main TODO comments.
 - Add source-integrity, command-quoting, workspace, environment, default-shell, cancellation and Android navigation/DEX checks; retain upstream terminal tests and corresponding-source artifacts.
+- Credit Mcpasi as the author of Arch Terminal's main application code in the documentation and the English, German and Simplified Chinese legal-notices UI. Preserve the third-party component attributions and GPL-3.0-or-later distribution terms; clarify that the original AGENTCODI work remains under Apache 2.0.
 
 ### Verification
 

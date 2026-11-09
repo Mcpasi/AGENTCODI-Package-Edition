@@ -1,6 +1,6 @@
 # Provenance
 
-AGENTCODI original Java/C++ application code, tests, resources, build automation, and documentation are Copyright 2026 Pascal (Mc Pasi) and licensed under the Apache License, Version 2.0. The complete terms are in `LICENSE` and are displayed in the APK's legal-notices screen.
+AGENTCODI's original Java/C++ application code, tests, resources, build automation, and documentation remain licensed under the Apache License, Version 2.0 and are Copyright 2026 Pascal (Mc Pasi). Integrating Arch Terminal does not change this license for the original AGENTCODI work. The complete Apache 2.0 terms are in `LICENSE` and are displayed in the APK's legal-notices screen.
 
 Historically, the Android sandbox backend, seccomp/ptrace supervisor and their integration into the local Codex fork were developed by Pascal (Mc Pasi). This backend and fork are not shipped in Package Edition. These contributions are Copyright 2026 Pascal (Mc Pasi) and licensed under the Apache License, Version 2.0. The underlying OpenAI Codex code, original Android/Termux port, and third-party libraries retain their respective authorship and license notices below.
 
@@ -144,10 +144,21 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 The combined APK includes the unchanged Arch Terminal 0.2.0 source snapshot at
 `5c51fdfcec0bf55349b61b6dc3fc49d1923438c3` from
 https://github.com/Mcpasi/Arch_Terminal. Each original file is pinned in
-`third_party/arch-terminal.lock.json`. Its GPL-3.0-or-later terms apply to the
-combined application; original Apache-2.0 AGENTCODI files retain their notices.
-Upstream component licenses and copyright notices remain unchanged at
-`third_party/arch-terminal/NOTICE.md` and in the APK's `assets/licenses/`.
+`third_party/arch-terminal.lock.json`.
+
+Arch Terminal's main application code is authored by Mcpasi. Its own
+implementations are licensed under GPL-3.0-or-later, as declared in
+`third_party/arch-terminal/NOTICE.md`, with the full license in
+`third_party/arch-terminal/LICENSE`. Arch Terminal incorporates PRoot
+(GPL-2.0-or-later), talloc (LGPL-3.0-or-later), libarchive (BSD and
+component-specific terms), and the Termux terminal emulator/view (Apache-2.0).
+These components retain their original authorship, copyright notices and
+license terms. The complete upstream component notices and license texts remain
+unchanged in `third_party/arch-terminal/` and the APK's `assets/licenses/`.
+
+The combined application is distributed under GPL-3.0-or-later. AGENTCODI's
+original code, tests, resources, build automation and documentation remain under
+Apache 2.0 with their existing copyright and license notices.
 
 AGENTCODI-only adapters bind its workspace to Arch, route commands and stdio MCP
 through PRoot, and select the guest Bash shell for the native Android app-server.
