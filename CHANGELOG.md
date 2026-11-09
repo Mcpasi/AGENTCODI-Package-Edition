@@ -6,6 +6,11 @@
 
 ### Fixes
 
+- Keep Unicode characters intact when truncating streamed chat output. Discard
+  an emoji that cannot fit completely, including when its surrogate pair spans
+  incoming chunks, and prevent later chunks from using the freed code unit.
+  Retain the reproduction test confirmed to fail on GitHub and cover character
+  limits, chunk boundaries and immutable earlier snapshots.
 - Recognize tabs and mixed spaces/tabs as Markdown code indentation at
   four-column tab stops. Preserve literal code, entities and additional tabs
   without activating emphasis or links; keep nested list indentation and code
@@ -35,6 +40,9 @@
 
 ### Verification
 
+- Local verification of the Unicode stream-truncation fix: **399 Java host
+  tests**, including the unchanged reproduction test and the additional Unicode
+  boundary regression, and architecture/source contracts passed.
 - Local verification of the Markdown tab-indentation fix: **397 Java host
   tests**, including the unchanged reproduction test and three additional
   indentation regressions, and architecture/source contracts passed.

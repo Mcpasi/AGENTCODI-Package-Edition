@@ -16,18 +16,19 @@ final class StreamText {
     private final int sectionOutputLength;
     private final String appendedDelta;
     private final int previousLength;
+    private final boolean appendClosed;
     private volatile String appendBase;
     private volatile String materialized;
     private volatile Boolean settledBeforeNewline;
 
     private StreamText(Node prefix, String tail, String materialized,
         String sectionMarker, String sectionBase) {
-        this(prefix, tail, materialized, sectionMarker, sectionBase, -1, null, null, -1);
+        this(prefix, tail, materialized, sectionMarker, sectionBase, -1, null, null, -1, false);
     }
 
     private StreamText(Node prefix, String tail, String materialized,
         String sectionMarker, String sectionBase, int sectionOutputLength,
-        String appendBase, String appendedDelta, int previousLength) {
+        String appendBase, String appendedDelta, int previousLength, boolean appendClosed) {
         this.prefix = prefix;
         this.tail = tail;
         this.length = size(prefix) + tail.length();
@@ -38,6 +39,7 @@ final class StreamText {
         this.appendBase = appendBase;
         this.appendedDelta = appendedDelta;
         this.previousLength = previousLength;
+        this.appendClosed = appendClosed;
     }
 
     static StreamText empty() {
@@ -81,27 +83,37 @@ final class StreamText {
     }
 
     StreamText append(String delta, int maximumCharacters, boolean removeNulls) {
-        if (length >= maximumCharacters || delta.isEmpty()) {
+        if (appendClosed || length >= maximumCharacters || delta.isEmpty()) {
             return this;
         }
         int remaining = maximumCharacters - length;
-        String addition = delta;
-        if (delta.length() > remaining) {
-            addition = remaining <= TRUNCATION.length()
-                ? TRUNCATION.substring(0, remaining)
-                : delta.substring(0, remaining - TRUNCATION.length()) + TRUNCATION;
-        }
+        boolean truncated = delta.length() > remaining;
+        int retained = truncated ? Math.max(0, remaining - TRUNCATION.length()) : delta.length();
+        String addition = delta.substring(0, retained);
         // Match the existing ordering: bound the incoming text, remove NULs, then redact.
         if (removeNulls && addition.indexOf('\0') >= 0) {
             addition = addition.replace("\0", "");
         }
         String combined = tail + addition;
+        // A final cut must also discard a pending high surrogate from an earlier delta.
+        boolean trimmedSurrogate = (truncated || size(prefix) + combined.length() >= maximumCharacters)
+            && !combined.isEmpty()
+            && Character.isHighSurrogate(combined.charAt(combined.length() - 1));
+        if (trimmedSurrogate) {
+            combined = combined.substring(0, combined.length() - 1);
+        }
+        if (truncated) {
+            String marker = TRUNCATION.substring(0, Math.min(remaining, TRUNCATION.length()));
+            addition += marker;
+            combined += marker;
+        }
         String safe = CrashReportFormatter.redactSecrets(combined);
         int settled = CrashReportFormatter.stableRedactedPrefixLength(safe);
         Node nextPrefix = appendSettled(prefix, safe.substring(0, settled));
-        boolean appendOnly = safe.equals(combined);
+        boolean appendOnly = !trimmedSurrogate && safe.equals(combined);
         return new StreamText(nextPrefix, safe.substring(settled), null, "", "", -1,
-            appendOnly ? materialized : null, appendOnly ? addition : null, length);
+            appendOnly ? materialized : null, appendOnly ? addition : null, length,
+            trimmedSurrogate);
     }
 
     StreamText visibleLimit(int maximumCharacters) {
@@ -157,7 +169,7 @@ final class StreamText {
         StreamText result = new StreamText(concat(leaf(safeHeading), stream.node()),
             "", null, safeHeading.contains(marker) ? marker : "", base, stream.length(),
             appendOnly ? existing.materialized : null,
-            appendOnly ? stream.appendedDelta : null, existing.length());
+            appendOnly ? stream.appendedDelta : null, existing.length(), false);
         return result.visibleLimit(maximumCharacters);
     }
 

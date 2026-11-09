@@ -17,12 +17,13 @@ public final class StreamTextTest {
         redactsQuotedPasswordsAcrossEveryChunkBoundary();
         preservesWordBoundariesAndSplitUnicode();
         preservesCompleteUnicodeWhenTruncatingStream();
+        truncatesUnicodeSafelyAcrossChunkBoundaries();
         matchesBoundedStreamAndNullRemoval();
         matchesWholeToolSectionFormatting();
         keepsEarlierSnapshotsImmutableWithoutEagerRendering();
         handlesLongSingleCharacterStreams();
         releasesMatcherInputAfterRedactionAndBoundaryChecks();
-        return 9;
+        return 10;
     }
 
     private static void redactsQuotedPasswordsAcrossEveryChunkBoundary() {
@@ -120,11 +121,40 @@ public final class StreamTextTest {
             "truncating a stream must not leave half an emoji (an unpaired UTF-16 surrogate)");
     }
 
+    private static void truncatesUnicodeSafelyAcrossChunkBoundaries() {
+        String input = "a🌍b😀c ordinary text long enough to require truncation";
+        for (boolean removeNulls : new boolean[] {false, true}) {
+            for (int maximum = 1; maximum <= input.length() + 1; maximum++) {
+                for (int split = 0; split <= input.length(); split++) {
+                    String context = "maximum " + maximum + ", split " + split
+                        + ", removeNulls " + removeNulls;
+                    StreamText first = StreamText.empty().append(
+                        input.substring(0, split), maximum, removeNulls);
+                    String snapshot = first.text();
+                    StreamText result = first.append(input.substring(split), maximum, removeNulls);
+                    String text = result.text();
+
+                    TestSupport.assertTrue(text.length() <= maximum, "bounded Unicode: " + context);
+                    TestSupport.assertTrue(StandardCharsets.UTF_8.newEncoder().canEncode(text),
+                        "whole Unicode after truncation: " + context);
+                    TestSupport.assertEquals(snapshot, first.text(), "immutable snapshot: " + context);
+                    if (input.length() <= maximum) {
+                        assertText(input, result, "Unicode that fits is preserved: " + context);
+                    } else {
+                        TestSupport.assertTrue(result == result.append("😀later", maximum, removeNulls),
+                            "truncated output cannot resume in space freed by an omitted emoji: " + context);
+                    }
+                }
+            }
+        }
+    }
+
     private static void matchesBoundedStreamAndNullRemoval() {
         Random random = new Random(140014L);
+        // Compare legacy BMP behavior here; supplementary characters use the boundary matrix above.
         String[] fragments = {"a", "s", "k-", "cwx_", "eyJ", "abcdefghijk", ".",
             "\n", "\t", "\0", "'", "\"", " ", "Bearer", "password", "=", ":",
-            "api", "key", "openai", "-", "_", "accessToken", "?state=", "&code=", "🌍", "é"};
+            "api", "key", "openai", "-", "_", "accessToken", "?state=", "&code=", "世", "é"};
         for (int maximum : new int[] {1, 3, 8, 19, 33, 128, 1024}) {
             for (boolean card : new boolean[] {false, true}) {
                 for (int replay = 0; replay < 60; replay++) {
