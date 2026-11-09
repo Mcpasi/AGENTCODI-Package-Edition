@@ -1,6 +1,7 @@
 package de.agentcodi.core;
 
 import de.agentcodi.tests.TestSupport;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
@@ -15,12 +16,13 @@ public final class StreamTextTest {
         matchesWholeTextRedactionAcrossEveryChunkBoundary();
         redactsQuotedPasswordsAcrossEveryChunkBoundary();
         preservesWordBoundariesAndSplitUnicode();
+        preservesCompleteUnicodeWhenTruncatingStream();
         matchesBoundedStreamAndNullRemoval();
         matchesWholeToolSectionFormatting();
         keepsEarlierSnapshotsImmutableWithoutEagerRendering();
         handlesLongSingleCharacterStreams();
         releasesMatcherInputAfterRedactionAndBoundaryChecks();
-        return 8;
+        return 9;
     }
 
     private static void redactsQuotedPasswordsAcrossEveryChunkBoundary() {
@@ -100,6 +102,22 @@ public final class StreamTextTest {
                 compareChunks(value, chunk, 4096, false);
             }
         }
+    }
+
+    private static void preservesCompleteUnicodeWhenTruncatingStream() {
+        String prefix = "before ";
+        String marker = "\n… Ausgabe gekürzt …";
+        String delta = prefix + "🌍 and enough ordinary text to exceed the stream limit";
+        // The retained prefix would end between the emoji's two UTF-16 code units.
+        int maximum = prefix.length() + 1 + marker.length();
+        StreamText truncated = StreamText.empty().append(delta, maximum, false);
+        String text = truncated.text();
+
+        TestSupport.assertTrue(text.length() <= maximum, "truncated output respects the limit");
+        TestSupport.assertTrue(text.startsWith(prefix), "text before the emoji is preserved");
+        TestSupport.assertTrue(text.endsWith(marker), "truncated output retains its marker");
+        TestSupport.assertTrue(StandardCharsets.UTF_8.newEncoder().canEncode(text),
+            "truncating a stream must not leave half an emoji (an unpaired UTF-16 surrogate)");
     }
 
     private static void matchesBoundedStreamAndNullRemoval() {
