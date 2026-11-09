@@ -402,7 +402,15 @@ public final class JsonCodec {
             }
             int value = 0;
             for (int offset = 0; offset < 4; offset++) {
-                int digit = Character.digit(input.charAt(index++), 16);
+                char character = input.charAt(index++);
+                int digit = -1;
+                if (isDigit(character)) {
+                    digit = character - '0';
+                } else if (character >= 'a' && character <= 'f') {
+                    digit = character - 'a' + 10;
+                } else if (character >= 'A' && character <= 'F') {
+                    digit = character - 'A' + 10;
+                }
                 if (digit < 0) {
                     fail("Invalid Unicode escape");
                 }

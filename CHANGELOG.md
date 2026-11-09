@@ -4,6 +4,10 @@
 
 ### Fixes
 
+- Reject non-ASCII digits and letters in JSON Unicode escapes instead of
+  silently decoding fullwidth or Arabic-Indic lookalikes. Accept only `0-9`,
+  `a-f` and `A-F`, preserving valid Unicode escapes. Retain the reproduction
+  test confirmed to fail on GitHub.
 - Distinguish file headers from header-shaped content inside diff hunks. Count
   removed SQL comments such as `-- old comment` and spaced increment/decrement
   statements correctly, and apply the same classification to line colors in
@@ -12,6 +16,9 @@
 
 ### Verification
 
+- Local verification of the JSON Unicode-escape fix: **403 Java host tests**,
+  including the unchanged reproduction test confirmed to fail on GitHub, and
+  architecture/source contracts passed.
 - Local verification: **402 Java host tests**, including the unchanged
   reproduction test and hunk-classification regressions, and architecture/source
   contracts passed.
