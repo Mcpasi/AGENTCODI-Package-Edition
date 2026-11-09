@@ -2,10 +2,9 @@
 
 # Signed Package Edition release APK
 
-The [APK Release](../workflows/apk-release.yml) workflow runs on `main` and,
-during integration, `Mcpasi/Fusion_Arch_Termux`. It uses the same container,
-pinned build inputs and verified Arch runtime as the debug build and invokes
-`scripts/build-release-apk.sh`.
+The [APK Release](../workflows/apk-release.yml) workflow runs on `main`. It uses
+the same container, pinned build inputs and verified Arch runtime as the debug
+build and invokes `scripts/build-release-apk.sh`.
 
 **Package Edition 0.1.9 is in preparation.** The maintainer updates the Android
 version metadata before running the APK build on GitHub. The expected versioned
@@ -79,13 +78,11 @@ access is checked before compiler builds. See [repository setup](PACKAGE_EDITION
 
 ## Start the build and download the APK
 
-Select **Actions → APK Release → Run workflow** and choose `main` or, during
-integration, `Mcpasi/Fusion_Arch_Termux`. The branch exception is marked with
-TODO comments and must be removed after the migration. The reusable runtime job
-builds the unchanged Arch Terminal snapshot; the old `source_run_id` and APT
-catalog publication inputs have been removed.
+Select **Actions → APK Release → Run workflow** and choose `main`. The reusable
+runtime job builds the unchanged Arch Terminal snapshot; the old `source_run_id`
+and APT catalog publication inputs have been removed.
 
-Relevant pushes to either allowed branch start the configured builds. Existing
+Relevant pushes to `main` start the configured builds. Existing
 release signing secrets and the private build-input read token keep their names.
 See [repository setup](PACKAGE_EDITION_SETUP.md) for the runtime/source artifacts
 and APK build inputs.

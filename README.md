@@ -22,7 +22,7 @@ Your project files, terminal and development tools run on your device. Codex req
 
 Package Edition can be installed alongside [AGENTCODI Standard Edition](https://github.com/Mcpasi/AGENTCODI). The two apps have separate files, settings and sign-ins.
 
-> **Version note:** Version 0.1.9 is in preparation. It includes [Arch Terminal](https://github.com/Mcpasi/Arch_Terminal) 0.2.0 unchanged, replacing the previous terminal, APT bootstrap and package catalog. The published 0.1.6 APKs use the older APT environment. The Arch instructions in this README apply to new builds from this source branch.
+> **Version note:** Version 0.1.9 is in preparation. It includes [Arch Terminal](https://github.com/Mcpasi/Arch_Terminal) 0.2.0 unchanged, replacing the previous terminal, APT bootstrap and package catalog. The published 0.1.6 APKs use the older APT environment. The Arch instructions in this README apply to new builds from `main`.
 
 ## Screenshots
 
@@ -58,7 +58,7 @@ You'll need **Android 10 or newer**, an **ARM64 (arm64-v8a) device** and an inte
 
 ## Get started
 
-1. For an Arch integration build, download the APK from a successful **APK** or **APK Release** Actions run on `Mcpasi/Fusion_Arch_Termux`. The [published 0.1.6 release](https://github.com/Mcpasi/AGENTCODI-Package-Edition/releases/tag/v.0.1.6.package.3) uses the previous APT environment.
+1. For an Arch integration build, download the APK from a successful **APK** or **APK Release** Actions run on `main`. The [published 0.1.6 release](https://github.com/Mcpasi/AGENTCODI-Package-Edition/releases/tag/v.0.1.6.package.3) uses the previous APT environment.
 2. Open the APK on your device and install it. If Android asks, allow installation from the app you used to download or open the file.
 3. In an Arch integration build, open **Terminal** and choose **Arch installieren / fortsetzen**. The first download is about 791 MiB; allow at least 5 GiB of free internal storage. Then open **Settings** and tap **Start Codex runtime**. You can also use terminal sessions without Codex.
 4. In **Settings**, choose **Sign in with ChatGPT** and complete the sign-in in your browser, or enter an OpenAI API key using the account controls.
@@ -181,7 +181,7 @@ python3 -B .github/ci/test-arch-terminal.py
 bash scripts/check-architecture.sh
 ```
 
-APK builds run on `main` and temporarily on `Mcpasi/Fusion_Arch_Termux`; TODO comments mark the return to main-only builds after integration. The Tests workflow checks all branches and pull requests. A reusable native-runtime job replaces the former APT bootstrap dependency, while the existing APK container and signing path remain. CI checks app identity, DEX, APK contents, ARM64 compatibility, alignment, signing, Arch integration and source and license material.
+APK builds run on `main`. The Tests workflow checks all branches and pull requests. A reusable native-runtime job replaces the former APT bootstrap dependency, while the existing APK container and signing path remain. CI checks app identity, DEX, APK contents, ARM64 compatibility, alignment, signing, Arch integration and source and license material.
 
 </details>
 

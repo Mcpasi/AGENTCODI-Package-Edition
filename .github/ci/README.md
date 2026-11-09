@@ -13,7 +13,7 @@ against `third_party/arch-terminal.lock.json` before use.
 | `scripts/check-architecture.sh` | Module boundaries, app identity/security contracts, pinned upstream and compile-only inputs, retired APT/PTY code and final APK source contract. |
 | `run-java-tests.sh` | Portable Java chat/protocol/approval/file suites, complete quoted-credential masking across streamed chunks and tool sections, plus actual Arch command-wrapper execution, quoting and hardlink rejection. Uses JDK 17. |
 | `run-cpp-tests.sh` | Seven native supervisor, framing, lifecycle and file suites. Uses `host_shell_fixture.cpp` only as a protocol peer. |
-| `test-arch-terminal.py` | Native adapter argv/binds/environment, shared workspace, missing installation, shell lookup, cancellation, immutable upstream sources and temporary branch gates. |
+| `test-arch-terminal.py` | Native adapter argv/binds/environment, shared workspace, missing installation, shell lookup, cancellation, immutable upstream sources and main-only build gates. |
 | `compile-android-sources.sh` | Combined resources and three Java namespaces, every manifest component, Java 8 lambda DEX desugaring and stable APK update signer. CI uses API 35; an installed local platform can be selected with `AGENTCODI_ANDROID_PLATFORM_VERSION`. |
 | `run-chat-ui-tests.sh` | Existing chat/editor views and Arch navigation on Robolectric API 29 and 35. |
 | `scripts/arch-terminal/test-upstream.sh` | Unchanged upstream native, Java, VT emulator and lint tests, in an isolated temporary copy with SDK 36 and NDK r28c. |
@@ -62,9 +62,8 @@ lambda signature stubs; these inputs are excluded from the runtime payload.
 
 ## Branches, secrets and source delivery
 
-Tests run on every branch and PR. APK and reusable runtime builds allow `main`
-and temporarily `Mcpasi/Fusion_Arch_Termux`; TODO comments mark every exception
-for removal after integration. Manual debug runs default to preflight only.
+Tests run on every branch and PR. APK and reusable runtime builds allow only
+`main`. Manual debug runs default to preflight only.
 The old `source_run_id` reuse and APT/Pages publication flows are removed.
 
 Existing `AGENTCODI_INPUTS_TOKEN` and `AGENTCODI_RELEASE_*` secrets retain their

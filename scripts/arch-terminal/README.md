@@ -31,9 +31,7 @@ They are not automatically converted to Arch packages.
 The reusable `bootstrap.yml` workflow builds Arch's native runtime on x86_64 with
 NDK r28c. The existing ARM64 APK container consumes `agentcodi-arch-terminal`
 and otherwise keeps its pinned Codex runtime, toolchain and signing paths.
-Debug and signed-release builds are temporarily enabled for
-`Mcpasi/Fusion_Arch_Termux`; remove that exception after completion and keep
-`main` as the build branch.
+Debug and signed-release builds run on `main`.
 
 Portable tests cover source integrity, argv, quoting, shared paths, environment
 cleanup, default-shell discovery and failure handling. Upstream native and Java

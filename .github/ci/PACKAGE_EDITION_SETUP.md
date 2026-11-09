@@ -3,12 +3,11 @@
 AGENTCODI retains the existing application ID, signing identities, private
 build-input mirror and ARM64 APK build container. The former APT repository,
 package catalog and publication workflows are removed. No Pages deployment or
-APT signing secrets are used by this source branch.
+APT signing secrets are used by builds from `main`.
 
-Debug and signed-release builds run on `main` and temporarily on
-`Mcpasi/Fusion_Arch_Termux`. Push filters and every job/reusable-workflow gate
-carry TODO comments to return to main-only builds after integration. Tests run
-on all branches and pull requests.
+Debug and signed-release builds run on `main`. Push filters and
+job/reusable-workflow gates restrict builds to `main`. Tests run on all
+branches and pull requests.
 
 ## Runtime and APK artifacts
 

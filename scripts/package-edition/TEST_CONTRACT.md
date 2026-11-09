@@ -24,8 +24,7 @@ PTY renderer/session implementation are excluded from this build.
 
 The APK workflow retains its container and signing path. Its reusable bootstrap
 dependency now builds Arch native runtime files instead of APT packages. Debug,
-release and reusable runtime branch gates temporarily allow
-`Mcpasi/Fusion_Arch_Termux`; TODO comments require returning to `main` afterward.
+release and reusable runtime branch gates allow only `main`.
 
 The runtime artifact includes original Arch application/native source archives
 and the complete combined AGENTCODI source bundle. Distribute those archives

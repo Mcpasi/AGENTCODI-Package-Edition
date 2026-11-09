@@ -16,8 +16,6 @@ on:
   push:
     branches:
       - 'main'
-      # TODO: Nach Abschluss der Arch-Integration auf main zurücksetzen.
-      - 'Mcpasi/Fusion_Arch_Termux'
     paths:
       - 'app/**'
       - 'modules/**'
@@ -51,8 +49,7 @@ concurrency:
 jobs:
   build-inputs:
     name: Validate archived build-input access
-    # TODO: Nach Abschluss nur refs/heads/main zulassen.
-    if: github.ref == 'refs/heads/main' || github.ref == 'refs/heads/Mcpasi/Fusion_Arch_Termux'
+    if: github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
     timeout-minutes: 5
     steps:
@@ -65,8 +62,7 @@ jobs:
         run: bash .github/ci/check-build-inputs-access.sh
   bootstrap:
     needs: build-inputs
-    # TODO: Nach Abschluss nur refs/heads/main zulassen.
-    if: github.ref == 'refs/heads/main' || github.ref == 'refs/heads/Mcpasi/Fusion_Arch_Termux'
+    if: github.ref == 'refs/heads/main'
     uses: ./.github/workflows/bootstrap.yml
   apk:
     needs: bootstrap

@@ -95,17 +95,16 @@ class ArchSourceTest(unittest.TestCase):
                 self.assertNotIn("/", name)
                 self.assertEqual(hashlib.sha256((output / name).read_bytes()).hexdigest(), expected)
 
-    def test_branch_build_exception_is_present_at_every_workflow_gate(self):
-        branch = "Mcpasi/Fusion_Arch_Termux"
+    def test_apk_builds_are_limited_to_main(self):
         for name in ("apk.yml", "apk-release.yml", "bootstrap.yml"):
             text = (ROOT / ".github/workflows" / name).read_text()
-            for line in text.splitlines():
-                if "if: github.ref" in line:
-                    self.assertIn("refs/heads/main", line)
-                    self.assertIn("refs/heads/" + branch, line)
-            self.assertIn("TODO:", text)
+            gates = [line.strip() for line in text.splitlines() if "if: github.ref" in line]
+            self.assertTrue(gates, name)
+            for gate in gates:
+                self.assertEqual(gate, "if: github.ref == 'refs/heads/main'", name)
             if name != "bootstrap.yml":
-                self.assertIn("- '" + branch + "'", text)
+                branches = text.split("    branches:\n", 1)[1].split("    paths:\n", 1)[0]
+                self.assertEqual(branches.strip(), "- 'main'", name)
                 self.assertIn("name: agentcodi-arch-terminal", text)
                 self.assertNotIn("agentcodi-package-bootstrap", text)
 
