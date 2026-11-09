@@ -15,7 +15,8 @@ public final class JsonCodecTest {
         rejectsTrailingContent();
         rejectsExcessiveNesting();
         rejectsUnpairedSurrogateEscape();
-        return 6;
+        rejectsNonAsciiUnicodeEscapeDigits();
+        return 7;
     }
 
     private static void parsesAppServerFixture() {
@@ -94,5 +95,30 @@ public final class JsonCodecTest {
             },
             "unpaired JSON surrogate"
         );
+    }
+
+    private static void rejectsNonAsciiUnicodeEscapeDigits() {
+        TestSupport.assertEquals("A", JsonCodec.parse("\"\\u0041\""),
+            "ASCII digits remain valid in Unicode escapes");
+        TestSupport.assertEquals("é", JsonCodec.parse("\"\\u00e9\""),
+            "lowercase ASCII hex letters remain valid in Unicode escapes");
+        TestSupport.assertEquals("é", JsonCodec.parse("\"\\u00E9\""),
+            "uppercase ASCII hex letters remain valid in Unicode escapes");
+
+        // Character.digit accepts these Unicode lookalikes, but JSON hex digits are ASCII.
+        for (final String digits : new String[] {
+            "００４１", "٠٠٤١", "00ＦＦ", "00ｆｆ", "004１"
+        }) {
+            TestSupport.expectThrows(
+                IllegalArgumentException.class,
+                new TestSupport.ThrowingRunnable() {
+                    @Override
+                    public void run() {
+                        JsonCodec.parse("\"\\u" + digits + "\"");
+                    }
+                },
+                "non-ASCII hex digits must be rejected in Unicode escapes: " + digits
+            );
+        }
     }
 }
