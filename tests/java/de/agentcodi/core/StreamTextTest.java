@@ -3,6 +3,7 @@ package de.agentcodi.core;
 import de.agentcodi.tests.TestSupport;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Random;
 import java.lang.reflect.Field;
@@ -20,10 +21,11 @@ public final class StreamTextTest {
         truncatesUnicodeSafelyAcrossChunkBoundaries();
         matchesBoundedStreamAndNullRemoval();
         matchesWholeToolSectionFormatting();
+        preservesCompleteUnicodeWhenClippingToolSections();
         keepsEarlierSnapshotsImmutableWithoutEagerRendering();
         handlesLongSingleCharacterStreams();
         releasesMatcherInputAfterRedactionAndBoundaryChecks();
-        return 10;
+        return 11;
     }
 
     private static void redactsQuotedPasswordsAcrossEveryChunkBoundary() {
@@ -193,6 +195,30 @@ public final class StreamTextTest {
                 }
             }
         }
+    }
+
+    private static void preservesCompleteUnicodeWhenClippingToolSections() {
+        // Match the card-section limit used by CodexSessionController.
+        int maximum = 64 * 1024;
+        String detail = "Arbeitsverzeichnis:\n/workspace";
+        String heading = detail + "\n\nAusgabe:\n";
+        char[] padding = new char[maximum - heading.length() - 1];
+        Arrays.fill(padding, 'x');
+        String prefix = new String(padding);
+        String output = prefix + "🌍 trailing output";
+        StreamText stream = StreamText.empty().append(output, maximum, true)
+            .visibleLimit(maximum);
+        TestSupport.assertEquals(output, stream.text(),
+            "the complete output fits before the tool-section heading is added");
+
+        // Adding the heading leaves room for only the emoji's first UTF-16 code unit.
+        String text = StreamText.section(StreamText.literal(detail), "Ausgabe", stream,
+            maximum).text();
+        TestSupport.assertTrue(text.length() <= maximum, "tool detail respects the card limit");
+        TestSupport.assertTrue(text.startsWith(heading + prefix),
+            "tool metadata and output before the emoji are preserved");
+        TestSupport.assertTrue(StandardCharsets.UTF_8.newEncoder().canEncode(text),
+            "clipping a tool section must not leave half an emoji (an unpaired UTF-16 surrogate)");
     }
 
     private static void keepsEarlierSnapshotsImmutableWithoutEagerRendering() {
