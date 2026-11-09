@@ -4,6 +4,10 @@
 
 ### Fixes
 
+- Keep Unicode characters intact when clipping long tool output to fit a chat
+  card's heading and length limit. Omit an emoji that cannot fit completely
+  instead of retaining half of its surrogate pair. Retain the reproduction
+  test confirmed to fail on GitHub and cover the surrounding character limits.
 - Reject non-ASCII digits and letters in JSON Unicode escapes instead of
   silently decoding fullwidth or Arabic-Indic lookalikes. Accept only `0-9`,
   `a-f` and `A-F`, preserving valid Unicode escapes. Retain the reproduction
@@ -16,6 +20,10 @@
 
 ### Verification
 
+- Local verification of the Unicode tool-section clipping fix: **405 Java host
+  tests**, including the unchanged reproduction test confirmed to fail on
+  GitHub and adjacent Unicode boundary cases, and architecture/source contracts
+  passed.
 - Local verification of the JSON Unicode-escape fix: **403 Java host tests**,
   including the unchanged reproduction test confirmed to fail on GitHub, and
   architecture/source contracts passed.

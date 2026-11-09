@@ -153,8 +153,13 @@ final class StreamText {
             // clipped value again before adding its ellipsis. Preserve that exact order.
             String output = stream.text();
             int remaining = Math.max(0, maximumCharacters - heading.length());
+            int retained = Math.min(output.length(), remaining);
+            // Leave out an emoji that cannot fit both UTF-16 code units.
+            if (retained > 0 && Character.isHighSurrogate(output.charAt(retained - 1))) {
+                retained--;
+            }
             return literal(CrashReportFormatter.redactVisibleText(
-                heading + output.substring(0, Math.min(output.length(), remaining)),
+                heading + output.substring(0, retained),
                 maximumCharacters));
         }
         String safeHeading = CrashReportFormatter.redactSecrets(heading);

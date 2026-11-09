@@ -22,10 +22,11 @@ public final class StreamTextTest {
         matchesBoundedStreamAndNullRemoval();
         matchesWholeToolSectionFormatting();
         preservesCompleteUnicodeWhenClippingToolSections();
+        clipsToolSectionsAtUnicodeBoundaries();
         keepsEarlierSnapshotsImmutableWithoutEagerRendering();
         handlesLongSingleCharacterStreams();
         releasesMatcherInputAfterRedactionAndBoundaryChecks();
-        return 11;
+        return 12;
     }
 
     private static void redactsQuotedPasswordsAcrossEveryChunkBoundary() {
@@ -219,6 +220,29 @@ public final class StreamTextTest {
             "tool metadata and output before the emoji are preserved");
         TestSupport.assertTrue(StandardCharsets.UTF_8.newEncoder().canEncode(text),
             "clipping a tool section must not leave half an emoji (an unpaired UTF-16 surrogate)");
+    }
+
+    private static void clipsToolSectionsAtUnicodeBoundaries() {
+        String detail = "cwd:\n/workspace";
+        String heading = detail + "\n\nAusgabe:\n";
+        String prefix = "output ";
+        String output = prefix + "🌍 after";
+        StreamText existing = StreamText.literal(detail);
+        StreamText stream = StreamText.empty().append(output, 1024, true);
+        int[] available = {0, 1, 2, 3, 8};
+        String[] endings = {"", "", "🌍", "🌍 ", "🌍 after"};
+        for (int index = 0; index < available.length; index++) {
+            int maximum = heading.length() + prefix.length() + available[index];
+            String context = "tool section with " + available[index] + " code units for the emoji and tail";
+            String text = StreamText.section(existing, "Ausgabe", stream, maximum).text();
+            TestSupport.assertEquals(heading + prefix + endings[index], text,
+                "only complete Unicode characters are retained: " + context);
+            TestSupport.assertTrue(text.length() <= maximum, "bounded output: " + context);
+            TestSupport.assertTrue(StandardCharsets.UTF_8.newEncoder().canEncode(text),
+                "valid Unicode: " + context);
+        }
+        assertText(detail, existing, "clipping leaves the original card snapshot unchanged");
+        assertText(output, stream, "clipping leaves the original output stream unchanged");
     }
 
     private static void keepsEarlierSnapshotsImmutableWithoutEagerRendering() {
