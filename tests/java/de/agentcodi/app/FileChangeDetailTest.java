@@ -18,6 +18,7 @@ public final class FileChangeDetailTest {
         keepsRenamedTargetsWithTheirChange();
         countsOnlyRealDiffLines();
         countsIncrementAndDecrementStatementsAsChangedLines();
+        countsRemovedSqlCommentsInsideDiffHunks();
         keepsUnrelatedSectionsVerbatim();
         keepsBlankAndHeadingLikeDiffLinesInsideTheirChange();
         keepsDetailsWithoutFileSectionsUnchanged();
@@ -28,7 +29,7 @@ public final class FileChangeDetailTest {
         readsTheDetailFormatTheCardBuilderWrites();
         rendersEveryChangeThroughTheSharedCard();
         reportsMissingDiffsAsEmptySoTheViewCanLocaliseThem();
-        return 14;
+        return 15;
     }
 
     private static void splitsEveryReportedFileIntoItsOwnSection() {
@@ -158,6 +159,45 @@ public final class FileChangeDetailTest {
         TestSupport.assertEquals(
             FileChangeDetail.LineKind.REMOVED, FileChangeDetail.lineKind("---counter;"),
             "the decrement statement receives removed-line formatting"
+        );
+    }
+
+    private static void countsRemovedSqlCommentsInsideDiffHunks() {
+        // Removing a SQL comment adds a diff marker before its two source-code hyphens.
+        // Inside the hunk, "--- old comment" is content rather than a file header.
+        String diff = "--- a/query.sql\n"
+            + "+++ b/query.sql\n"
+            + "@@ -1,2 +1,2 @@\n"
+            + "--- old comment\n"
+            + "+-- new comment\n"
+            + " SELECT 1;";
+        FileChangeDetail.Projection projection = FileChangeDetail.parse(
+            "ÄNDERN · /workspace/query.sql:\n" + diff
+        );
+        TestSupport.assertEquals(
+            Integer.valueOf(1), Integer.valueOf(projection.getChanges().size()),
+            "the SQL edit remains one file change"
+        );
+        FileChangeDetail.FileChange change = projection.getChanges().get(0);
+        TestSupport.assertEquals(diff, change.getDiff(), "the complete reported diff is retained");
+        TestSupport.assertEquals(
+            Integer.valueOf(1), Integer.valueOf(change.getRemovedLines()),
+            "a removed SQL comment inside a hunk counts as one removed line"
+        );
+        TestSupport.assertEquals(
+            Integer.valueOf(1), Integer.valueOf(change.getAddedLines()),
+            "the replacement comment counts once and the added-file header is excluded"
+        );
+        TestSupport.assertEquals(
+            Integer.valueOf(1), Integer.valueOf(projection.getRemovedLines()),
+            "transcript totals include the removed SQL comment and exclude the file header"
+        );
+        FileChangeDetail.FileChange approval = FileChangeDetail.of(
+            "update", "/workspace/query.sql", "", diff
+        );
+        TestSupport.assertEquals(
+            Integer.valueOf(1), Integer.valueOf(approval.getRemovedLines()),
+            "structured approval changes also count the removed SQL comment"
         );
     }
 
