@@ -1,5 +1,21 @@
 # Package Edition
 
+## 0.1.10 — Package Edition
+
+### Fixes
+
+- Distinguish file headers from header-shaped content inside diff hunks. Count
+  removed SQL comments such as `-- old comment` and spaced increment/decrement
+  statements correctly, and apply the same classification to line colors in
+  chat and approval cards. Keep actual file headers out of the change counts.
+  Retain the reproduction test confirmed to fail on GitHub.
+
+### Verification
+
+- Local verification: **402 Java host tests**, including the unchanged
+  reproduction test and hunk-classification regressions, and architecture/source
+  contracts passed.
+
 ## 0.1.9 — Package Edition — Tested and stable
 
 **Successfully tested and stable.**

@@ -3,6 +3,8 @@ package de.agentcodi.app;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 /**
  * Pure projection of a bounded file-change card detail into one section per changed file so
@@ -37,6 +39,9 @@ final class FileChangeDetail {
     private static final String MOVE_SEPARATOR = " → ";
     private static final int MAX_CHANGES = 24;
     private static final int MAX_FIELD_LABEL_CHARACTERS = 64;
+    private static final Pattern HUNK_HEADER = Pattern.compile(
+        "@@ -[0-9]+(?:,([0-9]+))? \\+[0-9]+(?:,([0-9]+))? @@"
+    );
     private static final Projection EMPTY = new Projection(
         Collections.<FileChange>emptyList(), ""
     );
@@ -59,8 +64,9 @@ final class FileChangeDetail {
             this.diff = diff;
             int added = 0;
             int removed = 0;
+            DiffLineClassifier classifier = new DiffLineClassifier();
             for (String line : splitLines(diff)) {
-                LineKind lineKind = lineKind(line);
+                LineKind lineKind = classifier.classify(line);
                 if (lineKind == LineKind.ADDED) {
                     added++;
                 } else if (lineKind == LineKind.REMOVED) {
@@ -181,6 +187,59 @@ final class FileChangeDetail {
         );
     }
 
+    /** Shared by the counters and renderer; header-shaped lines inside hunks are content. */
+    static final class DiffLineClassifier {
+        private boolean inHunk;
+        private long oldRemaining;
+        private long newRemaining;
+
+        LineKind classify(String line) {
+            LineKind kind = lineKind(line);
+            if (kind == LineKind.HUNK) {
+                beginHunk(line);
+                return kind;
+            }
+            if (!inHunk || line == null || line.isEmpty()) {
+                return kind;
+            }
+            char marker = line.charAt(0);
+            if (marker == '\\') {
+                // The missing-newline annotation consumes no source lines.
+                return kind;
+            }
+            if (marker != '+' && marker != '-' && marker != ' ') {
+                inHunk = false;
+                return kind;
+            }
+            if (marker != '+' && oldRemaining > 0) {
+                oldRemaining--;
+            }
+            if (marker != '-' && newRemaining > 0) {
+                newRemaining--;
+            }
+            inHunk = oldRemaining != 0 || newRemaining != 0;
+            return marker == '+' ? LineKind.ADDED
+                : marker == '-' ? LineKind.REMOVED : LineKind.CONTEXT;
+        }
+
+        private void beginHunk(String line) {
+            oldRemaining = -1;
+            newRemaining = -1;
+            Matcher header = HUNK_HEADER.matcher(line);
+            if (header.lookingAt()) {
+                try {
+                    oldRemaining = header.group(1) == null ? 1 : Long.parseLong(header.group(1));
+                    newRemaining = header.group(2) == null ? 1 : Long.parseLong(header.group(2));
+                } catch (NumberFormatException ignored) {
+                    oldRemaining = -1;
+                    newRemaining = -1;
+                }
+            }
+            // Abbreviated or incomplete ranges keep their context until new metadata.
+            inHunk = oldRemaining != 0 || newRemaining != 0;
+        }
+    }
+
     static LineKind lineKind(String line) {
         if (line == null || line.isEmpty()) {
             return LineKind.CONTEXT;
@@ -188,7 +247,7 @@ final class FileChangeDetail {
         if (line.startsWith("@@")) {
             return LineKind.HUNK;
         }
-        // File headers separate the marker from the path with a space.
+        // Outside hunks, file headers separate the marker from the path with a space.
         if (line.startsWith("+++ ") || line.startsWith("--- ")
             || line.startsWith("diff ")
             || line.startsWith("index ")

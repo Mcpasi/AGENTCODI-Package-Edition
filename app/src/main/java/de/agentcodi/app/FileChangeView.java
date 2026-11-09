@@ -160,11 +160,12 @@ final class FileChangeView extends LinearLayout {
     /** Colors a unified diff line by line and keeps every reported character visible. */
     static CharSequence diffText(UiTheme theme, String value) {
         SpannableStringBuilder text = new SpannableStringBuilder(value);
+        FileChangeDetail.DiffLineClassifier classifier = new FileChangeDetail.DiffLineClassifier();
         int lineStart = 0;
         while (lineStart <= value.length()) {
             int newline = value.indexOf('\n', lineStart);
             int lineEnd = newline < 0 ? value.length() : newline;
-            FileChangeDetail.LineKind kind = FileChangeDetail.lineKind(
+            FileChangeDetail.LineKind kind = classifier.classify(
                 value.substring(lineStart, lineEnd)
             );
             int spanEnd = newline < 0 ? lineEnd : lineEnd + 1;

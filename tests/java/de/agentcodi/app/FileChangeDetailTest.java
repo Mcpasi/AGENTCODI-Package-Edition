@@ -19,6 +19,8 @@ public final class FileChangeDetailTest {
         countsOnlyRealDiffLines();
         countsIncrementAndDecrementStatementsAsChangedLines();
         countsRemovedSqlCommentsInsideDiffHunks();
+        distinguishesHunkContentFromFollowingFileHeaders();
+        toleratesAbbreviatedAndOversizedHunkRanges();
         keepsUnrelatedSectionsVerbatim();
         keepsBlankAndHeadingLikeDiffLinesInsideTheirChange();
         keepsDetailsWithoutFileSectionsUnchanged();
@@ -29,7 +31,7 @@ public final class FileChangeDetailTest {
         readsTheDetailFormatTheCardBuilderWrites();
         rendersEveryChangeThroughTheSharedCard();
         reportsMissingDiffsAsEmptySoTheViewCanLocaliseThem();
-        return 15;
+        return 17;
     }
 
     private static void splitsEveryReportedFileIntoItsOwnSection() {
@@ -199,6 +201,56 @@ public final class FileChangeDetailTest {
             Integer.valueOf(1), Integer.valueOf(approval.getRemovedLines()),
             "structured approval changes also count the removed SQL comment"
         );
+    }
+
+    private static void distinguishesHunkContentFromFollowingFileHeaders() {
+        String[] lines = {
+            "--- a/counter.cpp", "+++ b/counter.cpp", "@@ -1,2 +1,2 @@ counter()",
+            "--- counter;", "+++ counter;", " context",
+            "--- a/added.cpp", "+++ b/added.cpp", "@@ -0,0 +1 @@", "+++ nextCounter;",
+            "--- a/deleted.sql", "+++ /dev/null", "@@ -1 +0,0 @@", "--- deleted comment",
+            "\\ No newline at end of file"
+        };
+        FileChangeDetail.LineKind[] expected = {
+            FileChangeDetail.LineKind.META, FileChangeDetail.LineKind.META,
+            FileChangeDetail.LineKind.HUNK, FileChangeDetail.LineKind.REMOVED,
+            FileChangeDetail.LineKind.ADDED, FileChangeDetail.LineKind.CONTEXT,
+            FileChangeDetail.LineKind.META, FileChangeDetail.LineKind.META,
+            FileChangeDetail.LineKind.HUNK, FileChangeDetail.LineKind.ADDED,
+            FileChangeDetail.LineKind.META, FileChangeDetail.LineKind.META,
+            FileChangeDetail.LineKind.HUNK, FileChangeDetail.LineKind.REMOVED,
+            FileChangeDetail.LineKind.META
+        };
+        FileChangeDetail.DiffLineClassifier classifier = new FileChangeDetail.DiffLineClassifier();
+        for (int index = 0; index < lines.length; index++) {
+            TestSupport.assertEquals(expected[index], classifier.classify(lines[index]),
+                "rendering distinguishes content from metadata at line " + index);
+        }
+        FileChangeDetail.FileChange change = FileChangeDetail.of(
+            "update", "/workspace/changes", "", String.join("\n", lines)
+        );
+        TestSupport.assertEquals(Integer.valueOf(2), Integer.valueOf(change.getAddedLines()),
+            "hunk ranges exclude later file headers from addition counts");
+        TestSupport.assertEquals(Integer.valueOf(2), Integer.valueOf(change.getRemovedLines()),
+            "hunk ranges exclude later file headers from removal counts");
+    }
+
+    private static void toleratesAbbreviatedAndOversizedHunkRanges() {
+        for (String header : new String[] {"@@", "@@ -1,999999999999999999999 +1 @@"}) {
+            FileChangeDetail.DiffLineClassifier classifier = new FileChangeDetail.DiffLineClassifier();
+            TestSupport.assertEquals(FileChangeDetail.LineKind.HUNK, classifier.classify(header),
+                "incomplete or oversized hunk ranges remain readable");
+            TestSupport.assertEquals(FileChangeDetail.LineKind.REMOVED,
+                classifier.classify("--- old comment"), "a shortened hunk still contains removed text");
+            TestSupport.assertEquals(FileChangeDetail.LineKind.META,
+                classifier.classify("\\ No newline at end of file"), "annotations remain metadata");
+            TestSupport.assertEquals(FileChangeDetail.LineKind.ADDED,
+                classifier.classify("+++ counter;"), "annotations retain the current hunk context");
+            TestSupport.assertEquals(FileChangeDetail.LineKind.META,
+                classifier.classify("diff --git a/next b/next"), "a new diff ends incomplete hunk context");
+            TestSupport.assertEquals(FileChangeDetail.LineKind.META,
+                classifier.classify("--- a/next"), "the next file header remains metadata");
+        }
     }
 
     private static void keepsUnrelatedSectionsVerbatim() {
@@ -437,7 +489,7 @@ public final class FileChangeDetailTest {
         String view = read("app/src/main/java/de/agentcodi/app/FileChangeView.java");
         TestSupport.assertContains(
             view,
-            "FileChangeDetail.lineKind(",
+            "new FileChangeDetail.DiffLineClassifier()",
             "diff lines are colored by their reported kind"
         );
 
