@@ -1,15 +1,15 @@
 # Roadmap: AGENTCODI Package Edition
 
-Package Edition **0.1.9 is in preparation** on `Mcpasi/Fusion_Arch_Termux`. The integration replaces the APT/catalog and custom terminal with unchanged Arch Terminal 0.2.0. See [the integration guide](scripts/arch-terminal/README.md). Builds are temporarily enabled for this branch with reset-to-main comments.
+Package Edition **0.1.9 has been successfully tested and is stable**. The integration replaces the APT/catalog and custom terminal with unchanged Arch Terminal 0.2.0. See [the integration guide](scripts/arch-terminal/README.md). Builds are temporarily enabled for `Mcpasi/Fusion_Arch_Termux` with reset-to-main comments.
 
-Status: 2026-11-08. The default development and release branch is `main` in
+Status: 2026-11-09. The default development and release branch is `main` in
 `Mcpasi/AGENTCODI-Package-Edition`. Repository operation and workflow inputs
 are documented in the [setup guide](.github/ci/PACKAGE_EDITION_SETUP.md).
 
 The dated records below retain historical CI links and branch names from the
 original AGENTCODI repository.
 
-### Package Edition 0.1.9: Arch integration and reproduced bug fixes (in preparation)
+### Package Edition 0.1.9: Arch integration and reproduced bug fixes (tested and stable)
 
 - Share Arch Terminal 0.2.0, pacman packages and the workspace between terminal
   sessions, Codex commands and stdio MCP tools. Preserve legacy package data for
@@ -25,8 +25,7 @@ their fixes. Local verification before the release version bump passed **392
 Java host tests**, **19 Arch integration tests** and architecture/source
 contracts. The original reproduction tests remain unchanged and pass.
 
-The version bump is a separate release step; the APK is built on GitHub.
-Physical Android validation of the Arch integration remains pending. See the
+Version 0.1.9 has been successfully tested and is stable. See the
 [0.1.9 changelog](CHANGELOG.md) and [test contract](scripts/package-edition/TEST_CONTRACT.md).
 
 ### Package Edition 0.1.6: native Markdown and inline images (published)

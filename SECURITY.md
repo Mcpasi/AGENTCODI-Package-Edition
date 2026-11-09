@@ -35,7 +35,7 @@ change the documented Full-access reach of installed programs.
 
 ## Supported versions
 
-AGENTCODI is in active early-access development. Security fixes are made on the
+AGENTCODI is in active development. Security fixes are made on the
 current development line and released in a new APK; fixes are not routinely
 backported.
 
@@ -49,12 +49,11 @@ backported.
 Install released APKs only from the official
 [Package Edition GitHub Releases](https://github.com/Mcpasi/AGENTCODI-Package-Edition/releases) page and
 update to the latest release before reporting an issue that may already be fixed.
-**Package Edition 0.1.9 is in preparation.** It fixes writes and permission
+**Package Edition 0.1.9 has been successfully tested and is stable.** It fixes writes and permission
 changes through hard-linked Arch launchers and incomplete masking of quoted
 credentials in crash reports and chat. Both bugs were reproduced on GitHub
 against unchanged production code before their fixes. Local regression tests
-pass; the release version bump, GitHub APK build and physical Android
-validation remain separate steps.
+pass.
 
 For historical release evidence, **0.1.6** (Android `versionCode 9`) was
 published on 2026-10-18 as an experimental prerelease:

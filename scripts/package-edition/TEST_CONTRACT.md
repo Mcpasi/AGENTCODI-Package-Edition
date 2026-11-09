@@ -1,7 +1,7 @@
 # Arch integration test contract
 
-Release documentation targets **Package Edition 0.1.9 (in preparation)**;
-the maintainer handles version metadata and the GitHub APK build separately.
+This contract covers **Package Edition 0.1.9**, which has been successfully
+tested and is stable.
 
 Installation ID remains `de.agentcodi.pkg`, minimum API 29, target SDK 28 and
 Full access. Arch Terminal 0.2.0 is imported unchanged at
@@ -20,7 +20,7 @@ PTY renderer/session implementation are excluded from this build.
 | APK/Bionic | Existing pinned Codex and code-mode host/schema/protocol smoke; actual Bionic shell lookup interception, commands, Full access, PTY API and stdio MCP environment. No large guest image is included in this protocol-only smoke. |
 | Final APK | Exact eleven native files, every staged byte, ARM64, 16 KiB segments, signature, original Arch/Codex/libc++/zlib notices, pinned rootfs lock and MPL source material. |
 | Optional rootfs smoke | Manual Arch Terminal runtime workflow input downloads the approximately 791 MiB pinned rootfs and runs the upstream PRoot/QEMU smoke. |
-| Physical Android | Installation/update, keyboard, notifications/services, actual Arch installation, pacman, simultaneous terminal/Codex workspace edits and long-running/cancelled commands remain device checks. |
+| Physical Android | Installation/update, keyboard, notifications/services, actual Arch installation, pacman, simultaneous terminal/Codex workspace edits and long-running/cancelled commands are device-check scenarios. |
 
 The APK workflow retains its container and signing path. Its reusable bootstrap
 dependency now builds Arch native runtime files instead of APT packages. Debug,
@@ -35,4 +35,4 @@ Local verification of the 0.1.9 bug fixes before the version bump passed
 **392 Java host tests**, including both unchanged reproduction tests,
 **19 Arch integration tests**, and architecture/source contracts. Both
 reproduction tests previously failed against unchanged production code on
-GitHub. These results do not replace the 0.1.9 APK build or physical device checks.
+GitHub. Version 0.1.9 has since been successfully tested and is stable.

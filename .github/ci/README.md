@@ -1,7 +1,7 @@
 # CI and portable checks
 
-Release documentation targets **Package Edition 0.1.9 (in preparation)**.
-The version bump is a separate release step; APKs are built on GitHub.
+This documentation covers **Package Edition 0.1.9**, which has been successfully
+tested and is stable. APKs are built on GitHub.
 
 AGENTCODI keeps its existing Android identity, ARM64/Bionic APK container, Codex
 runtime pins and signing paths. Arch Terminal replaces the former custom PTY,

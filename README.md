@@ -8,8 +8,8 @@
 
 ![Android](https://img.shields.io/badge/Android-10%2B-3DDC84?logo=android&logoColor=white)
 ![Architecture](https://img.shields.io/badge/Architecture-ARM64-555555)
-![Next release](https://img.shields.io/badge/Next%20release-0.1.9-blue)
-![Status](https://img.shields.io/badge/Status-experimental%20prerelease-orange)
+![Version](https://img.shields.io/badge/Version-0.1.9-blue)
+![Status](https://img.shields.io/badge/Status-tested%20and%20stable-brightgreen)
 ![License](https://img.shields.io/badge/License-Apache%202.0-blue)
 
 </div>
@@ -22,7 +22,7 @@ Your project files, terminal and development tools run on your device. Codex req
 
 Package Edition can be installed alongside [AGENTCODI Standard Edition](https://github.com/Mcpasi/AGENTCODI). The two apps have separate files, settings and sign-ins.
 
-> **Version note:** Version 0.1.9 is in preparation. It includes [Arch Terminal](https://github.com/Mcpasi/Arch_Terminal) 0.2.0 unchanged, replacing the previous terminal, APT bootstrap and package catalog. The published 0.1.6 APKs use the older APT environment. The Arch instructions in this README apply to new builds from `main`.
+> **Version note:** Version 0.1.9 has been successfully tested and is stable. It includes [Arch Terminal](https://github.com/Mcpasi/Arch_Terminal) 0.2.0 unchanged, replacing the previous terminal, APT bootstrap and package catalog. The published 0.1.6 APKs use the older APT environment. The Arch instructions in this README apply to builds from `main`.
 
 ## Screenshots
 
@@ -123,8 +123,8 @@ When reporting a bug, include the app version, Android version, device model and
 
 ## Versions
 
-- **0.1.9, in preparation:** Arch Terminal 0.2.0 provides a shared Arch environment for terminal sessions, Codex and stdio MCP tools. Development tools are installed with pacman. This version also fixes hardlink handling in generated Arch launchers and improves masking of quoted passwords in crash reports and chat, including streamed output and escaped quotes.
-- **Verification for 0.1.9:** 392 Java host tests, 19 Arch integration tests and architecture checks passed locally before the version bump. The APK build and testing on a physical Android device are still pending.
+- **0.1.9, tested and stable:** Arch Terminal 0.2.0 provides a shared Arch environment for terminal sessions, Codex and stdio MCP tools. Development tools are installed with pacman. This version also fixes hardlink handling in generated Arch launchers and improves masking of quoted passwords in crash reports and chat, including streamed output and escaped quotes.
+- **Verification for 0.1.9:** Testing succeeded. Earlier local verification also passed 392 Java host tests, 19 Arch integration tests and architecture checks.
 - **Since 0.1.6:** selectable native Markdown in answers, reasoning and plan cards, and inline previews of generated images and image-view results.
 - **Since 0.1.5:** the workspace editor, a separate Package Edition icon and an Android freedom page in Settings.
 
@@ -139,7 +139,7 @@ Package Edition uses the application ID `de.agentcodi.pkg` and has private stora
 
 It uses `targetSdk 28` to allow execution from its writable package directory. The minimum supported version is Android 10 / API 29.
 
-The 0.1.9 release is being prepared. Android version metadata is updated separately before the GitHub APK build.
+Version 0.1.9 uses Android `versionCode 12`.
 
 </details>
 

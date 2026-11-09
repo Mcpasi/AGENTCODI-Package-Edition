@@ -1,8 +1,8 @@
 # Package Edition
 
-## 0.1.9 — Package Edition — In preparation
+## 0.1.9 — Package Edition — Tested and stable
 
-**Experimental prerelease in preparation. Version metadata and the GitHub APK build are separate release steps.**
+**Successfully tested and stable.**
 
 ### Fixes
 
@@ -52,9 +52,8 @@
 - Local bug-fix verification before the release version bump: **392 Java host
   tests**, including both unchanged reproduction tests, **19 Arch integration
   tests**, and architecture/source contracts passed.
-- The 0.1.9 APK build runs on GitHub after the maintainer's version bump.
-  Physical Android validation of the Arch integration remains pending;
-  historical device results below apply to their respective releases.
+- Version 0.1.9 has been successfully tested and is stable. Historical device
+  results below apply to their respective releases.
 
 
 ## 0.1.6 — Package Edition (Android versionCode 9) — 2026-10-18

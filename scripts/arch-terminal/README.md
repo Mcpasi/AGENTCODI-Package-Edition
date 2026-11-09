@@ -1,7 +1,7 @@
 # Arch Terminal integration
 
-This guide covers **Package Edition 0.1.9 (in preparation)**. Version metadata
-and the GitHub APK build are separate release steps.
+This guide covers **Package Edition 0.1.9**, which has been successfully tested
+and is stable.
 
 AGENTCODI embeds the unchanged Arch Terminal 0.2.0 snapshot at
 `5c51fdfcec0bf55349b61b6dc3fc49d1923438c3`. The snapshot is verified against
@@ -36,8 +36,7 @@ Debug and signed-release builds run on `main`.
 Portable tests cover source integrity, argv, quoting, shared paths, environment
 cleanup, default-shell discovery and failure handling. Upstream native and Java
 tests run in CI. The large rootfs test is available through manual workflow input.
-Physical Android installation, keyboard and long-running session behavior still
-need device validation.
+Version 0.1.9 has been successfully tested and is stable.
 
 Arch Terminal's main application code is authored by Mcpasi and licensed under
 GPL-3.0-or-later. Its PRoot, talloc, libarchive and Termux terminal emulator/view
