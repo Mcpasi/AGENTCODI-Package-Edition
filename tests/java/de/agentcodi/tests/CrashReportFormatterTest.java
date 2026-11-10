@@ -1,6 +1,8 @@
 package de.agentcodi.tests;
 
 import de.agentcodi.core.CrashReportFormatter;
+import java.nio.charset.StandardCharsets;
+import java.util.Arrays;
 import java.util.concurrent.atomic.AtomicReference;
 
 public final class CrashReportFormatterTest {
@@ -14,9 +16,10 @@ public final class CrashReportFormatterTest {
         redactsQuotedSecretsWithEscapesAndUnfinishedValues();
         redactsWholeQuotedPasswordsInReportsAndChat();
         redactsVisibleTextBeforeTruncation();
+        preservesCompleteUnicodeWhenTruncatingVisibleText();
         handlesCauseCycles();
         keepsConcurrentRedactionIndependent();
-        return 8;
+        return 9;
     }
 
     private static void redactsQuotedSecretsWithEscapesAndUnfinishedValues() {
@@ -159,5 +162,30 @@ public final class CrashReportFormatterTest {
             8
         );
         TestSupport.assertEquals("01234...", truncated, "visible text limit is exact");
+    }
+
+    private static void preservesCompleteUnicodeWhenTruncatingVisibleText() {
+        TestSupport.assertEquals("🌍", CrashReportFormatter.redactVisibleText("🌍", 2),
+            "an emoji that fits remains intact");
+        TestSupport.assertEquals("a🌍...", CrashReportFormatter.redactVisibleText("a🌍 trailing", 6),
+            "truncation after a complete emoji preserves it and the ellipsis");
+
+        // Chat error messages use 180 characters; redact() uses 4096.
+        for (int maximum : new int[] {180, 4096, 1, 2, 3, 4, 8}) {
+            String marker = maximum <= 3 ? "" : "...";
+            char[] padding = new char[maximum - marker.length() - 1];
+            Arrays.fill(padding, 'x');
+            String prefix = new String(padding);
+            // Only the high surrogate would fit before the existing truncation marker.
+            String truncated = CrashReportFormatter.redactVisibleText(
+                prefix + "🌍 trailing", maximum);
+
+            TestSupport.assertTrue(truncated.length() <= maximum,
+                "visible Unicode text respects the limit: " + maximum);
+            TestSupport.assertTrue(StandardCharsets.UTF_8.newEncoder().canEncode(truncated),
+                "visible text truncation must not split an emoji at limit " + maximum);
+            TestSupport.assertEquals(prefix + marker, truncated,
+                "an emoji that cannot fit is omitted without losing preceding text: " + maximum);
+        }
     }
 }
