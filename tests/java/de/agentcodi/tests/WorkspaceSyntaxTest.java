@@ -26,6 +26,9 @@ public final class WorkspaceSyntaxTest {
         pythonEscapedCrLfStaysInsideStrings();
         pythonFormattedExpressionsAndDecorators();
         pythonFormattedHexSpecifierDoesNotStartComment();
+        pythonFormattedSpecifiersKeepLiteralText();
+        pythonFormattedSpecifiersHighlightNestedFields();
+        pythonFormattedExpressionsKeepColonsAndComments();
         pythonKeywordsFunctionsAndNumbers();
         htmlAttributesEntitiesAndComments();
         htmlEmbeddedLanguagesAndRawText();
@@ -39,7 +42,7 @@ public final class WorkspaceSyntaxTest {
         cancelsSupersededWork();
         countsLogicalLinesAndCursorOffsets();
         indexesManyLinesAndRejectsInvalidOffsets();
-        return 23;
+        return 26;
     }
 
     private static void detectsOnlySupportedFileNames() {
@@ -171,6 +174,60 @@ public final class WorkspaceSyntaxTest {
         token(PYTHON, text, " tail\"", STRING);
         token(PYTHON, text, "print", BUILTIN);
         token(PYTHON, text, "# real comment", COMMENT);
+        ranges(PYTHON, text);
+    }
+
+    private static void pythonFormattedSpecifiersKeepLiteralText() {
+        for (String prefix : new String[] {"f", "F", "fr", "rf"}) {
+            for (String specifier : new String[] {"#x", "#010X", "#o", "#b", "#.0f", "#>10"}) {
+                String text = "message = " + prefix + "\"number {255:" + specifier
+                    + "} tail\"\nprint(message) # real comment";
+                token(PYTHON, text, specifier, STRING);
+                token(PYTHON, text, "255", NUMBER);
+                token(PYTHON, text, " tail\"", STRING);
+                token(PYTHON, text, "# real comment", COMMENT);
+                ranges(PYTHON, text);
+            }
+        }
+    }
+
+    private static void pythonFormattedSpecifiersHighlightNestedFields() {
+        String text = "message = f\"number {255:#0{len(values)}x} tail\"\nprint(message)";
+        token(PYTHON, text, "#0", STRING);
+        token(PYTHON, text, "len", BUILTIN);
+        token(PYTHON, text, "x", STRING);
+        token(PYTHON, text, " tail\"", STRING);
+        token(PYTHON, text, "print", BUILTIN);
+        ranges(PYTHON, text);
+        String nested = "f\"number {255:{width:#x}} tail\"";
+        token(PYTHON, nested, "#x", STRING);
+        token(PYTHON, nested, " tail\"", STRING);
+        ranges(PYTHON, nested);
+        for (String unfinished : new String[] {"f\"{255:", "f\"{255:#x", "f\"{255:#0{len("}) {
+            ranges(PYTHON, unfinished);
+        }
+        String deep = "f\"";
+        for (int index = 0; index < 200; index++) { deep += "{255:#0"; }
+        ranges(PYTHON, deep);
+    }
+
+    private static void pythonFormattedExpressionsKeepColonsAndComments() {
+        for (String expression : new String[] {
+            "len(items[1:3])", " {'value': len(items[1:3])}",
+            "(lambda values: len(values[1:3]))(items)"
+        }) {
+            String text = "f\"{" + expression + ":#>20} tail\"";
+            token(PYTHON, text, "len", BUILTIN);
+            token(PYTHON, text, "1", NUMBER);
+            token(PYTHON, text, "3", NUMBER);
+            token(PYTHON, text, "#>20", STRING);
+            token(PYTHON, text, " tail\"", STRING);
+            ranges(PYTHON, text);
+        }
+        String text = "f\"\"\"{(255 # expression comment\n):#x} tail\"\"\"";
+        token(PYTHON, text, "# expression comment", COMMENT);
+        token(PYTHON, text, "#x", STRING);
+        token(PYTHON, text, " tail\"\"\"", STRING);
         ranges(PYTHON, text);
     }
 

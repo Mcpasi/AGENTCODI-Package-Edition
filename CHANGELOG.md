@@ -4,6 +4,10 @@
 
 ### Fixes
 
+- Highlight Python f-string format specifiers such as `#x` as literal format
+  text in the editor instead of treating them as comments. Preserve highlighting
+  of the remaining string, nested replacement fields and genuine Python
+  comments. Retain the reproduction test confirmed to fail on GitHub.
 - Keep Unicode characters intact when truncating redacted error messages in
   chat and crash reports. Omit an emoji that cannot fit completely, including
   character limits too small for an ellipsis. Retain the reproduction test
@@ -24,6 +28,10 @@
 
 ### Verification
 
+- Local verification of the Python f-string highlighting fix: **410 Java host
+  tests**, including the unchanged reproduction test confirmed to fail on
+  GitHub, format-specifier variants, nested fields and expression regressions,
+  and architecture/source contracts passed.
 - Local verification of the Unicode error-message truncation fix: **406 Java
   host tests**, including the unchanged reproduction test confirmed to fail
   on GitHub, and architecture/source contracts passed.

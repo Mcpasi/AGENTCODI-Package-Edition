@@ -19,7 +19,7 @@ final class PythonLexer {
     }
 
     private static int code(SyntaxScanner source, int start, int end, boolean interpolation, int depth) {
-        int braces = 0;
+        int nesting = 0;
         int cursor = start;
         for (; cursor < end;) {
             source.checkCancelled(cursor);
@@ -62,9 +62,15 @@ final class PythonLexer {
                     || source.text.charAt(next) == '.')) { next++; }
                 source.add(cursor, next, FUNCTION);
             } else {
-                if (value == '}' && interpolation && braces == 0) { return cursor; }
-                if (value == '{') { braces++; }
-                if (value == '}') { braces--; }
+                if (interpolation && nesting == 0) {
+                    if (value == '}') { return cursor; }
+                    if (value == ':') {
+                        source.add(cursor, next, OPERATOR);
+                        return formatSpecifier(source, next, end, depth);
+                    }
+                }
+                if (value == '{' || value == '[' || value == '(') { nesting++; }
+                if ((value == '}' || value == ']' || value == ')') && nesting > 0) { nesting--; }
                 source.add(cursor, next, OPERATOR);
             }
             cursor = next;
@@ -77,6 +83,27 @@ final class PythonLexer {
         boolean triple = start + 2 < end && source.text.charAt(start + 1) == quote
             && source.text.charAt(start + 2) == quote;
         return source.quoted(start, end, triple ? 3 : 1, triple, raw);
+    }
+
+    /** Format text is literal, including #; only nested replacement fields contain Python code. */
+    private static int formatSpecifier(SyntaxScanner source, int start, int end, int depth) {
+        int chunk = start;
+        int cursor = start;
+        while (cursor < end) {
+            source.checkCancelled(cursor);
+            char value = source.text.charAt(cursor);
+            if (value == '}') { break; }
+            if (value == '{' && depth < 64) {
+                source.add(chunk, cursor, STRING);
+                source.add(cursor, cursor + 1, OPERATOR);
+                cursor = code(source, cursor + 1, end, true, depth + 1);
+                if (cursor == end) { return end; }
+                source.add(cursor, cursor + 1, OPERATOR);
+                chunk = ++cursor;
+            } else { cursor++; }
+        }
+        source.add(chunk, cursor, STRING);
+        return cursor;
     }
 
     private static int formatted(SyntaxScanner source, int start, int quoteStart, int end, int depth) {
