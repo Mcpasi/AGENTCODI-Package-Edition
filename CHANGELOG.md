@@ -2,6 +2,8 @@
 
 ## 0.1.10 — Package Edition
 
+tested and stable
+
 ### Fixes
 
 - Highlight Python f-string format specifiers such as `#x` as literal format
