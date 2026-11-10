@@ -19,6 +19,7 @@ public final class StreamTextTest {
         preservesWordBoundariesAndSplitUnicode();
         preservesCompleteUnicodeWhenTruncatingStream();
         truncatesUnicodeSafelyAcrossChunkBoundaries();
+        preservesCompleteUnicodeWhenRedactionExceedsVisibleLimit();
         matchesBoundedStreamAndNullRemoval();
         matchesWholeToolSectionFormatting();
         preservesCompleteUnicodeWhenClippingToolSections();
@@ -26,7 +27,7 @@ public final class StreamTextTest {
         keepsEarlierSnapshotsImmutableWithoutEagerRendering();
         handlesLongSingleCharacterStreams();
         releasesMatcherInputAfterRedactionAndBoundaryChecks();
-        return 12;
+        return 13;
     }
 
     private static void redactsQuotedPasswordsAcrossEveryChunkBoundary() {
@@ -150,6 +151,31 @@ public final class StreamTextTest {
                 }
             }
         }
+    }
+
+    private static void preservesCompleteUnicodeWhenRedactionExceedsVisibleLimit() {
+        int maximum = 64 * 1024;
+        String redactedPassword = "password=<redacted> ";
+        char[] padding = new char[maximum - 4 - redactedPassword.length()];
+        Arrays.fill(padding, 'x');
+        String prefix = new String(padding);
+        String input = "password=x " + prefix + "🌍 trailing";
+        TestSupport.assertTrue(input.length() <= maximum,
+            "the complete incoming delta fits before secret redaction");
+
+        // Masking the one-character password grows the text beyond the card limit.
+        // Reserving three characters for "..." then cuts between the emoji's surrogates.
+        StreamText stream = StreamText.empty().append(input, maximum, true);
+        StreamText clipped = stream.visibleLimit(maximum);
+        String text = clipped.text();
+        TestSupport.assertTrue(text.length() <= maximum,
+            "output after secret redaction respects the visible limit");
+        TestSupport.assertTrue(StandardCharsets.UTF_8.newEncoder().canEncode(text),
+            "visible-limit clipping after secret redaction must not split an emoji");
+        assertText(redactedPassword + prefix + "...", clipped,
+            "clipping preserves the redacted password, complete characters and ellipsis");
+        assertText(redactedPassword + prefix + "🌍 trailing", stream,
+            "clipping leaves the original stream snapshot unchanged");
     }
 
     private static void matchesBoundedStreamAndNullRemoval() {
