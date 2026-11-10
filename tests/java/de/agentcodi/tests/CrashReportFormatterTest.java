@@ -17,9 +17,10 @@ public final class CrashReportFormatterTest {
         redactsWholeQuotedPasswordsInReportsAndChat();
         redactsVisibleTextBeforeTruncation();
         preservesCompleteUnicodeWhenTruncatingVisibleText();
+        preservesCompleteUnicodeWhenTruncatingWholeReport();
         handlesCauseCycles();
         keepsConcurrentRedactionIndependent();
-        return 9;
+        return 10;
     }
 
     private static void redactsQuotedSecretsWithEscapesAndUnfinishedValues() {
@@ -186,6 +187,33 @@ public final class CrashReportFormatterTest {
                 "visible text truncation must not split an emoji at limit " + maximum);
             TestSupport.assertEquals(prefix + marker, truncated,
                 "an emoji that cannot fit is omitted without losing preceding text: " + maximum);
+        }
+    }
+
+    private static void preservesCompleteUnicodeWhenTruncatingWholeReport() {
+        final int maximumReportCharacters = 16 * 1024;
+        StringBuilder message = new StringBuilder(4096);
+        for (int index = 0; index < 2048; index++) {
+            message.append("🌍");
+        }
+        // Each message fits its own 4096-character limit. The fourth cause
+        // reaches the separate limit for the complete report.
+        Throwable error = null;
+        for (int cause = 0; cause < 4; cause++) {
+            error = new IllegalStateException(message.toString(), error);
+            error.setStackTrace(new StackTraceElement[0]);
+        }
+        Thread thread = new Thread("unicode-report-fixture");
+        // Adjacent source lengths exercise both positions within a surrogate
+        // pair without depending on the timestamp or build-header length.
+        for (String source : new String[] {"unicode-a", "unicode-ab"}) {
+            String report = CrashReportFormatter.format(source, thread, error);
+            TestSupport.assertTrue(report.length() <= maximumReportCharacters,
+                "the complete Unicode crash report stays within its size limit");
+            TestSupport.assertContains(report, "Quelle: " + source,
+                "the report retains its source");
+            TestSupport.assertTrue(StandardCharsets.UTF_8.newEncoder().canEncode(report),
+                "truncating a whole crash report must not split an emoji: " + source);
         }
     }
 }
