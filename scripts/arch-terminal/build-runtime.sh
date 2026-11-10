@@ -6,6 +6,7 @@ python3 -B "$PROJECT_ROOT/scripts/arch-terminal/verify-source.py"
 WORK_DIR="$(mktemp -d "${RUNNER_TEMP:-/tmp}/agentcodi-arch-build.XXXXXX")"
 trap 'rm -rf -- "$WORK_DIR"' EXIT
 cp -a "$PROJECT_ROOT/third_party/arch-terminal/." "$WORK_DIR/"
+python3 -B "$PROJECT_ROOT/scripts/arch-terminal/fetch-sources.py" --destination "$WORK_DIR/.cache/sources"
 bash "$WORK_DIR/scripts/build-native.sh"
 bash "$WORK_DIR/scripts/source-bundle.sh"
 OUTPUT="$PROJECT_ROOT/output/arch-terminal"

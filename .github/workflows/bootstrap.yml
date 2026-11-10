@@ -30,7 +30,23 @@ jobs:
           distribution: temurin
           java-version: '17'
       - name: Verify unchanged upstream sources and integration tests
-        run: python3 -B .github/ci/test-arch-terminal.py
+        run: |
+          python3 -B .github/ci/test-arch-source-downloads.py
+          python3 -B .github/ci/test-arch-terminal.py
+      - name: Restore pinned Arch source archives
+        id: arch-sources
+        uses: actions/cache/restore@v4
+        with:
+          path: .cache/arch-terminal/sources
+          key: agentcodi-arch-sources-v1-${{ hashFiles('third_party/arch-terminal/scripts/dependencies.lock.json') }}
+      - name: Fetch and verify pinned Arch source archives
+        run: python3 -B scripts/arch-terminal/fetch-sources.py
+      - name: Cache verified Arch source archives
+        if: steps.arch-sources.outputs.cache-hit != 'true'
+        uses: actions/cache/save@v4
+        with:
+          path: .cache/arch-terminal/sources
+          key: ${{ steps.arch-sources.outputs.cache-primary-key }}
       - name: Install the pinned NDK for upstream native builds
         run: |
           "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" "ndk;28.2.13676358"
