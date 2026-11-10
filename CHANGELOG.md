@@ -4,6 +4,10 @@
 
 ### Fixes
 
+- Keep Unicode characters intact when truncating a complete crash report at its
+  16,384-character limit. Omit an emoji that cannot fit completely before the
+  final newline, preserving valid UTF-16 and the report size limit. Retain the
+  reproduction test confirmed to fail on GitHub.
 - Keep Unicode characters intact when secret masking expands streamed chat-card
   output beyond the visible length limit. Omit an emoji that cannot fit completely
   before the ellipsis, including limits too small for an ellipsis. Preserve earlier
@@ -12,6 +16,9 @@
 
 ### Verification
 
+- Local verification of the crash-report truncation fix: **413 Java host
+  tests**, including the unchanged reproduction test confirmed to fail on
+  GitHub, and architecture/source contracts passed.
 - Local verification: **412 Java host tests**, including the unchanged
   reproduction test confirmed to fail on GitHub and Unicode boundary cases for
   literal and segmented streams, and architecture/source contracts passed.

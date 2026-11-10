@@ -224,6 +224,11 @@ public final class CrashReportFormatter {
             return;
         }
         int characters = Math.max(0, remaining - 1);
+        // Keep a supplementary character whole at the report-wide limit, too.
+        if (characters > 0 && Character.isHighSurrogate(safeLine.charAt(characters - 1))
+            && Character.isLowSurrogate(safeLine.charAt(characters))) {
+            characters--;
+        }
         report.append(safeLine, 0, Math.min(characters, safeLine.length())).append('\n');
     }
 }
