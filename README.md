@@ -8,7 +8,7 @@
 
 ![Android](https://img.shields.io/badge/Android-10%2B-3DDC84?logo=android&logoColor=white)
 ![Architecture](https://img.shields.io/badge/Architecture-ARM64-555555)
-![Version](https://img.shields.io/badge/Version-0.1.9-blue)
+![Version](https://img.shields.io/badge/Version-0.1.10-blue)
 ![Status](https://img.shields.io/badge/Status-tested%20and%20stable-brightgreen)
 ![License](https://img.shields.io/badge/License-Apache%202.0-blue)
 
