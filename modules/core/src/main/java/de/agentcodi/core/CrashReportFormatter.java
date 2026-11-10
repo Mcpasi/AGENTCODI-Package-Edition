@@ -147,10 +147,14 @@ public final class CrashReportFormatter {
         if (redacted.length() <= maximumCharacters) {
             return redacted;
         }
-        if (maximumCharacters <= 3) {
-            return redacted.substring(0, maximumCharacters);
+        int characters = maximumCharacters <= 3 ? maximumCharacters : maximumCharacters - 3;
+        // Do not separate the two UTF-16 code units of a supplementary character.
+        if (characters > 0 && Character.isHighSurrogate(redacted.charAt(characters - 1))
+            && Character.isLowSurrogate(redacted.charAt(characters))) {
+            characters--;
         }
-        return redacted.substring(0, maximumCharacters - 3) + "...";
+        String prefix = redacted.substring(0, characters);
+        return maximumCharacters <= 3 ? prefix : prefix + "...";
     }
 
     /**

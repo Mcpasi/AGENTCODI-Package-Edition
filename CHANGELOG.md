@@ -4,6 +4,10 @@
 
 ### Fixes
 
+- Keep Unicode characters intact when truncating redacted error messages in
+  chat and crash reports. Omit an emoji that cannot fit completely, including
+  character limits too small for an ellipsis. Retain the reproduction test
+  confirmed to fail on GitHub.
 - Keep Unicode characters intact when clipping long tool output to fit a chat
   card's heading and length limit. Omit an emoji that cannot fit completely
   instead of retaining half of its surrogate pair. Retain the reproduction
@@ -20,6 +24,9 @@
 
 ### Verification
 
+- Local verification of the Unicode error-message truncation fix: **406 Java
+  host tests**, including the unchanged reproduction test confirmed to fail
+  on GitHub, and architecture/source contracts passed.
 - Local verification of the Unicode tool-section clipping fix: **405 Java host
   tests**, including the unchanged reproduction test confirmed to fail on
   GitHub and adjacent Unicode boundary cases, and architecture/source contracts
