@@ -25,6 +25,7 @@ public final class WorkspaceSyntaxTest {
         pythonStringsPrefixesAndComments();
         pythonEscapedCrLfStaysInsideStrings();
         pythonFormattedExpressionsAndDecorators();
+        pythonFormattedHexSpecifierDoesNotStartComment();
         pythonKeywordsFunctionsAndNumbers();
         htmlAttributesEntitiesAndComments();
         htmlEmbeddedLanguagesAndRawText();
@@ -38,7 +39,7 @@ public final class WorkspaceSyntaxTest {
         cancelsSupersededWork();
         countsLogicalLinesAndCursorOffsets();
         indexesManyLinesAndRejectsInvalidOffsets();
-        return 22;
+        return 23;
     }
 
     private static void detectsOnlySupportedFileNames() {
@@ -156,6 +157,21 @@ public final class WorkspaceSyntaxTest {
         token(PYTHON, text, "len", BUILTIN);
         token(PYTHON, text, "2", NUMBER);
         token(PYTHON, text, " tail\"", STRING);
+    }
+
+    private static void pythonFormattedHexSpecifierDoesNotStartComment() {
+        String text = "message = f\"hex {255:#x} tail\"\nprint(message) # real comment";
+        int specifier = text.indexOf("#x");
+        for (SyntaxToken syntax : SyntaxHighlighter.highlight(PYTHON, text)) {
+            TestSupport.assertFalse(syntax.getKind() == COMMENT
+                && syntax.getStart() <= specifier && specifier < syntax.getEnd(),
+                "Python f-string #x format specifier must not be highlighted as a comment");
+        }
+        token(PYTHON, text, "255", NUMBER);
+        token(PYTHON, text, " tail\"", STRING);
+        token(PYTHON, text, "print", BUILTIN);
+        token(PYTHON, text, "# real comment", COMMENT);
+        ranges(PYTHON, text);
     }
 
     private static void pythonKeywordsFunctionsAndNumbers() {
