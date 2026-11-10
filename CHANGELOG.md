@@ -1,5 +1,21 @@
 # Package Edition
 
+## 0.1.11 — Package Edition
+
+### Fixes
+
+- Keep Unicode characters intact when secret masking expands streamed chat-card
+  output beyond the visible length limit. Omit an emoji that cannot fit completely
+  before the ellipsis, including limits too small for an ellipsis. Preserve earlier
+  stream snapshots. Retain the reproduction test confirmed to fail on GitHub and
+  cover surrounding character limits and segmented streams.
+
+### Verification
+
+- Local verification: **412 Java host tests**, including the unchanged
+  reproduction test confirmed to fail on GitHub and Unicode boundary cases for
+  literal and segmented streams, and architecture/source contracts passed.
+
 ## 0.1.10 — Package Edition
 
 tested and stable

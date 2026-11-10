@@ -20,6 +20,7 @@ public final class StreamTextTest {
         preservesCompleteUnicodeWhenTruncatingStream();
         truncatesUnicodeSafelyAcrossChunkBoundaries();
         preservesCompleteUnicodeWhenRedactionExceedsVisibleLimit();
+        clipsVisibleLimitsAtUnicodeBoundaries();
         matchesBoundedStreamAndNullRemoval();
         matchesWholeToolSectionFormatting();
         preservesCompleteUnicodeWhenClippingToolSections();
@@ -27,7 +28,7 @@ public final class StreamTextTest {
         keepsEarlierSnapshotsImmutableWithoutEagerRendering();
         handlesLongSingleCharacterStreams();
         releasesMatcherInputAfterRedactionAndBoundaryChecks();
-        return 13;
+        return 14;
     }
 
     private static void redactsQuotedPasswordsAcrossEveryChunkBoundary() {
@@ -176,6 +177,33 @@ public final class StreamTextTest {
             "clipping preserves the redacted password, complete characters and ellipsis");
         assertText(redactedPassword + prefix + "🌍 trailing", stream,
             "clipping leaves the original stream snapshot unchanged");
+    }
+
+    private static void clipsVisibleLimitsAtUnicodeBoundaries() {
+        char[] padding = new char[40];
+        Arrays.fill(padding, 'x');
+        String input = "🌍a😀b" + new String(padding) + "𝄞"
+            + new String(padding) + "🌍 tail";
+        // Zero selects a literal; other sizes exercise text split across stream segments.
+        for (int chunk : new int[] {0, 1, 2, 17, 33, 64}) {
+            StreamText stream = StreamText.literal(input);
+            if (chunk > 0) {
+                stream = StreamText.empty();
+                for (int start = 0; start < input.length(); start += chunk) {
+                    stream = stream.append(input.substring(start,
+                        Math.min(input.length(), start + chunk)), 1024, true);
+                }
+            }
+            for (int maximum = -1; maximum <= input.length() + 1; maximum++) {
+                String context = "visible limit " + maximum + ", chunk " + chunk;
+                StreamText clipped = stream.visibleLimit(maximum);
+                assertText(CrashReportFormatter.redactVisibleText(input, maximum), clipped,
+                    "visible stream clipping matches whole-text formatting: " + context);
+                TestSupport.assertTrue(StandardCharsets.UTF_8.newEncoder().canEncode(clipped.text()),
+                    "visible clipping retains complete Unicode characters: " + context);
+            }
+            assertText(input, stream, "visible clipping preserves its source: chunk " + chunk);
+        }
     }
 
     private static void matchesBoundedStreamAndNullRemoval() {

@@ -217,6 +217,10 @@ final class StreamText {
         int remaining = characters;
         while (remaining > 0 && current != null) {
             if (current.value != null) {
+                // Do not retain half a supplementary character, even at a segment boundary.
+                if (Character.isHighSurrogate(current.value.charAt(remaining - 1))) {
+                    remaining--;
+                }
                 retained = concat(retained, leaf(current.value.substring(0, remaining)));
                 break;
             }
