@@ -4,6 +4,10 @@
 
 ### Fixes
 
+- Treat parentheses inside single- or double-quoted Markdown link titles as
+  literal title text. Keep complete URLs, formatted labels and adjacent links
+  intact, including escaped title quotes. Preserve image alt text and inactive
+  unsafe destinations. Retain the reproduction test confirmed to fail on GitHub.
 - Parse Markdown link destinations wrapped in `<...>` with literal, unbalanced
   parentheses. Preserve the complete clickable URL, formatted link text, optional
   titles and surrounding text. Keep image alt text and unsafe destinations
@@ -20,6 +24,10 @@
 
 ### Verification
 
+- Local verification of the Markdown quoted-title fix: **420 Java host tests**,
+  including the unchanged reproduction test confirmed to fail on GitHub, escaped
+  and opposite quotes, URL apostrophes, unfinished titles, image alt text, unsafe
+  destinations and streaming prefixes, and architecture/source contracts passed.
 - Local verification of the Markdown angle-destination fix: **416 Java host
   tests**, including the unchanged reproduction test confirmed to fail on
   GitHub, adjacent links, image alt text, unsafe destinations and streaming

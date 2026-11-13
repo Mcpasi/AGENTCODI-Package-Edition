@@ -20,6 +20,9 @@ public final class ChatMarkdownTest {
         preservesTableColumnsWithUnfinishedCode();
         handlesBalancedLinksAndAutolinks();
         handlesParenthesesInQuotedLinkTitles();
+        handlesEscapedQuotesInLinkTitles();
+        preservesQuotesOutsideLinkTitles();
+        keepsQuotedTitleImagesAndUnsafeLinksInactive();
         handlesUnbalancedParenthesesInAngleLinkDestinations();
         preservesAngleDestinationBoundariesAcrossAdjacentLinks();
         keepsUnsafeAngleDestinationsInactive();
@@ -31,7 +34,7 @@ public final class ChatMarkdownTest {
         validatesEveryStreamingPrefix();
         boundsDeepAndDelimiterHeavyInput();
         validatesRandomizedUnicodeInput();
-        return 25;
+        return 28;
     }
 
     private static void preservesPlainTextAndUnicode() {
@@ -248,6 +251,77 @@ public final class ChatMarkdownTest {
         }
     }
 
+    private static void handlesEscapedQuotesInLinkTitles() {
+        String destination = "https://example.com/a_(b)";
+        for (String quote : new String[] { "\"", "'" }) {
+            for (boolean angle : new boolean[] { false, true }) {
+                String target = angle ? "<" + destination + ">" : destination;
+                for (String title : new String[] {
+                    "Titel \\" + quote + " ) Entwurf",
+                    "Titel " + (quote.equals("\"") ? "'" : "\"") + " (Entwurf"
+                }) {
+                    String source = "Before [label](" + target + " " + quote + title + quote + ") after";
+                    ChatMarkdown.Document doc = ChatMarkdown.parse(source);
+                    TestSupport.assertEquals("Before label after", doc.text,
+                        "only an unescaped matching quote ends the title: " + source);
+                    TestSupport.assertEquals(destination,
+                        span(doc, ChatMarkdown.Style.LINK, "label").destination,
+                        "escaped and opposite quotes keep the destination intact: " + source);
+                    valid(doc);
+                }
+            }
+        }
+    }
+
+    private static void preservesQuotesOutsideLinkTitles() {
+        for (String destination : new String[] {
+            "https://example.com/it's_(a)", "https://example.com/'(a)"
+        }) {
+            ChatMarkdown.Document doc = ChatMarkdown.parse("[label](" + destination + ")");
+            TestSupport.assertEquals("label", doc.text, "a URL apostrophe cannot start a title");
+            TestSupport.assertEquals(destination,
+                span(doc, ChatMarkdown.Style.LINK, "label").destination,
+                "parentheses following a URL apostrophe still balance normally");
+            valid(doc);
+        }
+        String prose = "Before (\"literal ) [label](https://example.org) after\")";
+        ChatMarkdown.Document doc = ChatMarkdown.parse(prose);
+        TestSupport.assertEquals("Before (\"literal ) label after\")", doc.text,
+            "quoted prose cannot hide a following link");
+        span(doc, ChatMarkdown.Style.LINK, "label");
+        valid(doc);
+        for (String quote : new String[] { "\"", "'" }) {
+            String unfinished = "[open](https://example.com " + quote + "unfinished ( ";
+            ChatMarkdown.Document streaming = ChatMarkdown.parse(unfinished + "[next](https://example.org)");
+            TestSupport.assertEquals(unfinished + "next", streaming.text,
+                "an unclosed title stays visible without hiding a following complete link");
+            span(streaming, ChatMarkdown.Style.LINK, "next");
+            valid(streaming);
+        }
+    }
+
+    private static void keepsQuotedTitleImagesAndUnsafeLinksInactive() {
+        for (String quote : new String[] { "\"", "'" }) {
+            for (boolean angle : new boolean[] { false, true }) {
+                String blocked = angle ? "<javascript:alert(1)>" : "javascript:alert(1)";
+                String image = angle ? "<https://example.com/image.png>" : "https://example.com/image.png";
+                String source = "[**blocked**](" + blocked + " " + quote + "Titel )" + quote + ") "
+                    + "![image](" + image + " " + quote + "Titel (" + quote
+                    + ") [next](https://example.org)";
+                ChatMarkdown.Document doc = ChatMarkdown.parse(source);
+                TestSupport.assertEquals("blocked image next", doc.text,
+                    "title parentheses preserve blocked link labels and image alt text: " + source);
+                span(doc, ChatMarkdown.Style.BOLD, "blocked");
+                TestSupport.assertEquals("https://example.org",
+                    span(doc, ChatMarkdown.Style.LINK, "next").destination,
+                    "the following supported link stays clickable");
+                TestSupport.assertEquals(Integer.valueOf(2), Integer.valueOf(doc.spans.size()),
+                    "unsafe destinations and image alt text stay inactive");
+                valid(doc);
+            }
+        }
+    }
+
     private static void handlesUnbalancedParenthesesInAngleLinkDestinations() {
         // Parentheses inside <...> belong to the URL and need not be balanced.
         // CommonMark 0.31.2: https://spec.commonmark.org/0.31.2/#link-destination
@@ -390,7 +464,9 @@ public final class ChatMarkdownTest {
     private static void validatesEveryStreamingPrefix() {
         for (String source : new String[] {
             "# 👋\n\n**bold *nested* end** [link](https://example.com/a_(b))\n\n```java\n  x();\n```\n",
-            "[**Doku 👋**]( <https://example.com/a(b> \"Titel\") [next](<https://example.org/a)b>)"
+            "[**Doku 👋**]( <https://example.com/a(b> \"Titel\") [next](<https://example.org/a)b>)",
+            "[**Doku 👋**](https://example.com/a_(b) \"Titel \\\" ) Entwurf\") "
+                + "[next](<https://example.org/a)b> 'Titel (Entwurf')"
         }) {
             for (int end = 0; end <= source.length(); end++) { valid(ChatMarkdown.parse(source.substring(0, end))); }
         }

@@ -370,6 +370,14 @@ final class ChatMarkdown {
         for (int index = 0; index < source.length(); index++) {
             char character = source.charAt(index);
             if (character == '\\' && index + 1 < source.length()) { index++; }
+            else if (opening == '(' && depth > 0 && depth <= stack.length
+                && (character == '\"' || character == '\'')
+                && Character.isWhitespace(source.charAt(index - 1))
+                && stack[depth - 1] > 0 && source.charAt(stack[depth - 1] - 1) == ']') {
+                // Only quoted link titles hide parentheses; URL apostrophes remain literal.
+                int end = quotedTitleEnd(source, index);
+                if (end >= 0) { index = end; }
+            }
             else if (character == '`' && codeEnds[index] >= 0) {
                 index = codeEnds[index] + runLength(source, index) - 1;
             } else if (character == opening) {
@@ -388,6 +396,17 @@ final class ChatMarkdown {
             }
         }
         return pairs;
+    }
+
+    private static int quotedTitleEnd(String source, int start) {
+        char quote = source.charAt(start);
+        for (int index = start + 1; index < source.length(); index++) {
+            char character = source.charAt(index);
+            if (character == quote) { return index; }
+            if (character == '\\' && index + 1 < source.length()
+                && punctuation(source.charAt(index + 1))) { index++; }
+        }
+        return -1;
     }
 
     private static int angleDestinationEnd(String source, int start) {
