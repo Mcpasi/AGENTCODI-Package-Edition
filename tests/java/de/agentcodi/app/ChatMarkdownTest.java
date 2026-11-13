@@ -19,6 +19,7 @@ public final class ChatMarkdownTest {
         rendersTablesWithEscapedAndCodePipes();
         preservesTableColumnsWithUnfinishedCode();
         handlesBalancedLinksAndAutolinks();
+        handlesUnbalancedParenthesesInAngleLinkDestinations();
         decodesEntitiesInLinkDestinations();
         keepsUnsafeDestinationsInactive();
         leavesUnfinishedInlineMarkupVisible();
@@ -27,7 +28,7 @@ public final class ChatMarkdownTest {
         validatesEveryStreamingPrefix();
         boundsDeepAndDelimiterHeavyInput();
         validatesRandomizedUnicodeInput();
-        return 21;
+        return 22;
     }
 
     private static void preservesPlainTextAndUnicode() {
@@ -212,6 +213,28 @@ public final class ChatMarkdownTest {
         int links = 0;
         for (ChatMarkdown.Span span : doc.spans) { if (span.style == ChatMarkdown.Style.LINK) { links++; } }
         TestSupport.assertEquals(Integer.valueOf(2), Integer.valueOf(links), "image alt text is not a remote image action");
+    }
+
+    private static void handlesUnbalancedParenthesesInAngleLinkDestinations() {
+        // Parentheses inside <...> belong to the URL and need not be balanced.
+        // CommonMark 0.31.2: https://spec.commonmark.org/0.31.2/#link-destination
+        for (String destination : new String[] {
+            "https://example.com/a(b", "https://example.com/a)b"
+        }) {
+            for (String title : new String[] { "", " \"Titel\"" }) {
+                String source = "Before [**Doku 👋**](<" + destination + ">" + title + ") after";
+                TestSupport.assertTrue(ChatMarkdown.safeDestination(destination),
+                    "the URL is supported independently of its Markdown delimiters: " + destination);
+                ChatMarkdown.Document doc = ChatMarkdown.parse(source);
+                TestSupport.assertEquals("Before Doku 👋 after", doc.text,
+                    "a parenthesis inside an angle destination cannot consume or expose link markup: " + source);
+                TestSupport.assertEquals(destination,
+                    span(doc, ChatMarkdown.Style.LINK, "Doku 👋").destination,
+                    "the complete URL, including its literal parenthesis, remains clickable: " + source);
+                span(doc, ChatMarkdown.Style.BOLD, "Doku 👋");
+                valid(doc);
+            }
+        }
     }
 
     private static void preservesTableColumnsWithUnfinishedCode() {
