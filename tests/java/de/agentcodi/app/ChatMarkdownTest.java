@@ -19,6 +19,7 @@ public final class ChatMarkdownTest {
         rendersTablesWithEscapedAndCodePipes();
         preservesTableColumnsWithUnfinishedCode();
         handlesBalancedLinksAndAutolinks();
+        handlesParenthesesInQuotedLinkTitles();
         handlesUnbalancedParenthesesInAngleLinkDestinations();
         preservesAngleDestinationBoundariesAcrossAdjacentLinks();
         keepsUnsafeAngleDestinationsInactive();
@@ -30,7 +31,7 @@ public final class ChatMarkdownTest {
         validatesEveryStreamingPrefix();
         boundsDeepAndDelimiterHeavyInput();
         validatesRandomizedUnicodeInput();
-        return 24;
+        return 25;
     }
 
     private static void preservesPlainTextAndUnicode() {
@@ -215,6 +216,36 @@ public final class ChatMarkdownTest {
         int links = 0;
         for (ChatMarkdown.Span span : doc.spans) { if (span.style == ChatMarkdown.Style.LINK) { links++; } }
         TestSupport.assertEquals(Integer.valueOf(2), Integer.valueOf(links), "image alt text is not a remote image action");
+    }
+
+    private static void handlesParenthesesInQuotedLinkTitles() {
+        // Parentheses inside a quoted title are literal and need not be balanced.
+        // CommonMark 0.31.2: https://spec.commonmark.org/0.31.2/#link-title
+        String destination = "https://example.com/a_(b)?x=1&y=2";
+        for (String quote : new String[] { "\"", "'" }) {
+            for (boolean angle : new boolean[] { false, true }) {
+                String target = angle ? "<" + destination + ">" : destination;
+                for (String title : new String[] {
+                    "Titel", "Titel (Entwurf)", "Titel ) Entwurf", "Titel (Entwurf"
+                }) {
+                    String source = "Before [**Doku 👋**](" + target + " " + quote + title + quote
+                        + ") [next](https://example.org) after";
+                    ChatMarkdown.Document doc = ChatMarkdown.parse(source);
+                    TestSupport.assertEquals("Before Doku 👋 next after", doc.text,
+                        "quoted title parentheses cannot close a link early or expose its markup: " + source);
+                    TestSupport.assertEquals(destination,
+                        span(doc, ChatMarkdown.Style.LINK, "Doku 👋").destination,
+                        "title parentheses cannot alter the link destination: " + source);
+                    span(doc, ChatMarkdown.Style.BOLD, "Doku 👋");
+                    TestSupport.assertEquals("https://example.org",
+                        span(doc, ChatMarkdown.Style.LINK, "next").destination,
+                        "title parentheses cannot consume the following link: " + source);
+                    TestSupport.assertEquals(Integer.valueOf(3), Integer.valueOf(doc.spans.size()),
+                        "only the bold label and the two links acquire formatting: " + source);
+                    valid(doc);
+                }
+            }
+        }
     }
 
     private static void handlesUnbalancedParenthesesInAngleLinkDestinations() {
