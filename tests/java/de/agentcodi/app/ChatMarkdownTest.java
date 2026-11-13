@@ -20,6 +20,8 @@ public final class ChatMarkdownTest {
         preservesTableColumnsWithUnfinishedCode();
         handlesBalancedLinksAndAutolinks();
         handlesUnbalancedParenthesesInAngleLinkDestinations();
+        preservesAngleDestinationBoundariesAcrossAdjacentLinks();
+        keepsUnsafeAngleDestinationsInactive();
         decodesEntitiesInLinkDestinations();
         keepsUnsafeDestinationsInactive();
         leavesUnfinishedInlineMarkupVisible();
@@ -28,7 +30,7 @@ public final class ChatMarkdownTest {
         validatesEveryStreamingPrefix();
         boundsDeepAndDelimiterHeavyInput();
         validatesRandomizedUnicodeInput();
-        return 22;
+        return 24;
     }
 
     private static void preservesPlainTextAndUnicode() {
@@ -237,6 +239,44 @@ public final class ChatMarkdownTest {
         }
     }
 
+    private static void preservesAngleDestinationBoundariesAcrossAdjacentLinks() {
+        ChatMarkdown.Document doc = ChatMarkdown.parse(
+            "Before [left]( <https://example.com/a(b> ) "
+                + "[balanced](https://example.org/a_(b)) "
+                + "[right](<https://example.net/a)b> 'Titel') "
+                + "![preview](<https://example.com/image)b.png>) after"
+        );
+        TestSupport.assertEquals("Before left balanced right preview after", doc.text,
+            "angle destinations preserve surrounding text, adjacent links and image alt text");
+        TestSupport.assertEquals("https://example.com/a(b",
+            span(doc, ChatMarkdown.Style.LINK, "left").destination,
+            "whitespace around an angle destination does not affect its URL");
+        TestSupport.assertEquals("https://example.org/a_(b)",
+            span(doc, ChatMarkdown.Style.LINK, "balanced").destination,
+            "bare destinations still balance their own parentheses");
+        TestSupport.assertEquals("https://example.net/a)b",
+            span(doc, ChatMarkdown.Style.LINK, "right").destination,
+            "a closing parenthesis inside an angle destination cannot truncate the URL");
+        int links = 0;
+        for (ChatMarkdown.Span span : doc.spans) { if (span.style == ChatMarkdown.Style.LINK) { links++; } }
+        TestSupport.assertEquals(Integer.valueOf(3), Integer.valueOf(links),
+            "image alt text remains inactive");
+        valid(doc);
+    }
+
+    private static void keepsUnsafeAngleDestinationsInactive() {
+        for (String destination : new String[] {
+            "javascript:alert(b", "javascript:alert)b", "javascript&#58;alert(b",
+            "https://example.com/a\\>b)c"
+        }) {
+            ChatMarkdown.Document doc = ChatMarkdown.parse("Before [label](<" + destination + ">) after");
+            TestSupport.assertEquals("Before label after", doc.text,
+                "unsupported angle destinations retain their label and surrounding text: " + destination);
+            TestSupport.assertEquals(Integer.valueOf(0), Integer.valueOf(doc.spans.size()),
+                "angle delimiters do not bypass validation of the decoded URL: " + destination);
+        }
+    }
+
     private static void preservesTableColumnsWithUnfinishedCode() {
         ChatMarkdown.Document doc = ChatMarkdown.parse(
             "| A | B |\n| --- | --- |\n| `open | value |\n| `x|y` | ok |"
@@ -317,8 +357,12 @@ public final class ChatMarkdownTest {
     }
 
     private static void validatesEveryStreamingPrefix() {
-        String source = "# 👋\n\n**bold *nested* end** [link](https://example.com/a_(b))\n\n```java\n  x();\n```\n";
-        for (int end = 0; end <= source.length(); end++) { valid(ChatMarkdown.parse(source.substring(0, end))); }
+        for (String source : new String[] {
+            "# 👋\n\n**bold *nested* end** [link](https://example.com/a_(b))\n\n```java\n  x();\n```\n",
+            "[**Doku 👋**]( <https://example.com/a(b> \"Titel\") [next](<https://example.org/a)b>)"
+        }) {
+            for (int end = 0; end <= source.length(); end++) { valid(ChatMarkdown.parse(source.substring(0, end))); }
+        }
     }
 
     private static void boundsDeepAndDelimiterHeavyInput() {

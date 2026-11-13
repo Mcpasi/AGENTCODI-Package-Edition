@@ -4,6 +4,10 @@
 
 ### Fixes
 
+- Parse Markdown link destinations wrapped in `<...>` with literal, unbalanced
+  parentheses. Preserve the complete clickable URL, formatted link text, optional
+  titles and surrounding text. Keep image alt text and unsafe destinations
+  inactive. Retain the reproduction test confirmed to fail on GitHub.
 - Keep Unicode characters intact when truncating a complete crash report at its
   16,384-character limit. Omit an emoji that cannot fit completely before the
   final newline, preserving valid UTF-16 and the report size limit. Retain the
@@ -16,6 +20,10 @@
 
 ### Verification
 
+- Local verification of the Markdown angle-destination fix: **416 Java host
+  tests**, including the unchanged reproduction test confirmed to fail on
+  GitHub, adjacent links, image alt text, unsafe destinations and streaming
+  prefixes, and architecture/source contracts passed.
 - Local verification of the crash-report truncation fix: **413 Java host
   tests**, including the unchanged reproduction test confirmed to fail on
   GitHub, and architecture/source contracts passed.

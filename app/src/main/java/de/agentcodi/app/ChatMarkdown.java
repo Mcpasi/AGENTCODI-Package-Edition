@@ -375,6 +375,13 @@ final class ChatMarkdown {
             } else if (character == opening) {
                 if (depth < stack.length) { stack[depth] = index; }
                 depth++;
+                if (opening == '(') {
+                    int start = index + 1;
+                    while (start < source.length() && Character.isWhitespace(source.charAt(start))) { start++; }
+                    // Parentheses inside an angle-wrapped destination are literal URL characters.
+                    int end = angleDestinationEnd(source, start);
+                    if (end >= 0) { index = end; }
+                }
             } else if (character == closing && depth > 0) {
                 depth--;
                 if (depth < stack.length) { pairs[stack[depth]] = index; }
@@ -383,10 +390,22 @@ final class ChatMarkdown {
         return pairs;
     }
 
+    private static int angleDestinationEnd(String source, int start) {
+        if (start >= source.length() || source.charAt(start) != '<') { return -1; }
+        for (int index = start + 1; index < source.length(); index++) {
+            char character = source.charAt(index);
+            if (character == '<' || character == '\n' || character == '\r') { return -1; }
+            if (character == '>') { return index; }
+            if (character == '\\' && index + 1 < source.length()
+                && punctuation(source.charAt(index + 1))) { index++; }
+        }
+        return -1;
+    }
+
     private static String destination(String value) {
         String trimmed = value.trim();
         if (trimmed.startsWith("<")) {
-            int end = trimmed.indexOf('>');
+            int end = angleDestinationEnd(trimmed, 0);
             return end < 0 ? "" : decodeDestination(trimmed.substring(1, end));
         }
         int end = 0;
