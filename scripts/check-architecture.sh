@@ -894,13 +894,13 @@ if ! rg -Fq 'de.archterminal.MainActivity.class' "$terminal_activity" \
 fi
 python3 -B "$PROJECT_ROOT/scripts/arch-terminal/verify-source.py"
 
-if ! rg -q 'VERSION_NAME = "0\.1\.10"' "$core_root/BuildIdentity.java" \
-    || ! rg -q 'VERSION_CODE = 13' "$core_root/BuildIdentity.java" \
+if ! rg -q 'VERSION_NAME = "0\.1\.11"' "$core_root/BuildIdentity.java" \
+    || ! rg -q 'VERSION_CODE = 14' "$core_root/BuildIdentity.java" \
     || ! rg -q 'CODEX_RUNTIME_VERSION = "0\.156\.1-termux\.1"' "$core_root/BuildIdentity.java" \
-    || ! rg -q 'android:versionName="0\.1\.10"' "$manifest" \
-    || ! rg -q 'android:versionCode="13"' "$manifest" \
-    || ! rg -q 'APP_VERSION="0\.1\.10"' "$apk_builder" \
-    || ! rg -q 'VERSION_CODE="13"' "$apk_builder" \
+    || ! rg -q 'android:versionName="0\.1\.11"' "$manifest" \
+    || ! rg -q 'android:versionCode="14"' "$manifest" \
+    || ! rg -q 'APP_VERSION="0\.1\.11"' "$apk_builder" \
+    || ! rg -q 'VERSION_CODE="14"' "$apk_builder" \
     || ! rg -q 'CODEX_ANDROID_VERSION="0\.156\.1-termux\.1"' "$apk_builder" \
     || ! rg -q 'CODEX_TERMUX_SOURCE_TAG="v0\.156\.1-termux\.1"' "$apk_builder" \
     || ! rg -q 'CODEX_TERMUX_SOURCE_COMMIT="ea762071ec4acbf1531fcc7daf47524836f70a09"' "$apk_builder" \
@@ -921,7 +921,7 @@ if ! rg -q 'VERSION_NAME = "0\.1\.10"' "$core_root/BuildIdentity.java" \
     || ! rg -q 'ea762071ec4acbf1531fcc7daf47524836f70a09' "$PROJECT_ROOT/app/src/main/res/raw/third_party_notices.txt" \
     || ! rg -q 'b412ff32c417f855c2b2d1581b77058eed87c84b' "$PROJECT_ROOT/NOTICE.md" \
     || ! rg -q 'b412ff32c417f855c2b2d1581b77058eed87c84b' "$PROJECT_ROOT/app/src/main/res/raw/third_party_notices.txt"; then
-  echo "The 0.1.10 / Codex 0.156.1-termux.1 identity is inconsistent." >&2
+  echo "The 0.1.11 / Codex 0.156.1-termux.1 identity is inconsistent." >&2
   exit 1
 fi
 

@@ -14,8 +14,8 @@ public final class BuildIdentityTest {
     private static void pinsCompleteCodeModeRuntime() {
         TestSupport.assertEquals("AGENTCODI Package", BuildIdentity.APP_NAME, "edition name");
         TestSupport.assertEquals("de.agentcodi.pkg", BuildIdentity.APPLICATION_ID, "separate installation ID");
-        TestSupport.assertEquals("0.1.10", BuildIdentity.VERSION_NAME, "app version");
-        TestSupport.assertEquals(13, BuildIdentity.VERSION_CODE, "app version code");
+        TestSupport.assertEquals("0.1.11", BuildIdentity.VERSION_NAME, "app version");
+        TestSupport.assertEquals(14, BuildIdentity.VERSION_CODE, "app version code");
         TestSupport.assertEquals(28, BuildIdentity.TARGET_SDK, "package edition target SDK");
         TestSupport.assertEquals(29, BuildIdentity.MIN_SDK, "minimum Android version");
         TestSupport.assertEquals(
