@@ -91,8 +91,16 @@ public final class CodexPackageMetadata {
     }
 
     static String upstreamTag(Map<String, Object> metadata) throws IOException {
-        Matcher matcher = Pattern.compile("\\bupstream (rust-v[0-9]+\\.[0-9]+\\.[0-9]+)\\b").matcher(string(metadata, "description"));
-        require(matcher.find(), "Missing upstream release tag.");
+        String description = string(metadata, "description");
+        Matcher matcher = Pattern.compile("\\bupstream (rust-v[0-9]+\\.[0-9]+\\.[0-9]+)\\b").matcher(description);
+        if (!matcher.find()) {
+            // The final launcher-only release omitted this declaration. Its
+            // reviewed binary still reports 0.163.0; do not infer other bases.
+            require("0.163.0-termux.3".equals(string(metadata, "version"))
+                && description.startsWith("Final release of the Termux-packaged Codex CLI."),
+                "Missing upstream release tag.");
+            return "rust-v0.163.0";
+        }
         String result = matcher.group(1);
         require(isVersion(result.substring(6)) && !matcher.find(), "Invalid or ambiguous upstream release tag.");
         return result;

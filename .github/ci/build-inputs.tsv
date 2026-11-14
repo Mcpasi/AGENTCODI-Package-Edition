@@ -3,7 +3,7 @@
 # Columns: path<TAB>sha256<TAB>origin<TAB>url ("-" when not downloadable).
 # Paths are relative to the cache directory (AGENTCODI_CACHE_DIR,
 # by default .cache/android).
-codex/44cee2f3a4a110fd79d4f7d61378d46fd72406f45cffb3163e809d63e86d946a/package.tgz	44cee2f3a4a110fd79d4f7d61378d46fd72406f45cffb3163e809d63e86d946a	download	https://github.com/DioNanos/codex-termux/releases/download/v0.156.1-termux.1/mmmbuto-codex-cli-termux-0.156.1-termux.1.tgz
+codex/8d95d9ba9681c22ed44ea2e482f76efa0f3b80bac90597c11402e56bb5ebd72b/package.tgz	8d95d9ba9681c22ed44ea2e482f76efa0f3b80bac90597c11402e56bb5ebd72b	download	https://github.com/DioNanos/codex-termux/releases/download/v0.163.0-termux.3/mmmbuto-codex-cli-termux-0.163.0-termux.3.tgz
 platform-35_r02.zip	0988cacad01b38a18a47bac14a0695f246bc76c1b06c0eeb8eb0dc825ab0c8e0	download	https://dl.google.com/android/repository/platform-35_r02.zip
 r8-9.2.23.jar	c6f69c9398c2f1825cac162d0d26faa4002eb68cfc594a4aec18f574276c07cb	download	https://dl.google.com/dl/android/maven2/com/android/tools/r8/9.2.23/r8-9.2.23.jar
 aapt2-16.0.0.4-1-aarch64.deb	d35298f13ec26eee362d4e84f534b29b8e5f288b86c89d803ba4fb8ccb9784aa	download	https://packages.termux.dev/apt/termux-main/pool/main/a/aapt2/aapt2_16.0.0.4-1_aarch64.deb

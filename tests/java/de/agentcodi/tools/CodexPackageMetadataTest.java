@@ -18,8 +18,9 @@ public final class CodexPackageMetadataTest {
         permitsStaleAndAbsentReadmeWithoutTrustingIt();
         permitsOnlyThePinnedCommunityPackageVersion();
         requiresAgreementOfRegistryArchiveAndSource();
+        permitsOnlyTheReviewedFinalReleaseWithoutAnUpstreamDescription();
         rejectsMalformedAndLinkedMetadata();
-        return 4;
+        return 5;
     }
 
     public static void main(String[] arguments) throws Exception {
@@ -139,6 +140,23 @@ public final class CodexPackageMetadataTest {
                 }, "README relaxation does not allow a mismatch in " + field);
             }
         }
+    }
+
+    private static void permitsOnlyTheReviewedFinalReleaseWithoutAnUpstreamDescription() throws Exception {
+        final Map<String, Object> release = metadata();
+        release.put("version", "0.163.0-termux.3");
+        release.put("description", "Final release of the Termux-packaged Codex CLI. End-of-life: use the official package.");
+        TestSupport.assertEquals("rust-v0.163.0", CodexPackageMetadata.verifyAgreement("0.163.0-termux.3", release, release),
+            "the final launcher-only release retains the reviewed upstream binary");
+        release.put("version", "0.164.0-termux.3");
+        TestSupport.expectThrows(IOException.class, new TestSupport.ThrowingRunnable() {
+            @Override public void run() throws Exception { CodexPackageMetadata.upstreamTag(release); }
+        }, "the final-release exception cannot infer an unreviewed version");
+        release.put("version", "0.163.0-termux.3");
+        release.put("description", "No upstream declaration");
+        TestSupport.expectThrows(IOException.class, new TestSupport.ThrowingRunnable() {
+            @Override public void run() throws Exception { CodexPackageMetadata.upstreamTag(release); }
+        }, "unrecognized package descriptions still fail closed");
     }
 
     private static void rejectsMalformedAndLinkedMetadata() throws Exception {

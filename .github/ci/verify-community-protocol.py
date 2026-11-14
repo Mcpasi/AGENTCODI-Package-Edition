@@ -276,6 +276,8 @@ def main():
     parser.add_argument("--nested-mcp", action="store_true",
                         help="Reproduce the original code-mode MCP callback in the warmed host")
     parser.add_argument("--diagnose-gdb", action="store_true")
+    parser.add_argument("--schema-only", action="store_true",
+                        help="Validate generated schemas and Java traces without starting a runtime container")
     args = parser.parse_args()
     audit = args.audit.resolve()
     bundle = json.loads((audit / "report/schema/codex_app_server_protocol.schemas.json").read_text())
@@ -323,6 +325,9 @@ def main():
           "actual Java MCP approval requests/responses, including nullable turn IDs.")
     print("Approval and user-input request shapes match the generated Community schema.")
     print("Generated schemas accepted", count, "actual Java fixture RPCs:", ", ".join(sorted(observed)))
+
+    if args.schema_only:
+        return
 
     model = ModelFixture()
     runtime = Runtime(audit, client, model.url)

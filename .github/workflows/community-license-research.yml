@@ -22,7 +22,7 @@ jobs:
       - uses: actions/checkout@v4
         with:
           repository: DioNanos/codex-termux
-          ref: ea762071ec4acbf1531fcc7daf47524836f70a09
+          ref: 6a0a8a244fc09a4ecae8ca0324b3d63f6713ee46
           path: legal-source/codex
           persist-credentials: false
       - name: Install the producer's Rust toolchain

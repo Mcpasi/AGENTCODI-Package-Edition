@@ -1,19 +1,19 @@
 # Community Codex dependency license material
 
 This supplement accompanies the unchanged original Community release LICENSE
-and NOTICE. It is bound to DioNanos/codex-termux release v0.156.1-termux.1,
-source commit ea762071ec4acbf1531fcc7daf47524836f70a09, and the native APK
+and NOTICE. It is bound to DioNanos/codex-termux release v0.163.0-termux.3,
+source commit 6a0a8a244fc09a4ecae8ca0324b3d63f6713ee46, and the native APK
 hashes in [.github/ci/community-codex-release.json](../../.github/ci/community-codex-release.json).
 The complete original source Cargo.lock is retained here; SHA-256:
-d722f05fc760bcd1f5749ec452452d81058458b788df3b765b80500d757eba4a.
+0f80b3a23b6f2e4d1816993416aae367b80f870206cdff6311dceb44b0534c5f.
 
-The inventory contains 1,033 Cargo components for the aarch64-linux-android
-normal/build dependency closure of codex-cli and codex-code-mode-host, plus
-Rust standard-library and rusty_v8/V8 source material. It has 669 unique
-legal texts and no unresolved components. Build dependencies are included
-because native-source build crates can contribute linked code. Build-only
-components and additional V8 test-source notices are retained conservatively;
-the list does not assert that every source file is retained in the native ELF.
+The inventory contains 1,377 Cargo components in the complete locked dependency
+closure of codex-cli and codex-code-mode-host, plus Rust standard-library and
+rusty_v8/V8 source material. It has 797 unique legal texts and no unresolved
+components. All root-reachable Cargo.lock edges are included, conservatively
+covering development and other-platform dependencies as well as Android
+normal/build dependencies. The list does not assert that every source file is
+retained in the native ELF.
 
 ## Files and provenance
 
@@ -34,17 +34,21 @@ checked against the screen's 512-KiB limit; the index has a separate 4-MiB limit
 
 ## Source collection and omitted crate files
 
-[Collection run 37452960760](https://github.com/Mcpasi/AGENTCODI/actions/runs/37452960760)
-used Rust 1.95.0, cargo tree --locked --target aarch64-linux-android
---edges normal,build, and cargo metadata --locked. The checked-in lock
-remained unchanged. Registry checksums and Git dependency revisions are taken
-from that lock. Workspace packages retain the source-root LICENSE and NOTICE.
+The current collection reads the complete root-reachable Cargo.lock graph and
+original Cargo.toml metadata directly from verified source archives. Registry
+archives match their locked SHA-256 checksums; Git snapshots use their exact
+locked revisions. It requires neither Cargo execution nor Git commands, and
+the original Cargo.lock remains unchanged. Workspace packages retain the
+source-root LICENSE and NOTICE. Exact unchanged external package identities
+reuse checksum-verified legal material from
+[collection run 37452960760](https://github.com/Mcpasi/AGENTCODI/actions/runs/37452960760).
+The provenance records the current source archive and the reused seed hashes.
 
-For 64 crates whose published archives omitted legal files, original
+For crates whose published archives omitted legal files, original
 repository-root legal material was recovered at the exact revision recorded
-in .cargo_vcs_info.json or the locked Git source. For 16 remaining cases,
+in .cargo_vcs_info.json or the locked Git source. For remaining cases,
 the checksum-verified published package explicitly declares MIT or an
-MIT/Apache alternative. The collector supplies the complete declared terms,
+Apache-2.0 alternative. The collector supplies the complete declared terms,
 selecting Apache-2.0 where that alternative is offered. These supplements are
 identified by legal_source.selected_spdx, ATTRIBUTION.txt and the selected
 license file; they are not described as original publisher license files.
@@ -68,10 +72,28 @@ pinned release; it is not an independent reproduction of its native build.
 
 ## Regeneration and validation
 
+After independently verifying the release tag and extracting its source archive,
+the current conservative inventory can be regenerated with:
+
+```sh
+python3 .github/ci/collect-community-licenses.py \
+  --codex legal-source/codex --locked-closure \
+  --source-commit 6a0a8a244fc09a4ecae8ca0324b3d63f6713ee46 \
+  --seed-cargo third_party/community-codex \
+  --seed-v8 third_party/community-codex \
+  --source-cache .cache/community-license-sources \
+  --output legal-evidence --no-export
+```
+
+The APK contract recomputes the locked root closure and rejects omitted or
+unrelated components. The final package description omits its upstream tag;
+the metadata gate permits only this reviewed `0.163.0-termux.3` exception, while
+the binary version, source lineage, schemas and hashes remain independently pinned.
+
 ### Complete MPL-2.0 source delivery
 
-The twelve inventoried MPL-2.0 components are supplied in full, unchanged in
-[MPL-SOURCES.zip](MPL-SOURCES.zip). Ten original published `.crate` archives
+The thirteen inventoried MPL-2.0 components are supplied in full, unchanged in
+[MPL-SOURCES.zip](MPL-SOURCES.zip). Eleven original published `.crate` archives
 match their Cargo.lock SHA-256 values. One complete nucleo Git snapshot at
 4253de9faabb4e5c6d81d946a5e35a90f87347ee contains both nucleo and nucleo-matcher.
 Original file contents and license/copyright notices remain in these archives.
@@ -103,7 +125,7 @@ download or expiring CI artifact.
 The [collection workflow](../../.github/workflows/community-license-research.yml) on `main`
 uses the committed, checksum-verified V8/standard-library seed and freshly
 resolves the pinned Cargo source. It needs no expiring artifact as input.
-It runs four license-selection/attribution regressions and produces an
+It runs the license-selection/attribution regressions and produces an
 inspectable artifact; it does not update the repository automatically.
 
 For a fresh V8 collection, initialize the producer's rusty_v8 repository at

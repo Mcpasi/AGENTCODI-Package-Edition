@@ -39,8 +39,8 @@ class MplSourceTest(unittest.TestCase):
 
     def test_all_mpl_components_have_complete_original_source_archives(self):
         result = self.verify()
-        self.assertEqual(12, result["components"])
-        self.assertEqual(11, result["source_archives"])
+        self.assertEqual(13, result["components"])
+        self.assertEqual(12, result["source_archives"])
 
     def test_removing_an_indexed_component_is_rejected(self):
         self.index["components"].pop()

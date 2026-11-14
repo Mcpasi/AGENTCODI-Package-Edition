@@ -68,7 +68,7 @@ download URLs below are an additional way to obtain the identical pinned sources
 The delivered ZIP remains usable if an upstream URL becomes unavailable.
 
 The source selection follows the pinned Community Cargo.lock and conservative
-normal/build dependency inventory. It does not claim an independent reproduction
+locked dependency inventory. It does not claim an independent reproduction
 of the Community binaries. A shared Git snapshot contains both nucleo components.
 
 Components and exact upstream source locations:
@@ -137,7 +137,7 @@ def evidence(archive_data, index_data, notice_data, dependencies, lock_data):
                         and tomllib.loads(value.decode()).get("package", {}).get("version") == component["version"]
                         for value in manifests), "MPL source Cargo package/version missing")
             legal = [value for name, value in members.items()
-                     if re.fullmatch(r"(?i)(LICENSE(?:[.]txt)?)", PurePosixPath(name).name)]
+                     if re.fullmatch(r"(?i)LICENSE(?:[.]txt|[-]MPL(?:[-]2[.]0)?)?", PurePosixPath(name).name)]
             require(any(b"Mozilla Public License Version 2.0" in value for value in legal),
                     "Original MPL license missing from source archive")
             require(any(digest(value) in {f["sha256"] for f in component["files"]}
@@ -148,17 +148,27 @@ def evidence(archive_data, index_data, notice_data, dependencies, lock_data):
             "delivery": "Complete original sources bundled in APK; legal screen offers notice and source export"}
 
 
-def collect(output):
+def collect(output, source_cache=None):
     dependencies = json.loads((BASE / "DEPENDENCY-LICENSE-INDEX.json").read_bytes())
     lock_data = (BASE / "Cargo.lock").read_bytes()
     components = covered(dependencies)
     contents = {"MPL-SOURCE-OFFER.txt": notice(components)}
+    previous = {}
+    if (BASE / "MPL-SOURCES.zip").exists():
+        with zipfile.ZipFile(BASE / "MPL-SOURCES.zip") as archive:
+            previous = {name: archive.read(name) for name in archive.namelist() if name.startswith("sources/")}
     records = []
     for component in components:
         path, url = source_location(component)
         if path not in contents:
-            with urllib.request.urlopen(url, timeout=60) as response:
-                contents[path] = response.read()
+            cached = source_cache / (digest(url.encode()) + ".tar.gz") if source_cache else None
+            if cached and cached.is_file():
+                contents[path] = cached.read_bytes()
+            elif path in previous:
+                contents[path] = previous[path]
+            else:
+                with urllib.request.urlopen(url, timeout=60) as response:
+                    contents[path] = response.read()
         data = contents[path]
         require(not component["checksum"] or digest(data) == component["checksum"],
                 "Downloaded MPL crate checksum: " + component["name"])
@@ -186,9 +196,10 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--collect", action="store_true")
     parser.add_argument("--output", type=Path, default=BASE)
+    parser.add_argument("--source-cache", type=Path)
     args = parser.parse_args()
     if args.collect:
-        collect(args.output)
+        collect(args.output, args.source_cache)
     else:
         print(json.dumps(evidence(
             *((BASE / name).read_bytes() for name in FILENAMES),

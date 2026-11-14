@@ -66,7 +66,8 @@ public final class CodexRuntimeUpdater {
     static final String ORIGINAL_HOST = "codex-code-mode-host";
     static final String PACKAGED_HOST = "libcodex-codehost.so";
     // This is the install-context string table, not the other diagnostic occurrence.
-    static final String HOST_CONTEXT = ORIGINAL_HOST + "zshbincodex-resourcescodex-path";
+    static final String HOST_CONTEXT = ORIGINAL_HOST + "codex-resourcescodex-pathbin/opt/homebrew";
+    static final String LEGACY_HOST_CONTEXT = ORIGINAL_HOST + "zshbincodex-resourcescodex-path";
     static final String[] SCHEMAS = {
         "codex_app_server_protocol.schemas.json", "codex_app_server_protocol.v2.schemas.json"
     };
@@ -74,7 +75,8 @@ public final class CodexRuntimeUpdater {
         "package/bin/codex", "package/bin/codex-exec", "package/bin/codex.js",
         "package/bin/codex-exec.js", "package/scripts/postinstall_termux_launcher.js",
         "package/bin/codex.bin", "package/bin/codex-code-mode-host", "package/bin/libc++_shared.so",
-        "package/package.json", "package/README.md", "package/LICENSE", "package/NOTICE"
+        "package/package.json", "package/README.md", "package/LICENSE", "package/NOTICE",
+        "package/codex-package.json", "package/bin/migrate-to-termux-pkg.js"
     );
     static final Set<String> MATERIALIZED = set(
         "package/bin/codex.bin", "package/bin/codex-code-mode-host",
@@ -661,6 +663,8 @@ public final class CodexRuntimeUpdater {
         int hostOffset() throws IOException {
             require(ORIGINAL_HOST.length() == PACKAGED_HOST.length(), "Host relocation changes the binary layout.");
             List<Integer> matches = occurrences(HOST_CONTEXT);
+            int contextLength = matches.isEmpty() ? LEGACY_HOST_CONTEXT.length() : HOST_CONTEXT.length();
+            matches.addAll(occurrences(LEGACY_HOST_CONTEXT));
             require(matches.size() == 1 && occurrences(PACKAGED_HOST).isEmpty(),
                 "Unknown/ambiguous install-context host field; manual binary review required.");
             int offset = matches.get(0);
@@ -683,7 +687,7 @@ public final class CodexRuntimeUpdater {
                 long size = bytes.getLong(p + 32);
                 long flags = bytes.getLong(p + 8);
                 bounds(start, size);
-                require((flags & 7) == 2 && offset >= start && offset + HOST_CONTEXT.length() <= start + size,
+                require((flags & 7) == 2 && offset >= start && offset + contextLength <= start + size,
                     "Host field is not in read-only allocated ELF data.");
                 return offset;
             }

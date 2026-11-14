@@ -1,5 +1,24 @@
 # Package Edition
 
+## 0.2.0 — Package Edition (Unreleased)
+
+### Codex runtime
+
+- Update the Community Android ARM64 Codex CLI/app-server from
+  `0.156.1-termux.1` to `0.163.0-termux.3`, based on OpenAI Codex `rust-v0.163.0`,
+  including the matching code-mode host.
+- Refresh archive, source, native binary, relocation and protocol-schema pins.
+  Renew dependency license and provenance material, including complete MPL
+  source delivery.
+
+### Verification
+
+- **421 Java host tests**, **109 Python tests** and **all seven portable C++
+  suites** passed. **487 Java RPCs** and **15 MCP approval responses** matched
+  the generated schemas. The pinned Android app-server passed its initialize
+  handshake and returned the required Full access permission profile. APK
+  builds and physical-device tests were not run.
+
 ## 0.1.11 — Package Edition
 
 tested and stable

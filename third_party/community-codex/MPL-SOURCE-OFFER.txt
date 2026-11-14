@@ -23,7 +23,7 @@ download URLs below are an additional way to obtain the identical pinned sources
 The delivered ZIP remains usable if an upstream URL becomes unavailable.
 
 The source selection follows the pinned Community Cargo.lock and conservative
-normal/build dependency inventory. It does not claim an independent reproduction
+locked dependency inventory. It does not claim an independent reproduction
 of the Community binaries. A shared Git snapshot contains both nucleo components.
 
 Components and exact upstream source locations:
@@ -75,3 +75,7 @@ https://static.crates.io/crates/symphonia-format-riff/symphonia-format-riff-0.6.
 symphonia-metadata 0.6.0 — MPL-2.0
 sources/symphonia-metadata-0.6.0.crate
 https://static.crates.io/crates/symphonia-metadata/symphonia-metadata-0.6.0.crate
+
+termina 0.3.3 — MPL-2.0
+sources/termina-0.3.3.crate
+https://static.crates.io/crates/termina/termina-0.3.3.crate

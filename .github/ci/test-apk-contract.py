@@ -79,6 +79,16 @@ class ApkContractTest(unittest.TestCase):
         for filename in ("DEPENDENCY-LICENSE-INDEX.json", "DEPENDENCY-LICENSES.zip", "DEPENDENCY-PROVENANCE.json"):
             (base / filename).write_bytes(self.entries[root + filename])
 
+    def test_missing_locked_dependency_is_rejected(self):
+        selected = next(c for c in self.community_index["components"]
+                        if c["kind"] == "cargo-locked-dependency-closure")
+        self.community_index["components"].remove(selected)
+        self.community_provenance["cargo_component_count"] -= 1
+        self.update_community()
+        self.write()
+        with self.assertRaisesRegex(ValueError, "Community legal locked dependency coverage"):
+            self.verify()
+
     def write(self, staged=True):
         if staged:
             for name, data in self.entries.items():
@@ -146,8 +156,8 @@ class ApkContractTest(unittest.TestCase):
         report = self.verify(release=True)
         self.assertTrue(report["license_release_ready"])
         self.assertFalse(report["release_blockers"])
-        self.assertEqual(12, report["community"]["mpl_sources"]["components"])
-        self.assertEqual(11, report["community"]["mpl_sources"]["source_archives"])
+        self.assertEqual(13, report["community"]["mpl_sources"]["components"])
+        self.assertEqual(12, report["community"]["mpl_sources"]["source_archives"])
 
     def test_release_rejects_missing_mpl_source_delivery(self):
         for filename in contract.mpl_sources.FILENAMES:

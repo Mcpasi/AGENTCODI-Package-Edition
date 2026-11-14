@@ -10,7 +10,7 @@ The source paths, original SVG SHA-256 values, local resource mapping, and
 conversion rules are checked by the repository's ChatUiIconResourcesTest. The complete Apache
 License 2.0 terms are available in the APK legal-notices view.
 
-Codex CLI/app-server Android ARM64 community build 0.156.1-termux.1
+Codex CLI/app-server Android ARM64 community build 0.163.0-termux.3
 (@mmmbuto/codex-cli-termux), Apache License 2.0.
 OpenAI Codex Copyright 2025 OpenAI.
 Original Android/Termux compatibility work Copyright 2026 Davide A. Guglielmi.
@@ -18,12 +18,12 @@ DioNanos Community Codex runs with Full access in this edition.
 This is not an official OpenAI Android APK.
 Pascal (Mc Pasi) retains authorship of the AGENTCODI application and of the
 historical sandbox contributions documented in NOTICE.md.
-Distribution source: v0.156.1-termux.1, commit
-ea762071ec4acbf1531fcc7daf47524836f70a09.
-OpenAI source base: rust-v0.156.1, commit
-b412ff32c417f855c2b2d1581b77058eed87c84b.
+Distribution source: v0.163.0-termux.3, commit
+6a0a8a244fc09a4ecae8ca0324b3d63f6713ee46.
+OpenAI source base: rust-v0.163.0, commit
+83086188ae0614bd882818ff1aa23f3194962012.
 Package SHA-256:
-44cee2f3a4a110fd79d4f7d61378d46fd72406f45cffb3163e809d63e86d946a.
+8d95d9ba9681c22ed44ea2e482f76efa0f3b80bac90597c11402e56bb5ebd72b.
 The release archive is SHA-256-pinned; there is no npm or sandbox-fork fallback.
 AGENTCODI deterministically changes one equal-length app-server data field
 from codex-code-mode-host to libcodex-codehost.so so Android Package Manager
@@ -75,8 +75,9 @@ restrict your rights to these MPL sources. MPL-SOURCE-INDEX.json binds the
 complete source delivery to the pinned Community dependency inventory.
 
 The legal screen selects individual Rust crate, Rust standard-library and V8
-source notices. The collection uses the pinned aarch64-linux-android normal/build
-Cargo dependency closure and exact V8 submodule revisions. Original texts and
+source notices. The collection uses the complete pinned Cargo.lock dependency
+closure, including development and other-platform dependencies, and exact V8
+submodule revisions. Original texts and
 supplied copyright notices are retained. When a publisher omits a standalone
 legal file, the published crate's declared MIT/Apache terms and authors are
 identified explicitly; no copyright date is invented. Additional V8 build/test

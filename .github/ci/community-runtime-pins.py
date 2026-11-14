@@ -19,7 +19,7 @@ def main():
     data = binary.read_bytes()
     original = b"codex-code-mode-host"
     replacement = b"libcodex-codehost.so"
-    context = original + b"zshbincodex-resourcescodex-path"
+    context = original + b"codex-resourcescodex-pathbin/opt/homebrew"
     assert len(original) == len(replacement)
     assert data.count(context) == 1, "Host context must be unique in this artifact"
     offset = data.index(context)

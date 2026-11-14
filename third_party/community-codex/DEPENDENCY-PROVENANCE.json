@@ -2,34 +2,34 @@
   "format_version": 1,
   "community_release": {
     "repository": "DioNanos/codex-termux",
-    "release": "v0.156.1-termux.1",
-    "source_commit": "ea762071ec4acbf1531fcc7daf47524836f70a09",
+    "release": "v0.163.0-termux.3",
+    "source_commit": "6a0a8a244fc09a4ecae8ca0324b3d63f6713ee46",
     "package_name": "@mmmbuto/codex-cli-termux",
-    "package_version": "0.156.1-termux.1",
-    "asset_name": "mmmbuto-codex-cli-termux-0.156.1-termux.1.tgz",
-    "archive_sha256": "44cee2f3a4a110fd79d4f7d61378d46fd72406f45cffb3163e809d63e86d946a",
-    "upstream_tag": "rust-v0.156.1",
-    "upstream_commit": "b412ff32c417f855c2b2d1581b77058eed87c84b",
+    "package_version": "0.163.0-termux.3",
+    "asset_name": "mmmbuto-codex-cli-termux-0.163.0-termux.3.tgz",
+    "archive_sha256": "8d95d9ba9681c22ed44ea2e482f76efa0f3b80bac90597c11402e56bb5ebd72b",
+    "upstream_tag": "rust-v0.163.0",
+    "upstream_commit": "83086188ae0614bd882818ff1aa23f3194962012",
     "native_sha256": {
-      "codex.bin": "6cbfa7f1660095e9cf2df7de242014579a0fb0d42545652fb0e22d1b6c8571a5",
-      "codex-code-mode-host": "8afb196579c3fd8ecac558dbebfcba5467f91389b3754e485728ce6904e6ceaf",
+      "codex.bin": "b86c5f084314580d3b17ced869e6240bf1fa2f21f61e046730832eb2e3facbb5",
+      "codex-code-mode-host": "4b878ed2a9bb733c84662cf73543d31da830b482c1d4f0132db48cd20e464a54",
       "libc++_shared.so": "430f7cde7c1a88042bb9e39ae1c1f4b9f5819f3bd95acd1453d2e02c63ba1870"
     },
     "schema_sha256": {
-      "codex_app_server_protocol.schemas.json": "eb1ba91bd0fab656523092f6ed7de3ea7aef278921a650f14dc871ae7dcfaf84",
-      "codex_app_server_protocol.v2.schemas.json": "995fc3b8f8c469f6787e8fc5be4038c4f31359025edd8480b862e83355f3bf3b"
+      "codex_app_server_protocol.schemas.json": "408e09849d5d4931992a4227a7f3eb80b15d24901f84aca0562e816634651a82",
+      "codex_app_server_protocol.v2.schemas.json": "d204b96d8560d56600127423b89df9db471b3e22338e8809bb91d5a952998978"
     },
     "apk_relocation": {
-      "offset": 10568364,
+      "offset": 10875244,
       "from": "codex-code-mode-host",
       "to": "libcodex-codehost.so",
-      "sha256": "cf1b406252928b0d68cb0f8f81adde6a02bf357a7fffb762d10cb503a235be06"
+      "sha256": "c5dbad572cd18f4fe198d11d9cc07a5a9f141d99804e8a9529f899c89212a24a"
     }
   },
-  "cargo_lock_sha256": "d722f05fc760bcd1f5749ec452452d81058458b788df3b765b80500d757eba4a",
-  "index_sha256": "8da821f5b474812a05c963d5d18375e4c5ea395f7c2381c72f6cbdf7db861a7e",
-  "archive_sha256": "6fe3d77f8a41e8d69c66c7c99204e2977708678da78c073ab82eab0071e3fd70",
-  "cargo_component_count": 1033,
+  "cargo_lock_sha256": "0f80b3a23b6f2e4d1816993416aae367b80f870206cdff6311dceb44b0534c5f",
+  "index_sha256": "00bf7846df9e1628d247adefc98d1ccb0412fd26359073713ece0eb49703be99",
+  "archive_sha256": "258a4c7851b8bf3ed97b94114a708be51ec42ecc291a011a987c46441295f4db",
+  "cargo_component_count": 1377,
   "v8": {
     "version": "150.4.0",
     "source_commit": "5c15a6995c9bb4bacd3e341b59fff32c909c80bf",
@@ -127,21 +127,31 @@
   },
   "collection": {
     "source_repository": "DioNanos/codex-termux",
-    "source_commit": "ea762071ec4acbf1531fcc7daf47524836f70a09",
-    "workflow_run_url": "https://github.com/Mcpasi/AGENTCODI/actions/runs/37452960760",
-    "workflow_commit": "46c2367c03f1d8ca40b7a99c232c5be5bc94d529",
-    "job_id": 112233633111,
+    "source_commit": "6a0a8a244fc09a4ecae8ca0324b3d63f6713ee46",
+    "source_archive_url": "https://codeload.github.com/DioNanos/codex-termux/tar.gz/refs/tags/v0.163.0-termux.3",
+    "source_archive_sha256": "100a6bd5879f5583db86002bf64c5eb9c0d1910179ee9e19f0872f0d68d3dc01",
     "roots": [
       "codex-cli",
       "codex-code-mode-host"
     ],
     "target": "aarch64-linux-android",
     "cargo_edges": [
-      "normal",
-      "build"
-    ]
+      "all-locked-root-reachable"
+    ],
+    "method": "collect-community-licenses.py --locked-closure; checksum-verified source archives and direct Cargo.toml metadata; no Cargo builds or Git commands",
+    "selection": "All Cargo.lock edges reachable from the roots, including dev and other-platform dependencies; a conservative superset of the Android normal/build closure.",
+    "reused_immutable_cargo_evidence": {
+      "source_commit": "ea762071ec4acbf1531fcc7daf47524836f70a09",
+      "index_sha256": "8da821f5b474812a05c963d5d18375e4c5ea395f7c2381c72f6cbdf7db861a7e",
+      "archive_sha256": "6fe3d77f8a41e8d69c66c7c99204e2977708678da78c073ab82eab0071e3fd70"
+    },
+    "v8_and_rust_notice_seed": {
+      "source_commit": "ea762071ec4acbf1531fcc7daf47524836f70a09",
+      "index_sha256": "8da821f5b474812a05c963d5d18375e4c5ea395f7c2381c72f6cbdf7db861a7e",
+      "archive_sha256": "6fe3d77f8a41e8d69c66c7c99204e2977708678da78c073ab82eab0071e3fd70"
+    }
   },
-  "coverage": "Conservative pinned Cargo normal/build dependency closure, Rust standard-library notices and all original legal files in rusty_v8/V8 source submodules. Includes build-only and test-source material; does not assert every listed source is retained in the ELF files or claim an independently reproduced binary.",
+  "coverage": "Conservative complete Cargo.lock root closure, including dev and other-platform dependencies, Rust standard-library notices and original rusty_v8/V8 legal material. This is a superset of the Android normal/build closure; it does not assert every listed source is retained in the ELF files or claim an independently reproduced binary.",
   "spdx_mit_source": {
     "repository": "spdx/license-list-data",
     "commit": "31ba1a50e5397e00a304dbadc76531740e89ee48",

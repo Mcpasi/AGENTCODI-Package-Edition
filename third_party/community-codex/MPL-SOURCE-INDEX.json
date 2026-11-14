@@ -1,9 +1,9 @@
 {
   "format_version": 1,
-  "codex_source_commit": "ea762071ec4acbf1531fcc7daf47524836f70a09",
-  "cargo_lock_sha256": "d722f05fc760bcd1f5749ec452452d81058458b788df3b765b80500d757eba4a",
-  "archive_sha256": "cdcc940563e3e267fbca5343f08e118785b21018eda598a957382cb2a310a174",
-  "notice_sha256": "31caf593c24939e8f028269a0eaf49bf052b52d6ee0bdb08fa9e978777aa3f41",
+  "codex_source_commit": "6a0a8a244fc09a4ecae8ca0324b3d63f6713ee46",
+  "cargo_lock_sha256": "0f80b3a23b6f2e4d1816993416aae367b80f870206cdff6311dceb44b0534c5f",
+  "archive_sha256": "7e4cf3b09a708af65814d3bc42284c7be6fd0dbefc5c0743ee4a913c5c405ab1",
+  "notice_sha256": "303c3d2c62f8c6cea0d4f02db0c0e74f0e9b568637c64fe891371ef5869db9bb",
   "components": [
     {
       "name": "nucleo",
@@ -124,6 +124,16 @@
       "url": "https://static.crates.io/crates/symphonia-metadata/symphonia-metadata-0.6.0.crate",
       "size": 59325,
       "sha256": "a31acf5cd623398a6208e2225d18f4b20f761c55098a796a5247ad516a4a8681"
+    },
+    {
+      "name": "termina",
+      "version": "0.3.3",
+      "source": "registry+https://github.com/rust-lang/crates.io-index",
+      "checksum": "9048a889effe34a5cddee0af7f53285198b16dca3be510858d38dfdb3e62a04e",
+      "path": "sources/termina-0.3.3.crate",
+      "url": "https://static.crates.io/crates/termina/termina-0.3.3.crate",
+      "size": 89971,
+      "sha256": "9048a889effe34a5cddee0af7f53285198b16dca3be510858d38dfdb3e62a04e"
     }
   ]
 }

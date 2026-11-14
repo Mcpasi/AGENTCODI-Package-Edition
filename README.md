@@ -155,7 +155,7 @@ The [integration guide](scripts/arch-terminal/README.md) describes the shared wo
 <details>
 <summary>Codex runtime and access model</summary>
 
-The app pins the Community Android ARM64 runtime from [DioNanos/codex-termux](https://github.com/DioNanos/codex-termux), release [v0.156.1-termux.1](https://github.com/DioNanos/codex-termux/releases/tag/v0.156.1-termux.1), based on OpenAI Codex `rust-v0.156.1`. Runtime archives, source revisions, native binaries, schema files and integration hashes are pinned and verified in CI.
+The app pins the Community Android ARM64 runtime from [DioNanos/codex-termux](https://github.com/DioNanos/codex-termux), release [v0.163.0-termux.3](https://github.com/DioNanos/codex-termux/releases/tag/v0.163.0-termux.3), based on OpenAI Codex `rust-v0.163.0`. Runtime archives, source revisions, native binaries, schema files and integration hashes are pinned and verified in CI.
 
 Full access is the only runtime mode. Optional command and file confirmation uses Codex's `untrusted` policy. Programs installed through pacman, npm, pip or other tools run with AGENTCODI's app permissions. The workspace, `HOME`, `CODEX_HOME` and Arch rootfs are separate directories, but this does not isolate programs from account files.
 

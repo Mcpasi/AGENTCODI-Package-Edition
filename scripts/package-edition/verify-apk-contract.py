@@ -15,6 +15,9 @@ REPO = HERE.parents[1]
 mpl_spec = importlib.util.spec_from_file_location("mpl_sources", REPO / ".github/ci/community-mpl-sources.py")
 mpl_sources = importlib.util.module_from_spec(mpl_spec)
 mpl_spec.loader.exec_module(mpl_sources)
+collector_spec = importlib.util.spec_from_file_location("community_license_collector", REPO / ".github/ci/collect-community-licenses.py")
+community_licenses = importlib.util.module_from_spec(collector_spec)
+collector_spec.loader.exec_module(community_licenses)
 
 
 def digest(data):
@@ -69,7 +72,8 @@ def community_evidence(archive_data, index_data, provenance_data, project):
     require(index["target"] == "aarch64-linux-android" and
             index["roots"] == ["codex-cli", "codex-code-mode-host"], "Community legal target/roots")
     locked = {(p["name"], p["version"]): p for p in tomllib.loads(lock_data.decode())["package"]}
-    cargo = [c for c in index["components"] if c["kind"] == "cargo-normal-and-build-closure"]
+    cargo = [c for c in index["components"] if c["kind"] in
+             ("cargo-normal-and-build-closure", "cargo-locked-dependency-closure")]
     keys = {(c["name"], c["version"]) for c in cargo}
     require(len(keys) == len(cargo) == provenance["cargo_component_count"] and
             {"codex-cli", "codex-code-mode-host"}.issubset({name for name, _ in keys}),
@@ -78,6 +82,11 @@ def community_evidence(archive_data, index_data, provenance_data, project):
         package = locked.get((component["name"], component["version"]))
         require(package is not None and component["source"] == package.get("source") and
                 component["checksum"] == package.get("checksum"), "Community legal package/source checksum")
+    if any(c["kind"] == "cargo-locked-dependency-closure" for c in cargo):
+        expected = community_licenses.locked_closure(list(locked.values()), index["roots"])
+        require(all(c["kind"] == "cargo-locked-dependency-closure" for c in cargo)
+                and keys == {(p["name"], p["version"]) for p in expected},
+                "Community legal locked dependency coverage")
     v8 = [c for c in index["components"] if c["kind"] == "v8-source-material"]
     std = [c for c in index["components"] if c["kind"] == "rust-standard-library"]
     require(len(v8) == len(std) == 1 and v8[0]["version"] == "150.4.0" and
