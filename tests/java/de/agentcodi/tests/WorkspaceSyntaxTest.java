@@ -20,6 +20,7 @@ public final class WorkspaceSyntaxTest {
         javascriptCommentsAndQuotesTakePrecedence();
         javascriptNumbersRegexAndDivision();
         javascriptRegexAfterControlConditions();
+        javascriptRegexAfterControlBlocks();
         javascriptKeywordPropertiesKeepDivisionOperators();
         javascriptNestedTemplateExpressions();
         pythonStringsPrefixesAndComments();
@@ -42,7 +43,7 @@ public final class WorkspaceSyntaxTest {
         cancelsSupersededWork();
         countsLogicalLinesAndCursorOffsets();
         indexesManyLinesAndRejectsInvalidOffsets();
-        return 26;
+        return 27;
     }
 
     private static void detectsOnlySupportedFileNames() {
@@ -102,6 +103,27 @@ public final class WorkspaceSyntaxTest {
             ranges(JAVASCRIPT, text);
         }
         String division = "check(value) / 2 / 3; (value + 1) / 2 / 3;";
+        for (int index = 0; index < division.length(); index++) {
+            if (division.charAt(index) == '/') {
+                tokenAt(JAVASCRIPT, division, index, index + 1, OPERATOR);
+            }
+        }
+    }
+
+    private static void javascriptRegexAfterControlBlocks() {
+        // No semicolon separates the block from the next statement: / starts a regex here.
+        for (String block : new String[] {
+            "if (ready) { run(); }",
+            "while (ready) { break; }",
+            "for (const item of items) { use(item); }"
+        }) {
+            String text = block + "\n/ab+c/g.test(value);";
+            token(JAVASCRIPT, text, "/ab+c/g", STRING);
+            token(JAVASCRIPT, text, "test", FUNCTION);
+            ranges(JAVASCRIPT, text);
+        }
+        // Closing an object literal still permits division; not every } ends a statement.
+        String division = "const ratio = { valueOf() { return 12; } } / 2 / 3;";
         for (int index = 0; index < division.length(); index++) {
             if (division.charAt(index) == '/') {
                 tokenAt(JAVASCRIPT, division, index, index + 1, OPERATOR);
