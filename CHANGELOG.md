@@ -2,6 +2,8 @@
 
 ## 0.1.11 — Package Edition
 
+tested and stable
+
 ### Fixes
 
 - Treat parentheses inside single- or double-quoted Markdown link titles as
