@@ -21,6 +21,7 @@ public final class WorkspaceSyntaxTest {
         javascriptNumbersRegexAndDivision();
         javascriptRegexAfterControlConditions();
         javascriptRegexAfterControlBlocks();
+        javascriptRegexAfterFunctionDeclarations();
         javascriptRegexAfterNestedControlBlocksAndTrivia();
         javascriptRegexAfterOtherControlBlocks();
         javascriptExpressionBracesKeepDivisionOperators();
@@ -47,7 +48,7 @@ public final class WorkspaceSyntaxTest {
         cancelsSupersededWork();
         countsLogicalLinesAndCursorOffsets();
         indexesManyLinesAndRejectsInvalidOffsets();
-        return 31;
+        return 32;
     }
 
     private static void detectsOnlySupportedFileNames() {
@@ -132,6 +133,23 @@ public final class WorkspaceSyntaxTest {
             if (division.charAt(index) == '/') {
                 tokenAt(JAVASCRIPT, division, index, index + 1, OPERATOR);
             }
+        }
+    }
+
+    private static void javascriptRegexAfterFunctionDeclarations() {
+        // A declaration ends a statement, so the next slash can start a regex without a semicolon.
+        for (String declaration : new String[] {
+            "function declared() {}",
+            "function declared() { return { value: 1 }; }",
+            "async function declared() { await work(); }",
+            "function* declared() { yield 1; }",
+            "export function declared() { return 1; }"
+        }) {
+            String text = declaration + "\n/ab+c/g.test(value);\nconst after = 1;";
+            token(JAVASCRIPT, text, "/ab+c/g", STRING);
+            token(JAVASCRIPT, text, "test", FUNCTION);
+            token(JAVASCRIPT, text, "const", KEYWORD);
+            ranges(JAVASCRIPT, text);
         }
     }
 
