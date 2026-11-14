@@ -31,13 +31,16 @@ public final class WorkspaceJavaSyntaxTest {
         methodReferencesKeepNestedTypeArgumentsSeparate();
         methodReferencesPreserveCommentsAndTypeHighlighting();
         methodReferencesPreserveTypeAnnotationsWithArguments();
+        methodReferenceAnnotationsPreserveNestedExpressionsAndTokens();
+        methodReferenceAnnotationsPreserveTriviaAndMultipleTypeArguments();
+        incompleteMethodReferenceAnnotationsRecover();
         incompleteMethodReferenceTypeArgumentsRecover();
         recognizesJavaUnicodeIdentifiersWithoutSplittingKeywords();
         recognizesJavaOperatorsWithoutJavascriptRegexes();
         toleratesEveryEditingPrefixAndRetokenizes();
         standaloneModulePreservesOffsetsAndRejectsMissingInputs();
         cancelsSupersededJavaScans();
-        return 21;
+        return 24;
     }
 
     private static void detectsJavaFileNames() {
@@ -256,6 +259,69 @@ public final class WorkspaceJavaSyntaxTest {
         token(tokens, text, "1", NUMBER);
         plain(text, "untouched");
         ranges(text);
+    }
+
+    private static void methodReferenceAnnotationsPreserveNestedExpressionsAndTokens() {
+        String text = "Factory::<java.util.Map<@Hints(value = {@Hint(\"first ; > ( )\"), @Hint(\"second\")}, "
+            + "type = String.class, mask = (1 << 2) | (8 >>> 1), enabled = (3 > 2) && (1 < 2), letter = ')') "
+            + "String, java.util.List<Value>>>create; int untouched = 1;";
+        List<SyntaxToken> tokens = SyntaxHighlighter.highlight(JAVA, text);
+        token(tokens, text, "create", FUNCTION);
+        token(tokens, text, "@Hints", ATTRIBUTE);
+        token(tokens, text, "@Hint", ATTRIBUTE);
+        token(tokens, text, "\"first ; > ( )\"", STRING);
+        token(tokens, text, "\"second\"", STRING);
+        token(tokens, text, "')'", STRING);
+        token(tokens, text, "class", KEYWORD);
+        for (String number : new String[] {"1", "2", "3", "8"}) { token(tokens, text, number, NUMBER); }
+        for (String operator : new String[] {"<<", ">>>", ">", "<", "&&"}) {
+            token(tokens, text, operator, OPERATOR);
+        }
+        int type = text.indexOf("String, java.util.List");
+        tokenAt(tokens, type, type + "String".length(), BUILTIN);
+        plain(text, "Value");
+        plain(text, "untouched");
+        ranges(text);
+    }
+
+    private static void methodReferenceAnnotationsPreserveTriviaAndMultipleTypeArguments() {
+        for (String newline : new String[] {"\n", "\r\n", "\r"}) {
+            String text = "Factory::<@pkg.Hint /* before */ // opening" + newline
+                + "(value = /* literal */ \"demo\", type = String.class) /* after */ Value, "
+                + "@Marker @Empty() Other @pkg.Flag (true) []>create; int untouched = 1;";
+            List<SyntaxToken> tokens = SyntaxHighlighter.highlight(JAVA, text);
+            token(tokens, text, "create", FUNCTION);
+            for (String annotation : new String[] {"@pkg.Hint", "@Marker", "@Empty", "@pkg.Flag"}) {
+                token(tokens, text, annotation, ATTRIBUTE);
+            }
+            for (String comment : new String[] {"/* before */", "// opening", "/* literal */", "/* after */"}) {
+                token(tokens, text, comment, COMMENT);
+            }
+            token(tokens, text, "\"demo\"", STRING);
+            token(tokens, text, "String", BUILTIN);
+            token(tokens, text, "true", KEYWORD);
+            token(tokens, text, "int", KEYWORD);
+            plain(text, "Value");
+            plain(text, "Other");
+            plain(text, "untouched");
+            ranges(text);
+        }
+    }
+
+    private static void incompleteMethodReferenceAnnotationsRecover() {
+        for (String prefix : new String[] {"Factory::<@Hint(", "Factory::<@Hint(\"unfinished",
+            "Factory::<@Hint(\"unfinished\\", "Factory::<@Hint('x", "Factory::<@Hint((1 << 2)",
+            "Factory::<@Hints({@Hint(\"x\"),", "Factory::<@Hint(value = @Inner("}) {
+            String text = prefix + "\n; int untouched = 1; normal(); Object ref = Other::run;";
+            token(text, "int", KEYWORD);
+            token(text, "1", NUMBER);
+            token(text, "normal", FUNCTION);
+            token(text, "run", FUNCTION);
+            plain(text, "untouched");
+            plain(text, "ref");
+            ranges(text);
+            for (int end = 0; end <= prefix.length(); end++) { ranges(prefix.substring(0, end)); }
+        }
     }
 
     private static void incompleteMethodReferenceTypeArgumentsRecover() {

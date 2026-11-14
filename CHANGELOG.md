@@ -11,6 +11,12 @@
 
 ### Fixes
 
+- Preserve Java method-reference highlighting when explicit type arguments
+  contain annotations with arguments, such as
+  `Collections::<@TypeHint("demo") String>emptyList`. Keep nested annotation
+  values, literals, operators and comments highlighted and recover from
+  incomplete annotation arguments. Retain the reproduction test confirmed to
+  fail on GitHub.
 - Highlight Java method references with explicit type arguments such as
   `Collections::<String>emptyList` correctly. Preserve type and comment
   highlighting through nested type arguments and recover from incomplete edits.
@@ -40,6 +46,11 @@
 
 ### Verification
 
+- Local verification of Java method references with type-annotation arguments:
+  **456 Java host tests**, including the unchanged reproduction test confirmed
+  to fail on GitHub and locally before the fix, nested annotation values,
+  expression operators, comments across LF/CRLF/CR line endings and
+  incomplete-edit recovery, and architecture/source contracts passed.
 - Local verification of the Java method-reference highlighting fix:
   **452 Java host tests**, including the unchanged reproduction test confirmed
   to fail on GitHub, nested and multiple type arguments, comments across

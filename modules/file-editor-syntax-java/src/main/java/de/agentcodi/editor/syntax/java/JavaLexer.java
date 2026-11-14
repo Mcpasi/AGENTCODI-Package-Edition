@@ -48,6 +48,8 @@ public final class JavaLexer {
         boolean member = false;
         // -1: no reference; 0: method name expected; positive: nested type arguments.
         int methodReferenceDepth = -1;
+        boolean annotationArgumentsPending = false;
+        int annotationParentheses = 0;
         for (int cursor = 0; cursor < end;) {
             checkCancelled();
             char value = text.charAt(cursor);
@@ -63,12 +65,12 @@ public final class JavaLexer {
                 next = quoted(cursor, value == '"' && textBlock(cursor) ? 3 : 1);
                 sink.add(cursor, next, Kind.STRING);
                 member = false;
-                methodReferenceDepth = -1;
+                if (annotationParentheses == 0) { methodReferenceDepth = -1; }
             } else if (digit(value, 10) || (value == '.' && next < end && digit(text.charAt(next), 10))) {
                 next = number(cursor);
                 sink.add(cursor, next, Kind.NUMBER);
                 member = false;
-                methodReferenceDepth = -1;
+                if (annotationParentheses == 0) { methodReferenceDepth = -1; }
             } else if (value == '@' && next < end && Character.isJavaIdentifierStart(text.codePointAt(next))
                 && !text.substring(next, identifier(next)).equals("interface")) {
                 next = identifier(next);
@@ -79,6 +81,10 @@ public final class JavaLexer {
                 sink.add(cursor, next, Kind.ATTRIBUTE);
                 member = false;
                 if (methodReferenceDepth == 0) { methodReferenceDepth = -1; }
+                if (methodReferenceDepth > 0 && annotationParentheses == 0) {
+                    int following = trivia(next);
+                    annotationArgumentsPending = following < end && text.charAt(following) == '(';
+                }
             } else if (Character.isJavaIdentifierStart(text.codePointAt(cursor))) {
                 next = identifier(cursor);
                 String word = text.substring(cursor, next);
@@ -102,7 +108,19 @@ public final class JavaLexer {
                 }
                 sink.add(cursor, next, Kind.OPERATOR);
                 member = value == '.' && next == cursor + 1;
-                if (at(cursor, "::")) { methodReferenceDepth = 0; }
+                if (annotationArgumentsPending && value == '(') {
+                    annotationArgumentsPending = false;
+                    annotationParentheses = 1;
+                } else if (annotationParentheses > 0) {
+                    // Annotation expressions must not change the surrounding type-argument depth.
+                    if (value == '(') { annotationParentheses++; }
+                    else if (value == ')') { annotationParentheses--; }
+                    else if (value == ';') {
+                        // Recover at a statement boundary while an annotation is still being edited.
+                        annotationParentheses = 0;
+                        methodReferenceDepth = -1;
+                    }
+                } else if (at(cursor, "::")) { methodReferenceDepth = 0; }
                 else if (methodReferenceDepth >= 0 && value == '<' && next == cursor + 1) {
                     methodReferenceDepth++;
                 } else if (methodReferenceDepth > 0 && value == '>' && text.charAt(next - 1) == '>') {
