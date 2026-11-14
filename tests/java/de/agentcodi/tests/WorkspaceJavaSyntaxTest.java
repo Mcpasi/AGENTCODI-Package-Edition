@@ -28,12 +28,15 @@ public final class WorkspaceJavaSyntaxTest {
         recognizesAnnotationsAndAnnotationTypeDeclarations();
         recognizesMethodsConstructorsAndReferences();
         recognizesMethodReferencesWithExplicitTypeArguments();
+        methodReferencesKeepNestedTypeArgumentsSeparate();
+        methodReferencesPreserveCommentsAndTypeHighlighting();
+        incompleteMethodReferenceTypeArgumentsRecover();
         recognizesJavaUnicodeIdentifiersWithoutSplittingKeywords();
         recognizesJavaOperatorsWithoutJavascriptRegexes();
         toleratesEveryEditingPrefixAndRetokenizes();
         standaloneModulePreservesOffsetsAndRejectsMissingInputs();
         cancelsSupersededJavaScans();
-        return 17;
+        return 20;
     }
 
     private static void detectsJavaFileNames() {
@@ -206,6 +209,48 @@ public final class WorkspaceJavaSyntaxTest {
             + "java.util.Collections::<String>emptyList;";
         token(text, "emptyList", FUNCTION);
         ranges(text);
+    }
+
+    private static void methodReferencesKeepNestedTypeArgumentsSeparate() {
+        for (String arguments : new String[] {"<Value>", "<java.util.List<Value>>",
+            "<java.util.Map<Key, java.util.List<Value>>>", "<Key, Value[]>",
+            "<java.util.List<? extends Value[]>>"}) {
+            String text = "Factory::" + arguments + "create; int untouched = 1;";
+            token(text, "create", FUNCTION);
+            plain(text, "Value");
+            plain(text, "untouched");
+            token(text, "int", KEYWORD);
+            ranges(text);
+        }
+    }
+
+    private static void methodReferencesPreserveCommentsAndTypeHighlighting() {
+        for (String newline : new String[] {"\n", "\r\n", "\r"}) {
+            String text = "Factory:: /* before */ <String, // inside" + newline
+                + "Value> /* after */ create; String ordinary = \"text\";";
+            token(text, "create", FUNCTION);
+            int type = text.indexOf("<String") + 1;
+            tokenAt(SyntaxHighlighter.highlight(JAVA, text), type, type + "String".length(), BUILTIN);
+            token(text, "/* before */", COMMENT);
+            token(text, "// inside", COMMENT);
+            token(text, "/* after */", COMMENT);
+            token(text, "\"text\"", STRING);
+            plain(text, "Value");
+            plain(text, "ordinary");
+            ranges(text);
+        }
+    }
+
+    private static void incompleteMethodReferenceTypeArgumentsRecover() {
+        for (String prefix : new String[] {"Factory::<", "Factory::<Value", "Factory::<Value,",
+            "Factory::<List<Value>", "Factory::<Value>>", "Factory::<Value>="}) {
+            String text = prefix + "; int untouched = 1; normal();";
+            token(text, "int", KEYWORD);
+            token(text, "normal", FUNCTION);
+            plain(text, "untouched");
+            ranges(text);
+            for (int end = 0; end <= prefix.length(); end++) { ranges(prefix.substring(0, end)); }
+        }
     }
 
     private static void recognizesJavaUnicodeIdentifiersWithoutSplittingKeywords() {

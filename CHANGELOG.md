@@ -11,6 +11,10 @@
 
 ### Fixes
 
+- Highlight Java method references with explicit type arguments such as
+  `Collections::<String>emptyList` correctly. Preserve type and comment
+  highlighting through nested type arguments and recover from incomplete edits.
+  Retain the reproduction test confirmed to fail on GitHub.
 - Highlight Python matrix multiplication such as `left@right` as an operator
   instead of a decorator. Recognize decorators only at logical statement starts,
   preserving indented decorators, continued expressions and f-string fields.
@@ -36,6 +40,11 @@
 
 ### Verification
 
+- Local verification of the Java method-reference highlighting fix:
+  **452 Java host tests**, including the unchanged reproduction test confirmed
+  to fail on GitHub, nested and multiple type arguments, comments across
+  LF/CRLF/CR line endings and incomplete-edit recovery, and architecture/source
+  contracts passed.
 - Local verification of Java syntax highlighting: **448 Java host tests**,
   including 16 new Java-specific tests and shared incomplete-edit, random-input
   and 1 MiB document checks, plus **9 local-build tests**, architecture/source

@@ -46,7 +46,8 @@ public final class JavaLexer {
 
     private void scan() {
         boolean member = false;
-        boolean methodReference = false;
+        // -1: no reference; 0: method name expected; positive: nested type arguments.
+        int methodReferenceDepth = -1;
         for (int cursor = 0; cursor < end;) {
             checkCancelled();
             char value = text.charAt(cursor);
@@ -61,11 +62,13 @@ public final class JavaLexer {
             } else if (value == '\'' || value == '"') {
                 next = quoted(cursor, value == '"' && textBlock(cursor) ? 3 : 1);
                 sink.add(cursor, next, Kind.STRING);
-                member = methodReference = false;
+                member = false;
+                methodReferenceDepth = -1;
             } else if (digit(value, 10) || (value == '.' && next < end && digit(text.charAt(next), 10))) {
                 next = number(cursor);
                 sink.add(cursor, next, Kind.NUMBER);
-                member = methodReference = false;
+                member = false;
+                methodReferenceDepth = -1;
             } else if (value == '@' && next < end && Character.isJavaIdentifierStart(text.codePointAt(next))
                 && !text.substring(next, identifier(next)).equals("interface")) {
                 next = identifier(next);
@@ -74,14 +77,15 @@ public final class JavaLexer {
                     next = identifier(next + 1);
                 }
                 sink.add(cursor, next, Kind.ATTRIBUTE);
-                member = methodReference = false;
+                member = false;
+                if (methodReferenceDepth == 0) { methodReferenceDepth = -1; }
             } else if (Character.isJavaIdentifierStart(text.codePointAt(cursor))) {
                 next = identifier(cursor);
                 String word = text.substring(cursor, next);
                 int following = trivia(next);
                 boolean call = following < end && text.charAt(following) == '(';
                 if (KEYWORDS.contains(word)) { sink.add(cursor, next, Kind.KEYWORD); }
-                else if (methodReference) { sink.add(cursor, next, Kind.FUNCTION); }
+                else if (methodReferenceDepth == 0) { sink.add(cursor, next, Kind.FUNCTION); }
                 else if (!member && word.equals("non") && at(next, "-sealed")
                     && (next + 7 == end || !Character.isJavaIdentifierPart(text.codePointAt(next + 7)))) {
                     next += 7;
@@ -90,14 +94,23 @@ public final class JavaLexer {
                     sink.add(cursor, next, Kind.KEYWORD);
                 } else if (BUILTINS.contains(word)) { sink.add(cursor, next, Kind.BUILTIN); }
                 else if (call) { sink.add(cursor, next, Kind.FUNCTION); }
-                member = methodReference = false;
+                member = false;
+                if (methodReferenceDepth == 0) { methodReferenceDepth = -1; }
             } else {
                 for (String operator : OPERATORS) {
                     if (at(cursor, operator)) { next = cursor + operator.length(); break; }
                 }
                 sink.add(cursor, next, Kind.OPERATOR);
                 member = value == '.' && next == cursor + 1;
-                methodReference = at(cursor, "::");
+                if (at(cursor, "::")) { methodReferenceDepth = 0; }
+                else if (methodReferenceDepth >= 0 && value == '<' && next == cursor + 1) {
+                    methodReferenceDepth++;
+                } else if (methodReferenceDepth > 0 && value == '>' && text.charAt(next - 1) == '>') {
+                    // >> and >>> close nested type arguments within a method reference.
+                    methodReferenceDepth = Math.max(-1, methodReferenceDepth - (next - cursor));
+                } else if (methodReferenceDepth <= 0 || ".,?[]".indexOf(value) < 0) {
+                    methodReferenceDepth = -1;
+                }
             }
             cursor = next;
         }
