@@ -27,12 +27,13 @@ public final class WorkspaceJavaSyntaxTest {
         numbersKeepIdentifierAndOperatorBoundaries();
         recognizesAnnotationsAndAnnotationTypeDeclarations();
         recognizesMethodsConstructorsAndReferences();
+        recognizesMethodReferencesWithExplicitTypeArguments();
         recognizesJavaUnicodeIdentifiersWithoutSplittingKeywords();
         recognizesJavaOperatorsWithoutJavascriptRegexes();
         toleratesEveryEditingPrefixAndRetokenizes();
         standaloneModulePreservesOffsetsAndRejectsMissingInputs();
         cancelsSupersededJavaScans();
-        return 16;
+        return 17;
     }
 
     private static void detectsJavaFileNames() {
@@ -197,6 +198,13 @@ public final class WorkspaceJavaSyntaxTest {
         plain(text, "module");
         int referenced = text.indexOf("::record") + 2;
         tokenAt(SyntaxHighlighter.highlight(JAVA, text), referenced, referenced + "record".length(), FUNCTION);
+        ranges(text);
+    }
+
+    private static void recognizesMethodReferencesWithExplicitTypeArguments() {
+        String text = "java.util.function.Supplier<java.util.List<String>> factory = "
+            + "java.util.Collections::<String>emptyList;";
+        token(text, "emptyList", FUNCTION);
         ranges(text);
     }
 
