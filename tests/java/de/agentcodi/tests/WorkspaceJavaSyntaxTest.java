@@ -30,13 +30,14 @@ public final class WorkspaceJavaSyntaxTest {
         recognizesMethodReferencesWithExplicitTypeArguments();
         methodReferencesKeepNestedTypeArgumentsSeparate();
         methodReferencesPreserveCommentsAndTypeHighlighting();
+        methodReferencesPreserveTypeAnnotationsWithArguments();
         incompleteMethodReferenceTypeArgumentsRecover();
         recognizesJavaUnicodeIdentifiersWithoutSplittingKeywords();
         recognizesJavaOperatorsWithoutJavascriptRegexes();
         toleratesEveryEditingPrefixAndRetokenizes();
         standaloneModulePreservesOffsetsAndRejectsMissingInputs();
         cancelsSupersededJavaScans();
-        return 20;
+        return 21;
     }
 
     private static void detectsJavaFileNames() {
@@ -239,6 +240,22 @@ public final class WorkspaceJavaSyntaxTest {
             plain(text, "ordinary");
             ranges(text);
         }
+    }
+
+    private static void methodReferencesPreserveTypeAnnotationsWithArguments() {
+        // Type-use annotations may have arguments inside a method reference's explicit type arguments.
+        String text = "java.util.function.Supplier<java.util.List<String>> factory = "
+            + "java.util.Collections::<@TypeHint(\"demo\") String>emptyList; int untouched = 1;";
+        List<SyntaxToken> tokens = SyntaxHighlighter.highlight(JAVA, text);
+        token(tokens, text, "emptyList", FUNCTION);
+        token(tokens, text, "@TypeHint", ATTRIBUTE);
+        token(tokens, text, "\"demo\"", STRING);
+        int type = text.indexOf(" String>emptyList") + 1;
+        tokenAt(tokens, type, type + "String".length(), BUILTIN);
+        token(tokens, text, "int", KEYWORD);
+        token(tokens, text, "1", NUMBER);
+        plain(text, "untouched");
+        ranges(text);
     }
 
     private static void incompleteMethodReferenceTypeArgumentsRecover() {
