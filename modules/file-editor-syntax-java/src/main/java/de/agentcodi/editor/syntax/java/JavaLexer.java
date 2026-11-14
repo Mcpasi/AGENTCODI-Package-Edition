@@ -46,8 +46,8 @@ public final class JavaLexer {
 
     private void scan() {
         boolean member = false;
-        // -1: no reference; 0: method name expected; positive: nested type arguments.
-        int methodReferenceDepth = -1;
+        // -1: no method context; 0: method name expected; positive: nested type arguments.
+        int methodNameDepth = -1;
         boolean annotationArgumentsPending = false;
         int annotationParentheses = 0;
         for (int cursor = 0; cursor < end;) {
@@ -65,12 +65,12 @@ public final class JavaLexer {
                 next = quoted(cursor, value == '"' && textBlock(cursor) ? 3 : 1);
                 sink.add(cursor, next, Kind.STRING);
                 member = false;
-                if (annotationParentheses == 0) { methodReferenceDepth = -1; }
+                if (annotationParentheses == 0) { methodNameDepth = -1; }
             } else if (digit(value, 10) || (value == '.' && next < end && digit(text.charAt(next), 10))) {
                 next = number(cursor);
                 sink.add(cursor, next, Kind.NUMBER);
                 member = false;
-                if (annotationParentheses == 0) { methodReferenceDepth = -1; }
+                if (annotationParentheses == 0) { methodNameDepth = -1; }
             } else if (value == '@' && next < end && Character.isJavaIdentifierStart(text.codePointAt(next))
                 && !text.substring(next, identifier(next)).equals("interface")) {
                 next = identifier(next);
@@ -80,8 +80,8 @@ public final class JavaLexer {
                 }
                 sink.add(cursor, next, Kind.ATTRIBUTE);
                 member = false;
-                if (methodReferenceDepth == 0) { methodReferenceDepth = -1; }
-                if (methodReferenceDepth > 0 && annotationParentheses == 0) {
+                if (methodNameDepth == 0) { methodNameDepth = -1; }
+                if (methodNameDepth > 0 && annotationParentheses == 0) {
                     int following = trivia(next);
                     annotationArgumentsPending = following < end && text.charAt(following) == '(';
                 }
@@ -91,7 +91,7 @@ public final class JavaLexer {
                 int following = trivia(next);
                 boolean call = following < end && text.charAt(following) == '(';
                 if (KEYWORDS.contains(word)) { sink.add(cursor, next, Kind.KEYWORD); }
-                else if (methodReferenceDepth == 0) { sink.add(cursor, next, Kind.FUNCTION); }
+                else if (methodNameDepth == 0) { sink.add(cursor, next, Kind.FUNCTION); }
                 else if (!member && word.equals("non") && at(next, "-sealed")
                     && (next + 7 == end || !Character.isJavaIdentifierPart(text.codePointAt(next + 7)))) {
                     next += 7;
@@ -101,13 +101,12 @@ public final class JavaLexer {
                 } else if (BUILTINS.contains(word)) { sink.add(cursor, next, Kind.BUILTIN); }
                 else if (call) { sink.add(cursor, next, Kind.FUNCTION); }
                 member = false;
-                if (methodReferenceDepth == 0) { methodReferenceDepth = -1; }
+                if (methodNameDepth == 0) { methodNameDepth = -1; }
             } else {
                 for (String operator : OPERATORS) {
                     if (at(cursor, operator)) { next = cursor + operator.length(); break; }
                 }
                 sink.add(cursor, next, Kind.OPERATOR);
-                member = value == '.' && next == cursor + 1;
                 if (annotationArgumentsPending && value == '(') {
                     annotationArgumentsPending = false;
                     annotationParentheses = 1;
@@ -118,17 +117,19 @@ public final class JavaLexer {
                     else if (value == ';') {
                         // Recover at a statement boundary while an annotation is still being edited.
                         annotationParentheses = 0;
-                        methodReferenceDepth = -1;
+                        methodNameDepth = -1;
                     }
-                } else if (at(cursor, "::")) { methodReferenceDepth = 0; }
-                else if (methodReferenceDepth >= 0 && value == '<' && next == cursor + 1) {
-                    methodReferenceDepth++;
-                } else if (methodReferenceDepth > 0 && value == '>' && text.charAt(next - 1) == '>') {
-                    // >> and >>> close nested type arguments within a method reference.
-                    methodReferenceDepth = Math.max(-1, methodReferenceDepth - (next - cursor));
-                } else if (methodReferenceDepth <= 0 || ".,?[]".indexOf(value) < 0) {
-                    methodReferenceDepth = -1;
+                } else if (at(cursor, "::")) { methodNameDepth = 0; }
+                else if ((member || methodNameDepth >= 0) && value == '<' && next == cursor + 1) {
+                    // Explicit type arguments follow either a qualifier's dot or a method reference.
+                    methodNameDepth = Math.max(0, methodNameDepth) + 1;
+                } else if (methodNameDepth > 0 && value == '>' && text.charAt(next - 1) == '>') {
+                    // >> and >>> close nested type arguments before the method name.
+                    methodNameDepth = Math.max(-1, methodNameDepth - (next - cursor));
+                } else if (methodNameDepth <= 0 || ".,?[]".indexOf(value) < 0) {
+                    methodNameDepth = -1;
                 }
+                member = value == '.' && next == cursor + 1;
             }
             cursor = next;
         }

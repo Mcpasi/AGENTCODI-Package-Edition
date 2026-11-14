@@ -11,6 +11,10 @@
 
 ### Fixes
 
+- Highlight qualified Java method calls with explicit type arguments, such as
+  `this.<String>yield()`, as methods instead of contextual keywords. Preserve
+  nested type arguments, annotations, comments and `yield` statements. Retain
+  the reproduction test confirmed to fail on GitHub.
 - Preserve Java method-reference highlighting when explicit type arguments
   contain annotations with arguments, such as
   `Collections::<@TypeHint("demo") String>emptyList`. Keep nested annotation
@@ -46,6 +50,11 @@
 
 ### Verification
 
+- Local verification of qualified Java method-call highlighting: **459 Java
+  host tests**, including the unchanged reproduction test confirmed to fail on
+  GitHub and locally before the fix, nested type arguments, type annotations,
+  comments across LF/CRLF/CR line endings and incomplete-edit recovery, and
+  architecture/source contracts passed.
 - Local verification of Java method references with type-annotation arguments:
   **456 Java host tests**, including the unchanged reproduction test confirmed
   to fail on GitHub and locally before the fix, nested annotation values,

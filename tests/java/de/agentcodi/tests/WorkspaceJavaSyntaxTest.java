@@ -28,6 +28,8 @@ public final class WorkspaceJavaSyntaxTest {
         recognizesAnnotationsAndAnnotationTypeDeclarations();
         recognizesMethodsConstructorsAndReferences();
         qualifiedYieldCallsWithExplicitTypeArgumentsRemainFunctions();
+        qualifiedCallsPreserveTypeAnnotationsAndTrivia();
+        incompleteQualifiedTypeArgumentsRecover();
         recognizesMethodReferencesWithExplicitTypeArguments();
         methodReferencesKeepNestedTypeArgumentsSeparate();
         methodReferencesPreserveCommentsAndTypeHighlighting();
@@ -41,7 +43,7 @@ public final class WorkspaceJavaSyntaxTest {
         toleratesEveryEditingPrefixAndRetokenizes();
         standaloneModulePreservesOffsetsAndRejectsMissingInputs();
         cancelsSupersededJavaScans();
-        return 25;
+        return 27;
     }
 
     private static void detectsJavaFileNames() {
@@ -225,6 +227,51 @@ public final class WorkspaceJavaSyntaxTest {
             plain(text, "result");
             plain(text, "value");
             ranges(text);
+        }
+    }
+
+    private static void qualifiedCallsPreserveTypeAnnotationsAndTrivia() {
+        for (String newline : new String[] {"\n", "\r\n", "\r"}) {
+            for (String qualifier : new String[] {"this.", "super.", "Factory.", "(receiver)."}) {
+                String text = qualifier + " /* before */ <java.util.Map<String, "
+                    + "java.util.List<@Hint(value = \">\", enabled = (3 > 2), mask = (1 << 2)) "
+                    + "Value[]>>> // after" + newline + "yield /* call */ (); "
+                    + "int untouched = switch (1) { default -> { yield (2); } };";
+                List<SyntaxToken> tokens = SyntaxHighlighter.highlight(JAVA, text);
+                int method = text.indexOf("yield");
+                tokenAt(tokens, method, method + "yield".length(), FUNCTION);
+                int statement = text.lastIndexOf("yield");
+                tokenAt(tokens, statement, statement + "yield".length(), KEYWORD);
+                token(tokens, text, "String", BUILTIN);
+                token(tokens, text, "@Hint", ATTRIBUTE);
+                token(tokens, text, "\">\"", STRING);
+                token(tokens, text, ">", OPERATOR);
+                token(tokens, text, "<<", OPERATOR);
+                for (String comment : new String[] {"/* before */", "// after", "/* call */"}) {
+                    token(tokens, text, comment, COMMENT);
+                }
+                plain(text, "Value");
+                plain(text, "untouched");
+                ranges(text);
+            }
+        }
+    }
+
+    private static void incompleteQualifiedTypeArgumentsRecover() {
+        for (String prefix : new String[] {"receiver.<", "receiver.<Value", "receiver.<Value,",
+            "receiver.<List<Value>", "receiver.<Value>>", "receiver.<Value>=",
+            "receiver.<@Hint(", "receiver.<@Hint(\">\""}) {
+            String text = prefix + "\n; int untouched = switch (1) { default -> { yield (2); } }; "
+                + "receiver.yield();";
+            List<SyntaxToken> tokens = SyntaxHighlighter.highlight(JAVA, text);
+            int statement = text.indexOf("yield");
+            tokenAt(tokens, statement, statement + "yield".length(), KEYWORD);
+            int method = text.lastIndexOf("yield");
+            tokenAt(tokens, method, method + "yield".length(), FUNCTION);
+            token(tokens, text, "int", KEYWORD);
+            plain(text, "untouched");
+            ranges(text);
+            for (int end = 0; end <= prefix.length(); end++) { ranges(prefix.substring(0, end)); }
         }
     }
 
