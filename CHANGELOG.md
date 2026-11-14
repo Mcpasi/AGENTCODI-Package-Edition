@@ -2,6 +2,13 @@
 
 ## 0.2.0 — Package Edition (Unreleased)
 
+### Features
+
+- Add automatic Java syntax highlighting for `.java` files in a separate pure
+  Java module, covering keywords, annotations, methods, comments, character and
+  string literals, text blocks, numeric literals and operators. Add host tests
+  for Java syntax, incomplete edits, Unicode offsets and cancellation.
+
 ### Fixes
 
 - Highlight Python matrix multiplication such as `left@right` as an operator
@@ -29,6 +36,11 @@
 
 ### Verification
 
+- Local verification of Java syntax highlighting: **448 Java host tests**,
+  including 16 new Java-specific tests and shared incomplete-edit, random-input
+  and 1 MiB document checks, plus **9 local-build tests**, architecture/source
+  contracts, isolated Java 8 compilation of both syntax modules and shell syntax
+  checks passed. APK builds and physical-device tests were not run.
 - Local verification of the Python matrix-multiplication highlighting fix:
   **432 Java host tests**, including the unchanged reproduction test confirmed
   to fail on GitHub, continued expressions, f-string fields and indented

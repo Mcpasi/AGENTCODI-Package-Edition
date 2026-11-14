@@ -499,7 +499,7 @@ public final class WorkspaceSyntaxTest {
     }
 
     private static void toleratesIncompleteEditsAndRetokenizes() {
-        for (SyntaxLanguage language : new SyntaxLanguage[] {JAVASCRIPT, HTML, CSS, PYTHON}) {
+        for (SyntaxLanguage language : new SyntaxLanguage[] {JAVASCRIPT, HTML, CSS, PYTHON, JAVA}) {
             for (String text : new String[] {"", "'", "\"", "/*", "<!--", "<div x=", "`x ${", "f\"{", "'''open\n", "\\"}) {
                 ranges(language, text);
             }
@@ -568,7 +568,7 @@ public final class WorkspaceSyntaxTest {
         StringBuilder source = new StringBuilder(1024 * 1024);
         while (source.length() < 1024 * 1024 - 64) { source.append("\n "); }
         int tail = source.length();
-        for (SyntaxLanguage language : new SyntaxLanguage[] {JAVASCRIPT, HTML, CSS, PYTHON}) {
+        for (SyntaxLanguage language : new SyntaxLanguage[] {JAVASCRIPT, HTML, CSS, PYTHON, JAVA}) {
             String text = source + (language == HTML ? "<div>tail</div>" : language == CSS ? "a{width:2px}" : "return 123");
             List<SyntaxToken> tokens = SyntaxHighlighter.highlight(language, text);
             TestSupport.assertTrue(!tokens.isEmpty() && tokens.get(tokens.size() - 1).getEnd() > tail,

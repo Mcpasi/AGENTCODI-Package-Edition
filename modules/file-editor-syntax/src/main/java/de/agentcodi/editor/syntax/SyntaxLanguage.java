@@ -4,7 +4,7 @@ import java.util.Locale;
 
 /** File-name based opt-in: unsupported files always remain plain text. */
 public enum SyntaxLanguage {
-    PLAIN, JAVASCRIPT, HTML, CSS, PYTHON;
+    PLAIN, JAVASCRIPT, HTML, CSS, PYTHON, JAVA;
 
     public static SyntaxLanguage fromPath(String path) {
         if (path == null) { return PLAIN; }
@@ -19,6 +19,7 @@ public enum SyntaxLanguage {
         if (extension.equals("html") || extension.equals("htm")) { return HTML; }
         if (extension.equals("css")) { return CSS; }
         if (extension.equals("py") || extension.equals("pyw")) { return PYTHON; }
+        if (extension.equals("java")) { return JAVA; }
         return PLAIN;
     }
 }

@@ -531,6 +531,7 @@ FILE_BROWSER_CLIENT_CLASSES="$CLASSES_ROOT/file-browser-client"
 FILE_EDITOR_CONTRACTS_CLASSES="$CLASSES_ROOT/file-editor-contracts"
 FILE_EDITOR_CLIENT_CLASSES="$CLASSES_ROOT/file-editor-client"
 FILE_EDITOR_SYNTAX_CLASSES="$CLASSES_ROOT/file-editor-syntax"
+FILE_EDITOR_JAVA_SYNTAX_CLASSES="$CLASSES_ROOT/file-editor-syntax-java"
 IMPORT_CONTRACTS_CLASSES="$CLASSES_ROOT/import-contracts"
 IMPORT_CLIENT_CLASSES="$CLASSES_ROOT/import-client"
 MCP_CONTRACTS_CLASSES="$CLASSES_ROOT/mcp-contracts"
@@ -550,6 +551,7 @@ mkdir -p \
   "$FILE_EDITOR_CONTRACTS_CLASSES" \
   "$FILE_EDITOR_CLIENT_CLASSES" \
   "$FILE_EDITOR_SYNTAX_CLASSES" \
+  "$FILE_EDITOR_JAVA_SYNTAX_CLASSES" \
   "$IMPORT_CONTRACTS_CLASSES" \
   "$IMPORT_CLIENT_CLASSES" \
   "$MCP_CONTRACTS_CLASSES" \
@@ -605,8 +607,13 @@ find "$PROJECT_ROOT/modules/file-editor-client/src/main/java" -type f -name '*.j
 FILE_EDITOR_CLIENT_JAR="$JARS_ROOT/file-editor-client.jar"
 "$JAR" cf "$FILE_EDITOR_CLIENT_JAR" -C "$FILE_EDITOR_CLIENT_CLASSES" .
 
+find "$PROJECT_ROOT/modules/file-editor-syntax-java/src/main/java" -type f -name '*.java' -print | sort > "$WORK_DIR/file-editor-syntax-java-sources.txt"
+"$JAVAC" -encoding UTF-8 -source 8 -target 8 -Xlint:-options -bootclasspath "$ANDROID_JAR" -d "$FILE_EDITOR_JAVA_SYNTAX_CLASSES" @"$WORK_DIR/file-editor-syntax-java-sources.txt"
+FILE_EDITOR_JAVA_SYNTAX_JAR="$JARS_ROOT/file-editor-syntax-java.jar"
+"$JAR" cf "$FILE_EDITOR_JAVA_SYNTAX_JAR" -C "$FILE_EDITOR_JAVA_SYNTAX_CLASSES" .
+
 find "$PROJECT_ROOT/modules/file-editor-syntax/src/main/java" -type f -name '*.java' -print | sort > "$WORK_DIR/file-editor-syntax-sources.txt"
-"$JAVAC" -encoding UTF-8 -source 8 -target 8 -Xlint:-options -bootclasspath "$ANDROID_JAR" -d "$FILE_EDITOR_SYNTAX_CLASSES" @"$WORK_DIR/file-editor-syntax-sources.txt"
+"$JAVAC" -encoding UTF-8 -source 8 -target 8 -Xlint:-options -bootclasspath "$ANDROID_JAR" -classpath "$FILE_EDITOR_JAVA_SYNTAX_JAR" -d "$FILE_EDITOR_SYNTAX_CLASSES" @"$WORK_DIR/file-editor-syntax-sources.txt"
 FILE_EDITOR_SYNTAX_JAR="$JARS_ROOT/file-editor-syntax.jar"
 "$JAR" cf "$FILE_EDITOR_SYNTAX_JAR" -C "$FILE_EDITOR_SYNTAX_CLASSES" .
 
@@ -1013,7 +1020,7 @@ DEX_MODE="--debug"
 if [ "$BUILD_VARIANT" = "release" ]; then
   DEX_MODE="--release"
 fi
-"$JAVA" -cp "$R8_JAR" com.android.tools.r8.D8 "$DEX_MODE" --min-api "$MIN_SDK" --lib "$ANDROID_JAR" --lib "$ARCH_ANNOTATIONS_JAR" --output "$DEX_DIR" "$CORE_JAR" "$ANDROID_FREEDOM_JAR" "$REVIEW_MODE_JAR" "$COMPATIBILITY_MODE_JAR" "$STORAGE_JAR" "$FILE_BROWSER_CONTRACTS_JAR" "$FILE_BROWSER_CLIENT_JAR" "$FILE_EDITOR_CONTRACTS_JAR" "$FILE_EDITOR_CLIENT_JAR" "$FILE_EDITOR_SYNTAX_JAR" "$IMPORT_CONTRACTS_JAR" "$IMPORT_CLIENT_JAR" "$MCP_CONTRACTS_JAR" "$MCP_CLIENT_JAR" "$CONNECTOR_CONTRACTS_JAR" "$CONNECTOR_CLIENT_JAR" "$RUNTIME_JAR" "$ARCH_JAR" "$APP_JAR"
+"$JAVA" -cp "$R8_JAR" com.android.tools.r8.D8 "$DEX_MODE" --min-api "$MIN_SDK" --lib "$ANDROID_JAR" --lib "$ARCH_ANNOTATIONS_JAR" --output "$DEX_DIR" "$CORE_JAR" "$ANDROID_FREEDOM_JAR" "$REVIEW_MODE_JAR" "$COMPATIBILITY_MODE_JAR" "$STORAGE_JAR" "$FILE_BROWSER_CONTRACTS_JAR" "$FILE_BROWSER_CLIENT_JAR" "$FILE_EDITOR_CONTRACTS_JAR" "$FILE_EDITOR_CLIENT_JAR" "$FILE_EDITOR_SYNTAX_JAR" "$FILE_EDITOR_JAVA_SYNTAX_JAR" "$IMPORT_CONTRACTS_JAR" "$IMPORT_CLIENT_JAR" "$MCP_CONTRACTS_JAR" "$MCP_CLIENT_JAR" "$CONNECTOR_CONTRACTS_JAR" "$CONNECTOR_CLIENT_JAR" "$RUNTIME_JAR" "$ARCH_JAR" "$APP_JAR"
 cp "$DEX_DIR/classes.dex" "$ADDITIONS/classes.dex"
 
 UNALIGNED_APK="$WORK_DIR/unaligned.apk"

@@ -42,6 +42,7 @@ public final class TestMain {
         passed += WorkspaceFileBrowserTest.run();
         passed += WorkspaceFileEditorTest.run();
         passed += WorkspaceSyntaxTest.run();
+        passed += WorkspaceJavaSyntaxTest.run();
         passed += WorkspaceFileScopeTest.run();
         passed += StorageAndRedactionRegressionTest.run();
         System.out.println("Java tests passed: " + passed);

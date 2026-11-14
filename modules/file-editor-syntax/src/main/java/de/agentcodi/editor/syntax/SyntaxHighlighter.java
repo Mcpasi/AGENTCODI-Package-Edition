@@ -1,5 +1,7 @@
 package de.agentcodi.editor.syntax;
 
+import de.agentcodi.editor.syntax.java.JavaLexer;
+
 import java.util.Collections;
 import java.util.List;
 
@@ -16,6 +18,9 @@ public final class SyntaxHighlighter {
             case HTML: HtmlLexer.scan(source, 0, text.length()); break;
             case CSS: CssLexer.scan(source, 0, text.length()); break;
             case PYTHON: PythonLexer.scan(source, 0, text.length()); break;
+            case JAVA:
+                JavaLexer.scan(text, (start, end, kind) -> source.add(start, end, SyntaxToken.Kind.valueOf(kind.name())));
+                break;
             default: break;
         }
         return Collections.unmodifiableList(source.tokens);
