@@ -27,6 +27,7 @@ public final class WorkspaceJavaSyntaxTest {
         numbersKeepIdentifierAndOperatorBoundaries();
         recognizesAnnotationsAndAnnotationTypeDeclarations();
         recognizesMethodsConstructorsAndReferences();
+        qualifiedYieldCallsWithExplicitTypeArgumentsRemainFunctions();
         recognizesMethodReferencesWithExplicitTypeArguments();
         methodReferencesKeepNestedTypeArgumentsSeparate();
         methodReferencesPreserveCommentsAndTypeHighlighting();
@@ -40,7 +41,7 @@ public final class WorkspaceJavaSyntaxTest {
         toleratesEveryEditingPrefixAndRetokenizes();
         standaloneModulePreservesOffsetsAndRejectsMissingInputs();
         cancelsSupersededJavaScans();
-        return 24;
+        return 25;
     }
 
     private static void detectsJavaFileNames() {
@@ -206,6 +207,25 @@ public final class WorkspaceJavaSyntaxTest {
         int referenced = text.indexOf("::record") + 2;
         tokenAt(SyntaxHighlighter.highlight(JAVA, text), referenced, referenced + "record".length(), FUNCTION);
         ranges(text);
+    }
+
+    private static void qualifiedYieldCallsWithExplicitTypeArgumentsRemainFunctions() {
+        // A qualified method named yield may have explicit type arguments (JLS 3.8, 15.12).
+        for (String arguments : new String[] {"", "<String>", "<java.util.List<String>>",
+            "<java.util.Map<String, java.util.List<Integer>>>"}) {
+            String text = "Object result = this." + arguments + "yield(); "
+                + "int value = switch (1) { default -> { yield (2); } };";
+            List<SyntaxToken> tokens = SyntaxHighlighter.highlight(JAVA, text);
+            int method = text.indexOf("yield()");
+            tokenAt(tokens, method, method + "yield".length(), FUNCTION);
+            int statement = text.lastIndexOf("yield");
+            tokenAt(tokens, statement, statement + "yield".length(), KEYWORD);
+            token(tokens, text, "switch", KEYWORD);
+            token(tokens, text, "2", NUMBER);
+            plain(text, "result");
+            plain(text, "value");
+            ranges(text);
+        }
     }
 
     private static void recognizesMethodReferencesWithExplicitTypeArguments() {
