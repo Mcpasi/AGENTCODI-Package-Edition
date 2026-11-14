@@ -14,6 +14,7 @@ final class JavaScriptLexer {
         "Array BigInt Boolean Date Error Infinity JSON Map Math NaN Number Object Promise RegExp Set "
         + "String Symbol WeakMap WeakSet console document globalThis undefined window");
     private static final Set<String> CONTROL_CONDITIONS = SyntaxScanner.words("if while for with switch catch");
+    private static final Set<String> CONTROL_BLOCK_PREFIXES = SyntaxScanner.words("else do try finally catch");
 
     static void scan(SyntaxScanner source, int start, int end) { code(source, start, end, false, 0); }
 
@@ -21,8 +22,9 @@ final class JavaScriptLexer {
         boolean expression = true;
         boolean member = false;
         boolean controlCondition = false;
+        boolean controlBlock = false;
         ArrayDeque<Boolean> parentheses = new ArrayDeque<>();
-        int braces = 0;
+        ArrayDeque<Boolean> braces = new ArrayDeque<>();
         int cursor = start;
         while (cursor < end) {
             source.checkCancelled(cursor);
@@ -39,22 +41,22 @@ final class JavaScriptLexer {
                 next = source.quoted(cursor, end, 1, false, false);
                 source.add(cursor, next, STRING);
                 expression = false;
-                member = controlCondition = false;
+                member = controlCondition = controlBlock = false;
             } else if (value == '`') {
                 next = template(source, cursor, end, depth);
                 expression = false;
-                member = controlCondition = false;
+                member = controlCondition = controlBlock = false;
             } else if (value == '/' && expression && (next = regexEnd(source, cursor, end)) > cursor + 1) {
                 source.add(cursor, next, STRING);
                 expression = false;
-                member = controlCondition = false;
+                member = controlCondition = controlBlock = false;
             } else if (Character.isDigit(value) || (value == '.' && next < end
                 && Character.isDigit(source.text.charAt(next)))) {
                 next = source.number(cursor, end);
                 if (next < end && source.text.charAt(next) == 'n') { next++; }
                 source.add(cursor, next, NUMBER);
                 expression = false;
-                member = controlCondition = false;
+                member = controlCondition = controlBlock = false;
             } else if (SyntaxScanner.isIdentifierStart(value)) {
                 next = source.identifier(next, end);
                 String word = source.text.substring(cursor, next);
@@ -73,17 +75,21 @@ final class JavaScriptLexer {
                     expression = false;
                     controlCondition = false;
                 }
+                controlBlock = !member && CONTROL_BLOCK_PREFIXES.contains(word);
                 member = false;
             } else {
-                if (value == '}' && interpolation && braces == 0) { return cursor; }
-                if (value == '{') { braces++; }
-                if (value == '}') { braces--; }
+                if (value == '}' && interpolation && braces.isEmpty()) { return cursor; }
                 source.add(cursor, cursor + 1, OPERATOR);
                 expression = value != ')' && value != ']' && value != '}';
+                // A closing control block permits a following regex statement.
+                // Object literals and function/arrow expressions still permit division.
+                if (value == '{') { braces.addLast(controlBlock); }
+                if (value == '}' && !braces.isEmpty()) { expression = braces.removeLast(); }
                 // A control condition ends before a statement, where / can start a regex.
                 // Calls and grouped values still end an expression and permit division.
                 if (value == '(') { parentheses.addLast(controlCondition); }
                 if (value == ')' && !parentheses.isEmpty()) { expression = parentheses.removeLast(); }
+                controlBlock = value == ')' && expression;
                 member = value == '.';
                 controlCondition = false;
                 // Postfix ++/-- must not turn a following division into a regex.

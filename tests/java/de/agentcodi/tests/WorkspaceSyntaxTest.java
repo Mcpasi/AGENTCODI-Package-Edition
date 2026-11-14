@@ -21,6 +21,10 @@ public final class WorkspaceSyntaxTest {
         javascriptNumbersRegexAndDivision();
         javascriptRegexAfterControlConditions();
         javascriptRegexAfterControlBlocks();
+        javascriptRegexAfterNestedControlBlocksAndTrivia();
+        javascriptRegexAfterOtherControlBlocks();
+        javascriptExpressionBracesKeepDivisionOperators();
+        javascriptControlBlocksInsideTemplateExpressions();
         javascriptKeywordPropertiesKeepDivisionOperators();
         javascriptNestedTemplateExpressions();
         pythonStringsPrefixesAndComments();
@@ -43,7 +47,7 @@ public final class WorkspaceSyntaxTest {
         cancelsSupersededWork();
         countsLogicalLinesAndCursorOffsets();
         indexesManyLinesAndRejectsInvalidOffsets();
-        return 27;
+        return 31;
     }
 
     private static void detectsOnlySupportedFileNames() {
@@ -129,6 +133,72 @@ public final class WorkspaceSyntaxTest {
                 tokenAt(JAVASCRIPT, division, index, index + 1, OPERATOR);
             }
         }
+    }
+
+    private static void javascriptRegexAfterNestedControlBlocksAndTrivia() {
+        for (String block : new String[] {
+            "if (check(value / 2)) /* condition */ { run(); } /* block */",
+            "if (ready) // condition\r\n{ run(); } // block\r\n",
+            "if (ready) { while (active) { break; } }",
+            "if (ready) { const object = { nested: { value: 1 } }; }",
+            "if (ready) { const callback = () => { return { value: 1 }; }; }"
+        }) {
+            String text = block + "/a[\\/]+/giu.test(value); const after = 1;";
+            token(JAVASCRIPT, text, "/a[\\/]+/giu", STRING);
+            token(JAVASCRIPT, text, "test", FUNCTION);
+            token(JAVASCRIPT, text, "const", KEYWORD);
+            ranges(JAVASCRIPT, text);
+        }
+    }
+
+    private static void javascriptRegexAfterOtherControlBlocks() {
+        for (String block : new String[] {
+            "if (ready) { run(); } else { stop(); }",
+            "with (object) { run(); }",
+            "switch (value) { case 1: break; default: break; }",
+            "try { run(); } catch (error) { report(error); }",
+            "try { run(); } catch { recover(); }",
+            "try { run(); } finally { cleanup(); }",
+            "do { run(); } while (ready)"
+        }) {
+            String text = block + "\n/ab+c/g.test(value);";
+            token(JAVASCRIPT, text, "/ab+c/g", STRING);
+            token(JAVASCRIPT, text, "test", FUNCTION);
+            ranges(JAVASCRIPT, text);
+        }
+    }
+
+    private static void javascriptExpressionBracesKeepDivisionOperators() {
+        for (String expression : new String[] {
+            "{ value: 12 }",
+            "{ nested: { value: 12 } }",
+            "{ valueOf() { if (ready) { run(); } return 12; } }",
+            "function () { if (ready) { run(); } return 12; }",
+            "class { method() { if (ready) { run(); } } }",
+            "(() => { if (ready) { run(); } return 12; })",
+            "object.if()", "object.catch()", "object.else", "object?.finally"
+        }) {
+            String text = "const ratio = " + expression + " /* value */ / 2 / 3;";
+            int division = text.indexOf("/ 2");
+            tokenAt(JAVASCRIPT, text, division, division + 1, OPERATOR);
+            division = text.indexOf("/ 3");
+            tokenAt(JAVASCRIPT, text, division, division + 1, OPERATOR);
+            token(JAVASCRIPT, text, "2", NUMBER);
+            token(JAVASCRIPT, text, "3", NUMBER);
+            ranges(JAVASCRIPT, text);
+        }
+    }
+
+    private static void javascriptControlBlocksInsideTemplateExpressions() {
+        String text = "const message = `result ${(() => { if (ready) { run(); } "
+            + "/ab+c/g.test(value); return { value: 12 } / 2 / 3; })()} tail`;";
+        token(JAVASCRIPT, text, "/ab+c/g", STRING);
+        int division = text.indexOf("/ 2");
+        tokenAt(JAVASCRIPT, text, division, division + 1, OPERATOR);
+        division = text.indexOf("/ 3");
+        tokenAt(JAVASCRIPT, text, division, division + 1, OPERATOR);
+        token(JAVASCRIPT, text, " tail`", STRING);
+        ranges(JAVASCRIPT, text);
     }
 
     private static void javascriptKeywordPropertiesKeepDivisionOperators() {

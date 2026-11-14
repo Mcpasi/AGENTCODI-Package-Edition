@@ -2,6 +2,14 @@
 
 ## 0.2.0 — Package Edition (Unreleased)
 
+### Fixes
+
+- Highlight JavaScript regular expressions after control blocks such as
+  `if (...) { ... }` correctly in the editor instead of treating their slashes
+  as division. Track nested braces without changing division after object,
+  function or arrow expressions. Retain the reproduction test confirmed to
+  fail on GitHub.
+
 ### Codex runtime
 
 - Update the Community Android ARM64 Codex CLI/app-server from
@@ -13,6 +21,10 @@
 
 ### Verification
 
+- Local verification of the JavaScript control-block highlighting fix:
+  **426 Java host tests**, including the unchanged reproduction test confirmed
+  to fail on GitHub, nested blocks, comments, template expressions and division
+  regressions, and architecture/source contracts passed.
 - **421 Java host tests**, **109 Python tests** and **all seven portable C++
   suites** passed. **487 Java RPCs** and **15 MCP approval responses** matched
   the generated schemas. The pinned Android app-server passed its initialize
