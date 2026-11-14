@@ -22,6 +22,8 @@ public final class WorkspaceSyntaxTest {
         javascriptRegexAfterControlConditions();
         javascriptRegexAfterControlBlocks();
         javascriptRegexAfterFunctionDeclarations();
+        javascriptFunctionDeclarationsKeepParameterAndBlockContext();
+        javascriptFunctionExpressionsKeepDivisionOperators();
         javascriptRegexAfterNestedControlBlocksAndTrivia();
         javascriptRegexAfterOtherControlBlocks();
         javascriptExpressionBracesKeepDivisionOperators();
@@ -48,7 +50,7 @@ public final class WorkspaceSyntaxTest {
         cancelsSupersededWork();
         countsLogicalLinesAndCursorOffsets();
         indexesManyLinesAndRejectsInvalidOffsets();
-        return 32;
+        return 34;
     }
 
     private static void detectsOnlySupportedFileNames() {
@@ -149,6 +151,50 @@ public final class WorkspaceSyntaxTest {
             token(JAVASCRIPT, text, "/ab+c/g", STRING);
             token(JAVASCRIPT, text, "test", FUNCTION);
             token(JAVASCRIPT, text, "const", KEYWORD);
+            ranges(JAVASCRIPT, text);
+        }
+    }
+
+    private static void javascriptFunctionDeclarationsKeepParameterAndBlockContext() {
+        for (String text : new String[] {
+            "/* before */ function /* name */ declared /* params */ (value = (1 + 2))"
+                + " /* body */ { if (value) { work(); } } // after\r\n/ab+c/g.test(value);",
+            "function declared(value = { nested: { count: 1 } },"
+                + " callback = function named() { return 1; }) {}\n/ab+c/g.test(value);",
+            "export default function () {}\n/ab+c/g.test(value);",
+            "export default async function* declared() { yield 1; }\n/ab+c/g.test(value);",
+            "const before = 1; function declared() {} /ab+c/g.test(value);",
+            "function outer() { function declared() {} /ab+c/g.test(value); }",
+            "const callback = function () { function declared() {} /ab+c/g.test(value); };",
+            "for (;;) { function declared() {} /ab+c/g.test(value); }",
+            "const message = `value ${(() => { function declared() {} /ab+c/g.test(value); })()}`;"
+        }) {
+            token(JAVASCRIPT, text, "/ab+c/g", STRING);
+            token(JAVASCRIPT, text, "test", FUNCTION);
+            ranges(JAVASCRIPT, text);
+        }
+    }
+
+    private static void javascriptFunctionExpressionsKeepDivisionOperators() {
+        for (String text : new String[] {
+            "const ratio = function named() {} /* value */ / 2 / 3;",
+            "const ratio = async function named() {} / 2 / 3;",
+            "const ratio = function* named() {} / 2 / 3;",
+            "const ratio = async function* named() {} / 2 / 3;",
+            "function outer() { return function named() {} / 2 / 3; }",
+            "function declared(value = function named() {} / 2 / 3) {}",
+            "const object = { function: function named() {} / 2 / 3 };",
+            "const ratio = (function named() {}) / 2 / 3;",
+            "for (; function named() {} / 2 / 3; ) {}",
+            "for (;; function named() {} / 2 / 3) {}",
+            "const message = `value ${function named() {} / 2 / 3}`;"
+        }) {
+            int division = text.indexOf("/ 2");
+            tokenAt(JAVASCRIPT, text, division, division + 1, OPERATOR);
+            division = text.indexOf("/ 3");
+            tokenAt(JAVASCRIPT, text, division, division + 1, OPERATOR);
+            token(JAVASCRIPT, text, "2", NUMBER);
+            token(JAVASCRIPT, text, "3", NUMBER);
             ranges(JAVASCRIPT, text);
         }
     }

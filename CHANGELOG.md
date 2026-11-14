@@ -4,6 +4,10 @@
 
 ### Fixes
 
+- Highlight JavaScript regular expressions after function declarations,
+  including async, generator and exported declarations, correctly in the
+  editor. Preserve division after function expressions and retain the
+  reproduction test confirmed to fail on GitHub.
 - Highlight JavaScript regular expressions after control blocks such as
   `if (...) { ... }` correctly in the editor instead of treating their slashes
   as division. Track nested braces without changing division after object,
@@ -21,6 +25,11 @@
 
 ### Verification
 
+- Local verification of the JavaScript function-declaration highlighting fix:
+  **429 Java host tests**, including the unchanged reproduction test confirmed
+  to fail on GitHub, async/generator/export variants, comments, nested parameters
+  and blocks, template expressions and function-expression division regressions,
+  and architecture/source contracts passed.
 - Local verification of the JavaScript control-block highlighting fix:
   **426 Java host tests**, including the unchanged reproduction test confirmed
   to fail on GitHub, nested blocks, comments, template expressions and division

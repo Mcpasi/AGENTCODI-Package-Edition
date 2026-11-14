@@ -16,15 +16,27 @@ final class JavaScriptLexer {
     private static final Set<String> CONTROL_CONDITIONS = SyntaxScanner.words("if while for with switch catch");
     private static final Set<String> CONTROL_BLOCK_PREFIXES = SyntaxScanner.words("else do try finally catch");
 
+    private static final class Brace {
+        final boolean statement;
+        final int parentheses;
+
+        Brace(boolean statement, int parentheses) {
+            this.statement = statement;
+            this.parentheses = parentheses;
+        }
+    }
+
     static void scan(SyntaxScanner source, int start, int end) { code(source, start, end, false, 0); }
 
     private static int code(SyntaxScanner source, int start, int end, boolean interpolation, int depth) {
         boolean expression = true;
+        boolean statement = !interpolation;
+        boolean functionDeclaration = false;
         boolean member = false;
         boolean controlCondition = false;
         boolean controlBlock = false;
         ArrayDeque<Boolean> parentheses = new ArrayDeque<>();
-        ArrayDeque<Boolean> braces = new ArrayDeque<>();
+        ArrayDeque<Brace> braces = new ArrayDeque<>();
         int cursor = start;
         while (cursor < end) {
             source.checkCancelled(cursor);
@@ -41,14 +53,17 @@ final class JavaScriptLexer {
                 next = source.quoted(cursor, end, 1, false, false);
                 source.add(cursor, next, STRING);
                 expression = false;
+                statement = functionDeclaration = false;
                 member = controlCondition = controlBlock = false;
             } else if (value == '`') {
                 next = template(source, cursor, end, depth);
                 expression = false;
+                statement = functionDeclaration = false;
                 member = controlCondition = controlBlock = false;
             } else if (value == '/' && expression && (next = regexEnd(source, cursor, end)) > cursor + 1) {
                 source.add(cursor, next, STRING);
                 expression = false;
+                statement = functionDeclaration = false;
                 member = controlCondition = controlBlock = false;
             } else if (Character.isDigit(value) || (value == '.' && next < end
                 && Character.isDigit(source.text.charAt(next)))) {
@@ -56,10 +71,12 @@ final class JavaScriptLexer {
                 if (next < end && source.text.charAt(next) == 'n') { next++; }
                 source.add(cursor, next, NUMBER);
                 expression = false;
+                statement = functionDeclaration = false;
                 member = controlCondition = controlBlock = false;
             } else if (SyntaxScanner.isIdentifierStart(value)) {
                 next = source.identifier(next, end);
                 String word = source.text.substring(cursor, next);
+                if (!member && word.equals("function")) { functionDeclaration = statement; }
                 if (!member && KEYWORDS.contains(word)) {
                     source.add(cursor, next, KEYWORD);
                     expression = !(word.equals("true") || word.equals("false") || word.equals("null")
@@ -76,20 +93,28 @@ final class JavaScriptLexer {
                     controlCondition = false;
                 }
                 controlBlock = !member && CONTROL_BLOCK_PREFIXES.contains(word);
+                // Keep declaration prefixes across async/export/default, names and trivia.
+                statement = controlBlock || (!member && statement
+                    && (word.equals("async") || word.equals("export") || word.equals("default")));
                 member = false;
             } else {
                 if (value == '}' && interpolation && braces.isEmpty()) { return cursor; }
                 source.add(cursor, cursor + 1, OPERATOR);
                 expression = value != ')' && value != ']' && value != '}';
-                // A closing control block permits a following regex statement.
+                // Closing a control block or function declaration permits a regex statement.
                 // Object literals and function/arrow expressions still permit division.
-                if (value == '{') { braces.addLast(controlBlock); }
-                if (value == '}' && !braces.isEmpty()) { expression = braces.removeLast(); }
-                // A control condition ends before a statement, where / can start a regex.
+                if (value == '{') { braces.addLast(new Brace(controlBlock, parentheses.size())); }
+                if (value == '}' && !braces.isEmpty()) { expression = braces.removeLast().statement; }
+                // Declaration parameters, like control conditions, precede a statement body.
                 // Calls and grouped values still end an expression and permit division.
-                if (value == '(') { parentheses.addLast(controlCondition); }
+                if (value == '(') { parentheses.addLast(controlCondition || functionDeclaration); }
                 if (value == ')' && !parentheses.isEmpty()) { expression = parentheses.removeLast(); }
                 controlBlock = value == ')' && expression;
+                int statementParentheses = braces.isEmpty() ? 0 : braces.peekLast().parentheses;
+                // A semicolon inside for (...) does not begin a declaration.
+                statement = value == '{' || ((value == ')' || value == '}') && expression)
+                    || (value == ';' && parentheses.size() == statementParentheses);
+                functionDeclaration = functionDeclaration && value == '*';
                 member = value == '.';
                 controlCondition = false;
                 // Postfix ++/-- must not turn a following division into a regex.
