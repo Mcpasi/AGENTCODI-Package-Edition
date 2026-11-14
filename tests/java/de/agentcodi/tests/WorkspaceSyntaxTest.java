@@ -33,6 +33,7 @@ public final class WorkspaceSyntaxTest {
         pythonStringsPrefixesAndComments();
         pythonEscapedCrLfStaysInsideStrings();
         pythonFormattedExpressionsAndDecorators();
+        pythonMatrixMultiplicationIsNotADecorator();
         pythonFormattedHexSpecifierDoesNotStartComment();
         pythonFormattedSpecifiersKeepLiteralText();
         pythonFormattedSpecifiersHighlightNestedFields();
@@ -50,7 +51,7 @@ public final class WorkspaceSyntaxTest {
         cancelsSupersededWork();
         countsLogicalLinesAndCursorOffsets();
         indexesManyLinesAndRejectsInvalidOffsets();
-        return 34;
+        return 35;
     }
 
     private static void detectsOnlySupportedFileNames() {
@@ -316,6 +317,22 @@ public final class WorkspaceSyntaxTest {
         token(PYTHON, text, "len", BUILTIN);
         token(PYTHON, text, "2", NUMBER);
         token(PYTHON, text, " tail\"", STRING);
+    }
+
+    private static void pythonMatrixMultiplicationIsNotADecorator() {
+        for (String expression : new String[] {
+            "left@right", "left @right", "left@tools.matrix", "left @ right"
+        }) {
+            String text = "@tools.cache\ndef product():\n    return " + expression
+                + "\nprint(product()) # real comment";
+            // Only the leading @ introduces a decorator; the expression's @ is an operator.
+            token(PYTHON, text, "@tools.cache", FUNCTION);
+            int multiplication = text.lastIndexOf('@');
+            tokenAt(PYTHON, text, multiplication, multiplication + 1, OPERATOR);
+            token(PYTHON, text, "print", BUILTIN);
+            token(PYTHON, text, "# real comment", COMMENT);
+            ranges(PYTHON, text);
+        }
     }
 
     private static void pythonFormattedHexSpecifierDoesNotStartComment() {
