@@ -21,14 +21,25 @@ final class PythonLexer {
     private static int code(SyntaxScanner source, int start, int end, boolean interpolation, int depth) {
         int nesting = 0;
         int cursor = start;
+        boolean decoratorStart = !interpolation;
         for (; cursor < end;) {
             source.checkCancelled(cursor);
             char value = source.text.charAt(cursor);
             int next = cursor + 1;
-            if (Character.isWhitespace(value)) { cursor++; continue; }
+            if (Character.isWhitespace(value)) {
+                if (value == '\n' || value == '\r') { decoratorStart = !interpolation && nesting == 0; }
+                cursor++;
+                continue;
+            }
             if (value == '#') {
                 next = source.lineEnd(cursor, end);
                 source.add(cursor, next, COMMENT);
+            } else if (value == '\\' && next < end
+                && (source.text.charAt(next) == '\n' || source.text.charAt(next) == '\r')) {
+                // An explicit line continuation cannot begin a decorator on the next physical line.
+                source.add(cursor, next, OPERATOR);
+                char newline = source.text.charAt(next++);
+                if (newline == '\r' && next < end && source.text.charAt(next) == '\n') { next++; }
             } else if (value == '\'' || value == '"') {
                 next = string(source, cursor, end, false);
                 source.add(cursor, next, STRING);
@@ -57,7 +68,8 @@ final class PythonLexer {
                         source.add(cursor, next, FUNCTION);
                     }
                 }
-            } else if (value == '@' && next < end && SyntaxScanner.isIdentifierStart(source.text.charAt(next))) {
+            } else if (value == '@' && decoratorStart && next < end
+                && SyntaxScanner.isIdentifierStart(source.text.charAt(next))) {
                 while (next < end && (SyntaxScanner.isIdentifierPart(source.text.charAt(next))
                     || source.text.charAt(next) == '.')) { next++; }
                 source.add(cursor, next, FUNCTION);
@@ -73,6 +85,7 @@ final class PythonLexer {
                 if ((value == '}' || value == ']' || value == ')') && nesting > 0) { nesting--; }
                 source.add(cursor, next, OPERATOR);
             }
+            decoratorStart = false;
             cursor = next;
         }
         return cursor;

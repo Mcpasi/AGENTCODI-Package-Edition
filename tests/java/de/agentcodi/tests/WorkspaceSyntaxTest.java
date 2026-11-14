@@ -34,6 +34,8 @@ public final class WorkspaceSyntaxTest {
         pythonEscapedCrLfStaysInsideStrings();
         pythonFormattedExpressionsAndDecorators();
         pythonMatrixMultiplicationIsNotADecorator();
+        pythonMatrixMultiplicationInContinuedExpressions();
+        pythonIndentedDecoratorsAfterComments();
         pythonFormattedHexSpecifierDoesNotStartComment();
         pythonFormattedSpecifiersKeepLiteralText();
         pythonFormattedSpecifiersHighlightNestedFields();
@@ -51,7 +53,7 @@ public final class WorkspaceSyntaxTest {
         cancelsSupersededWork();
         countsLogicalLinesAndCursorOffsets();
         indexesManyLinesAndRejectsInvalidOffsets();
-        return 35;
+        return 37;
     }
 
     private static void detectsOnlySupportedFileNames() {
@@ -331,6 +333,43 @@ public final class WorkspaceSyntaxTest {
             tokenAt(PYTHON, text, multiplication, multiplication + 1, OPERATOR);
             token(PYTHON, text, "print", BUILTIN);
             token(PYTHON, text, "# real comment", COMMENT);
+            ranges(PYTHON, text);
+        }
+    }
+
+    private static void pythonMatrixMultiplicationInContinuedExpressions() {
+        for (String newline : new String[] {"\n", "\r\n", "\r"}) {
+            for (String statement : new String[] {
+                "product = (left" + newline + "    @right)",
+                "product = [left" + newline + "    @right]",
+                "product = {left" + newline + "    @right}",
+                "product = left \\" + newline + "    @right",
+                "product = f\"{left@right}\"",
+                "product = f\"\"\"{left" + newline + "    @right}\"\"\""
+            }) {
+                String text = statement + newline + "print(product) # real comment";
+                int multiplication = text.indexOf('@');
+                tokenAt(PYTHON, text, multiplication, multiplication + 1, OPERATOR);
+                token(PYTHON, text, "print", BUILTIN);
+                token(PYTHON, text, "# real comment", COMMENT);
+                ranges(PYTHON, text);
+            }
+        }
+    }
+
+    private static void pythonIndentedDecoratorsAfterComments() {
+        for (String newline : new String[] {"\n", "\r\n", "\r"}) {
+            String text = "class Products:" + newline
+                + "    # A trailing backslash in a comment does not continue the line: \\" + newline
+                + "    @tools.cache" + newline
+                + "    @other(flag=True)" + newline
+                + "    def product(self):" + newline
+                + "        return left@right" + newline;
+            token(PYTHON, text, "@tools.cache", FUNCTION);
+            token(PYTHON, text, "@other", FUNCTION);
+            token(PYTHON, text, "True", KEYWORD);
+            int multiplication = text.lastIndexOf('@');
+            tokenAt(PYTHON, text, multiplication, multiplication + 1, OPERATOR);
             ranges(PYTHON, text);
         }
     }

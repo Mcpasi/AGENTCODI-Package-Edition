@@ -4,6 +4,10 @@
 
 ### Fixes
 
+- Highlight Python matrix multiplication such as `left@right` as an operator
+  instead of a decorator. Recognize decorators only at logical statement starts,
+  preserving indented decorators, continued expressions and f-string fields.
+  Retain the reproduction test confirmed to fail on GitHub.
 - Highlight JavaScript regular expressions after function declarations,
   including async, generator and exported declarations, correctly in the
   editor. Preserve division after function expressions and retain the
@@ -25,6 +29,11 @@
 
 ### Verification
 
+- Local verification of the Python matrix-multiplication highlighting fix:
+  **432 Java host tests**, including the unchanged reproduction test confirmed
+  to fail on GitHub, continued expressions, f-string fields and indented
+  decorators across LF/CRLF/CR line endings, and architecture/source contracts
+  passed.
 - Local verification of the JavaScript function-declaration highlighting fix:
   **429 Java host tests**, including the unchanged reproduction test confirmed
   to fail on GitHub, async/generator/export variants, comments, nested parameters
