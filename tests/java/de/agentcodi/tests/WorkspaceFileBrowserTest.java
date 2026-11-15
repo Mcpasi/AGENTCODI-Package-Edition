@@ -13,7 +13,10 @@ import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
+import java.util.Comparator;
 import java.util.List;
 import java.util.zip.CRC32;
 import java.util.zip.Deflater;
@@ -24,6 +27,7 @@ public final class WorkspaceFileBrowserTest {
 
     public static int run() throws Exception {
         pagesDirectoriesBeforeFilesDeterministically();
+        keepsDirectoryPagesStableWhenDisplayNamesCollide();
         buildsNestedBreadcrumbNavigation();
         clampsAStaleDirectoryPageAfterChanges();
         pagesUtf8TextContent();
@@ -37,7 +41,7 @@ public final class WorkspaceFileBrowserTest {
         reportsCatalogTruncationWithoutDiscardingEntries();
         rejectsUnsafeNavigationPaths();
         keepsPreviewAndPageContractsImmutable();
-        return 14;
+        return 15;
     }
 
     private static void pagesDirectoriesBeforeFilesDeterministically() throws Exception {
@@ -67,6 +71,83 @@ public final class WorkspaceFileBrowserTest {
             TestSupport.assertEquals("z.txt", second.getEntries().get(1).getDisplayName(), "second file order");
             TestSupport.assertTrue(second.hasPreviousPage(), "second page has previous");
             TestSupport.assertTrue(!second.hasNextPage(), "second page is terminal");
+        } finally {
+            deleteRecursively(base);
+        }
+    }
+
+    private static void keepsDirectoryPagesStableWhenDisplayNamesCollide()
+        throws Exception {
+        Path base = Files.createTempDirectory("agentcodi-browser-name-collision-");
+        try {
+            WorkspaceLayout layout = WorkspaceLayout.create(base.toFile());
+            Path catalog = layout.getWorkspace().toPath().resolve("catalog");
+            Files.createDirectory(catalog);
+            char[] prefix = new char[200];
+            Arrays.fill(prefix, 'x');
+            // Valid filenames below the filesystem's 255-byte limit whose
+            // distinguishing suffixes are lost from the catalog's display names.
+            String firstName = new String(prefix) + "-first.txt";
+            String secondName = new String(prefix) + "-second.txt";
+            Files.write(catalog.resolve(firstName), new byte[] {'a'});
+            Files.write(catalog.resolve(secondName), new byte[] {'b'});
+
+            WorkspaceDirectoryCatalog.Reader reader = new WorkspaceDirectoryCatalog.Reader() {
+                private int reads;
+
+                @Override
+                public WorkspaceDirectoryCatalog.Snapshot list(
+                    java.io.File workspaceDirectory,
+                    String relativeDirectory,
+                    int maximumEntries,
+                    int maximumRelativePathCharacters,
+                    int maximumDepth
+                ) throws IOException {
+                    WorkspaceDirectoryCatalog.Snapshot snapshot =
+                        WorkspaceDirectoryCatalog.secureNioReader().list(
+                            workspaceDirectory,
+                            relativeDirectory,
+                            maximumEntries,
+                            maximumRelativePathCharacters,
+                            maximumDepth
+                        );
+                    List<WorkspaceDirectoryCatalog.Entry> entries =
+                        new ArrayList<WorkspaceDirectoryCatalog.Entry>(snapshot.getEntries());
+                    Collections.sort(entries, new Comparator<WorkspaceDirectoryCatalog.Entry>() {
+                        @Override
+                        public int compare(
+                            WorkspaceDirectoryCatalog.Entry left,
+                            WorkspaceDirectoryCatalog.Entry right
+                        ) {
+                            return left.getRelativePath().compareTo(right.getRelativePath());
+                        }
+                    });
+                    // Directory enumeration has no ordering guarantee. Change
+                    // only its order between requests, keeping the files intact.
+                    if (reads++ % 2 != 0) {
+                        Collections.reverse(entries);
+                    }
+                    return WorkspaceDirectoryCatalog.Snapshot.of(entries, snapshot.isTruncated());
+                }
+            };
+            WorkspaceFileBrowser browser = new WorkspaceFileBrowser(
+                layout.getWorkspace(),
+                reader,
+                WorkspaceFileAccess.secureNioOpener()
+            );
+
+            WorkspaceBrowserPage first = browser.list("catalog", 0, 1);
+            WorkspaceBrowserPage second = browser.list("catalog", 1, 1);
+            TestSupport.assertEquals(
+                "catalog/" + firstName,
+                first.getEntries().get(0).getRelativePath(),
+                "first page contains the first long filename"
+            );
+            TestSupport.assertEquals(
+                "catalog/" + secondName,
+                second.getEntries().get(0).getRelativePath(),
+                "second page must show the other file after directory enumeration changes"
+            );
         } finally {
             deleteRecursively(base);
         }
