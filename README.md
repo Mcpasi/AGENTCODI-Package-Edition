@@ -8,7 +8,7 @@
 
 ![Android](https://img.shields.io/badge/Android-10%2B-3DDC84?logo=android&logoColor=white)
 ![Architecture](https://img.shields.io/badge/Architecture-ARM64-555555)
-![Version](https://img.shields.io/badge/Version-0.1.11-blue)
+![Version](https://img.shields.io/badge/Version-0.2.0-blue)
 ![Status](https://img.shields.io/badge/Status-tested%20and%20stable-brightgreen)
 ![License](https://img.shields.io/badge/License-Apache%202.0-blue)
 
@@ -41,7 +41,7 @@ Package Edition can be installed alongside [AGENTCODI Standard Edition](https://
 - Chat with Codex and follow its responses, plans, commands and file changes as they arrive.
 - Read selectable Markdown responses, including code blocks, tables, lists and links, and view generated images in the chat.
 - Run commands in the terminal and install the tools you need.
-- Edit workspace files with syntax highlighting for JavaScript, HTML, CSS and Python.
+- Edit workspace files with syntax highlighting for JavaScript, HTML, CSS, Python and Java.
 - Import and export files using Android's file picker. The workspace is the app's folder for your project files.
 - Browse and export files from installed packages in separate, read-only views.
 - Connect MCP servers to give Codex access to additional tools. Each managed MCP tool request requires your approval.
