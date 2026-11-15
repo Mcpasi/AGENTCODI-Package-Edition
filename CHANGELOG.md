@@ -1,5 +1,20 @@
 # Package Edition
 
+## 0.2.1 — Package Edition
+
+### Fixes
+
+- Keep file-browser pages stable when distinct long filenames share the same
+  shortened display name. Use the full relative path to break sorting ties,
+  preventing repeated or missing files when directory enumeration order changes.
+  Retain the reproduction test confirmed to fail on GitHub.
+
+### Verification
+
+- Local verification of file-browser paging: **468 Java host tests**, including
+  the unchanged reproduction test confirmed to fail on GitHub and locally before
+  the fix, and architecture/source contracts passed.
+
 ## 0.2.0 — Package Edition 
 
 tested and stable

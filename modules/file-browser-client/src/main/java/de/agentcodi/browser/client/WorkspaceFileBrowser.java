@@ -769,9 +769,14 @@ public final class WorkspaceFileBrowser {
                 String leftFolded = left.getDisplayName().toLowerCase(Locale.ROOT);
                 String rightFolded = right.getDisplayName().toLowerCase(Locale.ROOT);
                 int folded = leftFolded.compareTo(rightFolded);
-                return folded != 0
-                    ? folded
-                    : left.getDisplayName().compareTo(right.getDisplayName());
+                if (folded != 0) {
+                    return folded;
+                }
+                int name = left.getDisplayName().compareTo(right.getDisplayName());
+                // Shortened display names can belong to distinct workspace paths.
+                return name != 0
+                    ? name
+                    : left.getRelativePath().compareTo(right.getRelativePath());
             }
         };
 
