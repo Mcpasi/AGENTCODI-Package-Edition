@@ -30,6 +30,7 @@ public final class WorkspaceFileBrowserTest {
         pagesDirectoriesBeforeFilesDeterministically();
         keepsDirectoryPagesStableWhenDisplayNamesCollide();
         keepsUnicodeDisplayNamesWellFormedWhenShortened();
+        preservesUnicodeNamesAroundTheDisplayLimit();
         buildsNestedBreadcrumbNavigation();
         clampsAStaleDirectoryPageAfterChanges();
         pagesUtf8TextContent();
@@ -43,7 +44,7 @@ public final class WorkspaceFileBrowserTest {
         reportsCatalogTruncationWithoutDiscardingEntries();
         rejectsUnsafeNavigationPaths();
         keepsPreviewAndPageContractsImmutable();
-        return 16;
+        return 17;
     }
 
     private static void pagesDirectoriesBeforeFilesDeterministically() throws Exception {
@@ -183,6 +184,61 @@ public final class WorkspaceFileBrowserTest {
                 preview.getRenderedContent(),
                 "shortening the display name must preserve access to the original file"
             );
+        } finally {
+            deleteRecursively(base);
+        }
+    }
+
+    private static void preservesUnicodeNamesAroundTheDisplayLimit() throws Exception {
+        Path base = Files.createTempDirectory("agentcodi-browser-unicode-boundaries-");
+        try {
+            WorkspaceLayout layout = WorkspaceLayout.create(base.toFile());
+            char[] prefix = new char[180];
+            Arrays.fill(prefix, 'a');
+            String fullPrefix = new String(prefix);
+            String beforeLimit = fullPrefix.substring(0, 178);
+            String acrossLimit = fullPrefix.substring(0, 179);
+            String[][] cases = new String[][] {
+                {beforeLimit + "🚀", beforeLimit + "🚀"},
+                {acrossLimit + "🚀", acrossLimit},
+                {fullPrefix + "🚀", fullPrefix},
+                {acrossLimit + "𠮷", acrossLimit},
+                {acrossLimit + "界", acrossLimit + "界"}
+            };
+            WorkspaceFileBrowser browser = browser(layout);
+            for (String[] testCase : cases) {
+                String fileName = testCase[0] + ".txt";
+                String directoryName = testCase[0] + "-folder";
+                Files.write(
+                    layout.getWorkspace().toPath().resolve(fileName),
+                    "boundary content".getBytes(StandardCharsets.UTF_8)
+                );
+                Path directory = layout.getWorkspace().toPath().resolve(directoryName);
+                Files.createDirectory(directory);
+                Files.write(directory.resolve("child.txt"), new byte[] {'x'});
+
+                WorkspaceBrowserPage page = browser.list("", 0);
+                WorkspaceBrowserEntry file = findEntry(page, fileName);
+                WorkspaceBrowserEntry folder = findEntry(page, directoryName);
+                TestSupport.assertEquals(
+                    testCase[1], file.getDisplayName(),
+                    "file display name preserves complete characters within the limit"
+                );
+                TestSupport.assertEquals(
+                    testCase[1], folder.getDisplayName(),
+                    "folder display name preserves complete characters within the limit"
+                );
+                TestSupport.assertEquals(
+                    "boundary content",
+                    browser.preview(file.getRelativePath(), 0).getRenderedContent(),
+                    "original Unicode file path remains accessible"
+                );
+                TestSupport.assertEquals(
+                    directoryName + "/child.txt",
+                    browser.list(folder.getRelativePath(), 0).getEntries().get(0).getRelativePath(),
+                    "original Unicode folder path remains navigable"
+                );
+            }
         } finally {
             deleteRecursively(base);
         }

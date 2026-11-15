@@ -4,6 +4,11 @@
 
 ### Fixes
 
+- Keep shortened file-browser names valid Unicode by preserving complete
+  characters at the 180 UTF-16 unit display limit in both host and Android
+  directory catalogs. Omit an emoji that cannot fit completely, preserve the
+  original file and folder paths, and retain the reproduction test confirmed
+  to fail on GitHub.
 - Omit ZIP entries with Windows-reserved filename characters (`<`, `>`, `"`,
   `|`, `?`, `*`), including affected folders and their contents. Count every
   omitted entry, preserve safe siblings and allow portable contents to be
@@ -16,6 +21,11 @@
 
 ### Verification
 
+- Local verification of Unicode file-browser names: **473 Java host tests**,
+  including the unchanged reproduction test confirmed to fail on GitHub and
+  locally before the fix, Unicode boundary cases and preserved file/folder
+  access, plus **10 isolated Android directory-frame checks** and
+  architecture/source contracts passed.
 - Local verification of Windows-compatible ZIP names: **471 Java host tests**,
   including the unchanged reproduction test confirmed to fail locally before
   the fix, omitted subtree counts, exact file and byte limits, selected-folder

@@ -183,9 +183,14 @@ final class NativeWorkspaceDirectoryCatalog {
     private static String safeDisplayName(String value) {
         StringBuilder safe = new StringBuilder();
         String source = value == null ? "" : value;
-        for (int index = 0; index < source.length() && safe.length() < 180; index++) {
-            char character = source.charAt(index);
-            safe.append(character < 0x20 || character == 0x7f ? '_' : character);
+        for (int index = 0; index < source.length(); ) {
+            int character = source.codePointAt(index);
+            int characterLength = Character.charCount(character);
+            if (safe.length() + characterLength > 180) {
+                break;
+            }
+            safe.appendCodePoint(character < 0x20 || character == 0x7f ? '_' : character);
+            index += characterLength;
         }
         if (safe.length() == 0) {
             return "[entry]";
