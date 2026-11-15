@@ -11,6 +11,7 @@ import de.agentcodi.storage.WorkspaceLayout;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
@@ -28,6 +29,7 @@ public final class WorkspaceFileBrowserTest {
     public static int run() throws Exception {
         pagesDirectoriesBeforeFilesDeterministically();
         keepsDirectoryPagesStableWhenDisplayNamesCollide();
+        keepsUnicodeDisplayNamesWellFormedWhenShortened();
         buildsNestedBreadcrumbNavigation();
         clampsAStaleDirectoryPageAfterChanges();
         pagesUtf8TextContent();
@@ -41,7 +43,7 @@ public final class WorkspaceFileBrowserTest {
         reportsCatalogTruncationWithoutDiscardingEntries();
         rejectsUnsafeNavigationPaths();
         keepsPreviewAndPageContractsImmutable();
-        return 15;
+        return 16;
     }
 
     private static void pagesDirectoriesBeforeFilesDeterministically() throws Exception {
@@ -147,6 +149,39 @@ public final class WorkspaceFileBrowserTest {
                 "catalog/" + secondName,
                 second.getEntries().get(0).getRelativePath(),
                 "second page must show the other file after directory enumeration changes"
+            );
+        } finally {
+            deleteRecursively(base);
+        }
+    }
+
+    private static void keepsUnicodeDisplayNamesWellFormedWhenShortened()
+        throws Exception {
+        Path base = Files.createTempDirectory("agentcodi-browser-unicode-name-");
+        try {
+            WorkspaceLayout layout = WorkspaceLayout.create(base.toFile());
+            char[] prefix = new char[179];
+            Arrays.fill(prefix, 'a');
+            // The emoji straddles the catalog's 180-UTF-16-unit display limit.
+            // The complete filename still fits within the filesystem's byte limit.
+            String fileName = new String(prefix) + "🚀.txt";
+            Files.write(
+                layout.getWorkspace().toPath().resolve(fileName),
+                "unicode filename content".getBytes(StandardCharsets.UTF_8)
+            );
+            WorkspaceFileBrowser browser = browser(layout);
+            WorkspaceBrowserEntry entry = findEntry(browser.list("", 0), fileName);
+
+            TestSupport.assertTrue(entry.isOpenable(), "Unicode filename remains openable");
+            TestSupport.assertTrue(
+                StandardCharsets.UTF_8.newEncoder().canEncode(entry.getDisplayName()),
+                "shortening a filename must not split a supplementary Unicode character"
+            );
+            WorkspaceFilePreview preview = browser.preview(entry.getRelativePath(), 0);
+            TestSupport.assertEquals(
+                "unicode filename content",
+                preview.getRenderedContent(),
+                "shortening the display name must preserve access to the original file"
             );
         } finally {
             deleteRecursively(base);
