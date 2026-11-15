@@ -613,7 +613,7 @@ FILE_EDITOR_JAVA_SYNTAX_JAR="$JARS_ROOT/file-editor-syntax-java.jar"
 "$JAR" cf "$FILE_EDITOR_JAVA_SYNTAX_JAR" -C "$FILE_EDITOR_JAVA_SYNTAX_CLASSES" .
 
 find "$PROJECT_ROOT/modules/file-editor-syntax/src/main/java" -type f -name '*.java' -print | sort > "$WORK_DIR/file-editor-syntax-sources.txt"
-"$JAVAC" -encoding UTF-8 -source 8 -target 8 -Xlint:-options -bootclasspath "$ANDROID_JAR" -classpath "$FILE_EDITOR_JAVA_SYNTAX_JAR" -d "$FILE_EDITOR_SYNTAX_CLASSES" @"$WORK_DIR/file-editor-syntax-sources.txt"
+"$JAVAC" -encoding UTF-8 -source 8 -target 8 -Xlint:-options -bootclasspath "$ANDROID_JAR:$PROJECT_ROOT/third_party/android-lambda-stubs/core-lambda-stubs.jar" -classpath "$FILE_EDITOR_JAVA_SYNTAX_JAR" -d "$FILE_EDITOR_SYNTAX_CLASSES" @"$WORK_DIR/file-editor-syntax-sources.txt"
 FILE_EDITOR_SYNTAX_JAR="$JARS_ROOT/file-editor-syntax.jar"
 "$JAR" cf "$FILE_EDITOR_SYNTAX_JAR" -C "$FILE_EDITOR_SYNTAX_CLASSES" .
 

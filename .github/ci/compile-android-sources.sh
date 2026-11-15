@@ -36,6 +36,31 @@ find "$PROJECT_ROOT/app/src/main/java" "$PROJECT_ROOT/modules" "$BUILD_DIR/gener
   -type f -name '*.java' -print | sort > "$BUILD_DIR/sources.txt"
 javac -encoding UTF-8 -source 8 -target 8 -Xlint:-options \
   -bootclasspath "$ANDROID_JAR:$PROJECT_ROOT/third_party/android-lambda-stubs/core-lambda-stubs.jar" -classpath "$PROJECT_ROOT/third_party/androidx-annotation/annotation-1.3.0.jar" -d "$BUILD_DIR/classes" @"$BUILD_DIR/sources.txt"
+# Exercise the APK builder's actual isolated editor compilation as well. The
+# combined compile above cannot detect a missing per-module boot/classpath.
+python3 - "$PROJECT_ROOT" "$BUILD_DIR" "$ANDROID_JAR" <<'PY'
+import os
+from pathlib import Path
+import shutil
+import subprocess
+import sys
+
+project, build, android_jar = map(Path, sys.argv[1:])
+builder = (project / "scripts/build-debug-apk.sh").read_text()
+start = builder.index('find "$PROJECT_ROOT/modules/file-editor-syntax-java/src/main/java"')
+end = builder.index('find "$PROJECT_ROOT/modules/import-contracts/src/main/java"', start)
+work = build / "isolated-editor"
+for name in ("syntax", "java-syntax", "jars"):
+    (work / name).mkdir(parents=True)
+environment = {
+    **os.environ, "PROJECT_ROOT": str(project), "WORK_DIR": str(work),
+    "ANDROID_JAR": str(android_jar), "JAVAC": shutil.which("javac"), "JAR": shutil.which("jar"),
+    "JARS_ROOT": str(work / "jars"), "FILE_EDITOR_SYNTAX_CLASSES": str(work / "syntax"),
+    "FILE_EDITOR_JAVA_SYNTAX_CLASSES": str(work / "java-syntax"),
+}
+subprocess.run(["bash", "-euo", "pipefail", "-c", builder[start:end]], env=environment, check=True)
+print("APK builder's isolated editor compilation verified.")
+PY
 # Exercise Java 8 lambda desugaring for the unchanged upstream terminal sources.
 mkdir -p "$BUILD_DIR/dex"
 jar cf "$BUILD_DIR/classes.jar" -C "$BUILD_DIR/classes" .
