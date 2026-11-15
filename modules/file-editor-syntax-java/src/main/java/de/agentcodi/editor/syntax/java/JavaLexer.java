@@ -33,7 +33,7 @@ public final class JavaLexer {
     private final TokenSink sink;
 
     private JavaLexer(String text, TokenSink sink) {
-        this.text = text;
+        this.text = unicodeLineTerminators(text);
         this.end = text.length();
         this.sink = sink;
     }
@@ -42,6 +42,48 @@ public final class JavaLexer {
     public static void scan(String text, TokenSink sink) {
         if (text == null || sink == null) { throw new IllegalArgumentException(); }
         new JavaLexer(text, sink).scan();
+    }
+
+    /** Recognizes escaped CR/LF in a same-length scan view, preserving raw UTF-16 offsets. */
+    private static String unicodeLineTerminators(String source) {
+        char[] view = null;
+        int backslashes = 0;
+        boolean translated = false;
+        for (int cursor = source.indexOf('\\'); cursor >= 0 && cursor < source.length();) {
+            checkCancelled();
+            char value = source.charAt(cursor);
+            int next = cursor + 1;
+            boolean unicode = false;
+            if (value == '\\' && (translated || (backslashes & 1) == 0)) {
+                int digits = next;
+                while (digits < source.length() && source.charAt(digits) == 'u') {
+                    checkCancelled();
+                    digits++;
+                }
+                if (digits > next && digits <= source.length() - 4) {
+                    int decoded = 0;
+                    int offset = digits;
+                    while (offset < digits + 4 && digit(source.charAt(offset), 16)) {
+                        decoded = decoded * 16 + Character.digit(source.charAt(offset++), 16);
+                    }
+                    if (offset == digits + 4) {
+                        value = (char) decoded;
+                        next = offset;
+                        unicode = true;
+                    }
+                }
+            }
+            if (unicode && (value == '\r' || value == '\n')) {
+                if (view == null) { view = source.toCharArray(); }
+                view[cursor] = value;
+                Arrays.fill(view, cursor + 1, next, ' ');
+            }
+            // JLS 3.3: eligibility also depends on backslashes produced by Unicode escapes.
+            backslashes = value == '\\' ? backslashes + 1 : 0;
+            translated = unicode;
+            cursor = next;
+        }
+        return view == null ? source : new String(view);
     }
 
     private void scan() {

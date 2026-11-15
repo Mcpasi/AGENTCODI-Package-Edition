@@ -21,6 +21,9 @@ public final class WorkspaceJavaSyntaxTest {
         highlightsModernAndModuleKeywords();
         commentsAndStringsTakePrecedence();
         unicodeEscapedLineTerminatorsEndLineComments();
+        unicodeEscapedLineTerminatorsPreserveMethodLookahead();
+        unicodeLineCommentEscapesRespectBackslashEligibility();
+        unicodeLineCommentEscapesTolerateIncompleteEdits();
         characterAndStringEscapesKeepTheirDelimiters();
         textBlocksKeepCommentsAndEscapedQuotesLiteral();
         ordinaryStringsRecoverAtPhysicalLineBreaks();
@@ -44,7 +47,7 @@ public final class WorkspaceJavaSyntaxTest {
         toleratesEveryEditingPrefixAndRetokenizes();
         standaloneModulePreservesOffsetsAndRejectsMissingInputs();
         cancelsSupersededJavaScans();
-        return 28;
+        return 31;
     }
 
     private static void detectsJavaFileNames() {
@@ -125,6 +128,73 @@ public final class WorkspaceJavaSyntaxTest {
         String unchanged = "// comment " + backslash + backslash + "u000a int hidden = 42;";
         token(unchanged, unchanged, COMMENT);
         ranges(unchanged);
+    }
+
+    private static void unicodeEscapedLineTerminatorsPreserveMethodLookahead() {
+        String backslash = "\\";
+        for (String newline : new String[] {backslash + "u000a", backslash + "u000d",
+            "\r" + backslash + "u000a", backslash + "u000d" + "\n",
+            backslash + "uu000d" + backslash + "uuu000a"}) {
+            String text = "run // call 🐱 " + newline + "(); Object ref = Factory:: // reference "
+                + newline + "<String>create;";
+            List<SyntaxToken> tokens = SyntaxHighlighter.highlight(JAVA, text);
+            token(tokens, text, "run", FUNCTION);
+            token(tokens, text, "create", FUNCTION);
+            token(tokens, text, "String", BUILTIN);
+            token(tokens, text, "// call 🐱 ", COMMENT);
+            token(tokens, text, "// reference ", COMMENT);
+            int method = text.indexOf("create");
+            tokenAt(tokens, method, method + "create".length(), FUNCTION);
+            plain(text, "ref");
+            ranges(text);
+        }
+    }
+
+    private static void unicodeLineCommentEscapesRespectBackslashEligibility() {
+        String backslash = "\\";
+        for (String prefix : new String[] {backslash + backslash, backslash + "u005c",
+            backslash + "u005c" + backslash, backslash + "u005c" + backslash + "u005c"}) {
+            String comment = "// comment 🐱 " + prefix;
+            String text = comment + backslash + "u000a int visible = 1;";
+            List<SyntaxToken> tokens = SyntaxHighlighter.highlight(JAVA, text);
+            token(tokens, text, "int", KEYWORD);
+            tokenAt(tokens, 0, comment.length(), COMMENT);
+            token(tokens, text, "1", NUMBER);
+            plain(text, "visible");
+            ranges(text);
+        }
+        for (String prefix : new String[] {backslash, backslash + backslash + backslash,
+            backslash + "u005c" + backslash + backslash}) {
+            String text = "// comment " + prefix + backslash + "u000a int hidden = 42;";
+            token(text, text, COMMENT);
+            ranges(text);
+        }
+        // A translated backslash is not recursively interpreted as another escape.
+        String nonrecursive = "// comment " + backslash + "u005cu000a int hidden = 42;";
+        token(nonrecursive, nonrecursive, COMMENT);
+        ranges(nonrecursive);
+    }
+
+    private static void unicodeLineCommentEscapesTolerateIncompleteEdits() {
+        String backslash = "\\";
+        String newline = backslash + "uuuu000a";
+        for (int end = 0; end < newline.length(); end++) {
+            String comment = "// editing " + newline.substring(0, end);
+            String text = comment + "\r\nreturn 2;";
+            token(text, comment, COMMENT);
+            token(text, "return", KEYWORD);
+            token(text, "2", NUMBER);
+            ranges(text);
+        }
+        for (String escape : new String[] {"U000a", "u000g", "u000Ｇ", "u０００a",
+            "u000b", "u000c", "u2028", "u2029"}) {
+            String comment = "// comment " + backslash + escape + " int hidden = 42;";
+            String text = comment + "\nreturn 2;";
+            token(text, comment, COMMENT);
+            token(text, "return", KEYWORD);
+            token(text, "2", NUMBER);
+            ranges(text);
+        }
     }
 
     private static void characterAndStringEscapesKeepTheirDelimiters() {

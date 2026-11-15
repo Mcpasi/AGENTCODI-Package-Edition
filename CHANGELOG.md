@@ -11,6 +11,10 @@
 
 ### Fixes
 
+- End Java line comments at eligible Unicode-escaped line terminators such as
+  `\u000a` and `\u000d`, so following code receives syntax highlighting. Preserve
+  original UTF-16 token offsets, backslash eligibility and method lookahead
+  through comments. Retain the reproduction test confirmed to fail on GitHub.
 - Highlight qualified Java method calls with explicit type arguments, such as
   `this.<String>yield()`, as methods instead of contextual keywords. Preserve
   nested type arguments, annotations, comments and `yield` statements. Retain
@@ -50,6 +54,11 @@
 
 ### Verification
 
+- Local verification of Unicode-escaped Java line-comment termination: **463
+  Java host tests**, including the unchanged reproduction test confirmed to
+  fail on GitHub and locally before the fix, backslash eligibility, mixed
+  physical and escaped line endings, method lookahead, malformed and incomplete
+  escapes, and architecture/source contracts passed.
 - Local verification of qualified Java method-call highlighting: **459 Java
   host tests**, including the unchanged reproduction test confirmed to fail on
   GitHub and locally before the fix, nested type arguments, type annotations,
