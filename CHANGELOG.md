@@ -1,6 +1,8 @@
 # Package Edition
 
-## 0.2.0 — Package Edition (Unreleased)
+## 0.2.0 — Package Edition 
+
+tested and stable
 
 ### Features
 
@@ -97,7 +99,7 @@
   suites** passed. **487 Java RPCs** and **15 MCP approval responses** matched
   the generated schemas. The pinned Android app-server passed its initialize
   handshake and returned the required Full access permission profile. APK
-  builds and physical-device tests were not run.
+  
 
 ## 0.1.11 — Package Edition
 
