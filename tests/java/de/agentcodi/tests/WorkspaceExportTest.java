@@ -47,6 +47,7 @@ public final class WorkspaceExportTest {
         rejectsArchiveTotalAboveLimit();
         rejectsArchiveFileCountAboveLimit();
         omitsUnsafePortableArchiveNameWithoutBlockingSibling();
+        omitsWindowsReservedCharactersFromArchiveNames();
         omitsPortableArchiveNameCollisionWithoutBlockingSibling();
         doesNotChargeOmittedArchiveEntriesAgainstTheFileLimit();
         archivesAcrossProviderTimestampPrecision();
@@ -55,7 +56,7 @@ public final class WorkspaceExportTest {
         archivesRegularFilesWhileOmittingSymbolicEntries();
         archivesRegularFilesWhileOmittingHardLinks();
         countsEveryEntryHiddenByAnUnsafeArchiveFolder();
-        return 29;
+        return 30;
     }
 
     private static void catalogsAllRegularFileTypes() throws Exception {
@@ -931,6 +932,65 @@ public final class WorkspaceExportTest {
             TestSupport.assertFalse(
                 entries.containsKey("C:\\outside.bin"),
                 "drive and separator ambiguity never enters the ZIP"
+            );
+        } finally {
+            deleteRecursively(base);
+        }
+    }
+
+    private static void omitsWindowsReservedCharactersFromArchiveNames()
+        throws Exception {
+        Path base = Files.createTempDirectory("agentcodi-export-reserved-name-characters-");
+        try {
+            WorkspaceLayout layout = WorkspaceLayout.create(base.toFile());
+            Path workspace = layout.getWorkspace().toPath();
+            // Legal Linux/Android names that cannot be extracted as filenames
+            // on Windows must follow the archive's non-portable-name policy.
+            String[] unsafeNames = new String[] {
+                "report?.txt", "report*.txt", "report<.txt",
+                "report>.txt", "report\".txt", "report|.txt"
+            };
+            for (String name : unsafeNames) {
+                Files.write(workspace.resolve(name), new byte[] {1});
+            }
+            byte[] safeBytes = new byte[] {4, 2, 0, (byte) 0xff};
+            Files.write(workspace.resolve("safe.bin"), safeBytes);
+
+            ByteArrayOutputStream destination = new ByteArrayOutputStream();
+            WorkspaceArchive.Summary summary = WorkspaceArchive.write(
+                layout.getWorkspace(),
+                destination,
+                10,
+                16L,
+                1024L,
+                256,
+                8
+            );
+            Map<String, byte[]> entries = unzip(destination.toByteArray());
+            TestSupport.assertTrue(
+                java.util.Arrays.equals(safeBytes, entries.get("safe.bin")),
+                "safe sibling exports with unchanged bytes"
+            );
+            for (String name : unsafeNames) {
+                TestSupport.assertFalse(
+                    entries.containsKey(name),
+                    "Windows-reserved character must be omitted from ZIP: " + name
+                );
+            }
+            TestSupport.assertEquals(
+                Integer.valueOf(unsafeNames.length),
+                Integer.valueOf(summary.getOmittedEntryCount()),
+                "each non-portable filename is reported as omitted"
+            );
+            TestSupport.assertEquals(
+                Integer.valueOf(1),
+                Integer.valueOf(summary.getFileCount()),
+                "only the safe file counts as exported"
+            );
+            TestSupport.assertEquals(
+                Integer.valueOf(1),
+                Integer.valueOf(entries.size()),
+                "ZIP contains only the safe sibling"
             );
         } finally {
             deleteRecursively(base);
