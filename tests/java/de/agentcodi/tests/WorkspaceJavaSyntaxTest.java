@@ -20,6 +20,7 @@ public final class WorkspaceJavaSyntaxTest {
         highlightsDeclarationsAndLiteralKeywords();
         highlightsModernAndModuleKeywords();
         commentsAndStringsTakePrecedence();
+        unicodeEscapedLineTerminatorsEndLineComments();
         characterAndStringEscapesKeepTheirDelimiters();
         textBlocksKeepCommentsAndEscapedQuotesLiteral();
         ordinaryStringsRecoverAtPhysicalLineBreaks();
@@ -43,7 +44,7 @@ public final class WorkspaceJavaSyntaxTest {
         toleratesEveryEditingPrefixAndRetokenizes();
         standaloneModulePreservesOffsetsAndRejectsMissingInputs();
         cancelsSupersededJavaScans();
-        return 27;
+        return 28;
     }
 
     private static void detectsJavaFileNames() {
@@ -100,6 +101,30 @@ public final class WorkspaceJavaSyntaxTest {
         token(text, "int", KEYWORD);
         token(text, "// last", COMMENT);
         ranges(text);
+    }
+
+    private static void unicodeEscapedLineTerminatorsEndLineComments() {
+        // JLS 3.2: Unicode escapes are translated before comments are recognized.
+        // Build escapes in pieces so javac leaves the test input unchanged.
+        String backslash = "\\";
+        for (String newline : new String[] {backslash + "u000a", backslash + "u000d",
+            backslash + "u000d" + backslash + "u000a", backslash + "uuuu000A"}) {
+            String comment = "// comment 🐱 ";
+            String text = comment + newline + "int value = 42;";
+            List<SyntaxToken> tokens = SyntaxHighlighter.highlight(JAVA, text);
+            token(tokens, text, "int", KEYWORD);
+            tokenAt(tokens, 0, comment.length(), COMMENT);
+            int codeStart = comment.length() + newline.length();
+            tokenAt(tokens, codeStart, codeStart + "int".length(), KEYWORD);
+            int number = text.indexOf("42");
+            tokenAt(tokens, number, number + 2, NUMBER);
+            plain(text, "value");
+            ranges(text);
+        }
+        // A doubled backslash makes the following escape ineligible for translation.
+        String unchanged = "// comment " + backslash + backslash + "u000a int hidden = 42;";
+        token(unchanged, unchanged, COMMENT);
+        ranges(unchanged);
     }
 
     private static void characterAndStringEscapesKeepTheirDelimiters() {
