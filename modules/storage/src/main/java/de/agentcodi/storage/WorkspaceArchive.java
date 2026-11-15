@@ -794,6 +794,11 @@ public final class WorkspaceArchive {
         if (!safeComponent(component) || component.endsWith(" ") || component.endsWith(".")) {
             return false;
         }
+        for (int index = 0; index < component.length(); index++) {
+            if ("<>\"|?*".indexOf(component.charAt(index)) >= 0) {
+                return false;
+            }
+        }
         String normalized = Normalizer.normalize(
             Normalizer.normalize(component, Normalizer.Form.NFC).toLowerCase(Locale.ROOT),
             Normalizer.Form.NFC

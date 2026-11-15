@@ -4,6 +4,11 @@
 
 ### Fixes
 
+- Omit ZIP entries with Windows-reserved filename characters (`<`, `>`, `"`,
+  `|`, `?`, `*`), including affected folders and their contents. Count every
+  omitted entry, preserve safe siblings and allow portable contents to be
+  exported from a selected folder whose own name is non-portable. Retain the
+  unchanged reproduction test.
 - Keep file-browser pages stable when distinct long filenames share the same
   shortened display name. Use the full relative path to break sorting ties,
   preventing repeated or missing files when directory enumeration order changes.
@@ -11,6 +16,11 @@
 
 ### Verification
 
+- Local verification of Windows-compatible ZIP names: **471 Java host tests**,
+  including the unchanged reproduction test confirmed to fail locally before
+  the fix, omitted subtree counts, exact file and byte limits, selected-folder
+  exports and valid punctuation/Unicode names, and architecture/source
+  contracts passed.
 - Local verification of file-browser paging: **468 Java host tests**, including
   the unchanged reproduction test confirmed to fail on GitHub and locally before
   the fix, and architecture/source contracts passed.

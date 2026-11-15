@@ -1,6 +1,7 @@
 package de.agentcodi.tests;
 
 import de.agentcodi.storage.WorkspaceArchive;
+import de.agentcodi.storage.WorkspaceDirectoryCatalog;
 import de.agentcodi.storage.WorkspaceExportFile;
 import de.agentcodi.storage.WorkspaceExportTransaction;
 import de.agentcodi.storage.WorkspaceFileAccess;
@@ -48,6 +49,8 @@ public final class WorkspaceExportTest {
         rejectsArchiveFileCountAboveLimit();
         omitsUnsafePortableArchiveNameWithoutBlockingSibling();
         omitsWindowsReservedCharactersFromArchiveNames();
+        omitsWindowsReservedDirectoryNamesAndTheirContents();
+        archivesPortableContentsFromSelectedNonPortableFolder();
         omitsPortableArchiveNameCollisionWithoutBlockingSibling();
         doesNotChargeOmittedArchiveEntriesAgainstTheFileLimit();
         archivesAcrossProviderTimestampPrecision();
@@ -56,7 +59,7 @@ public final class WorkspaceExportTest {
         archivesRegularFilesWhileOmittingSymbolicEntries();
         archivesRegularFilesWhileOmittingHardLinks();
         countsEveryEntryHiddenByAnUnsafeArchiveFolder();
-        return 30;
+        return 32;
     }
 
     private static void catalogsAllRegularFileTypes() throws Exception {
@@ -991,6 +994,114 @@ public final class WorkspaceExportTest {
                 Integer.valueOf(1),
                 Integer.valueOf(entries.size()),
                 "ZIP contains only the safe sibling"
+            );
+        } finally {
+            deleteRecursively(base);
+        }
+    }
+
+    private static void omitsWindowsReservedDirectoryNamesAndTheirContents()
+        throws Exception {
+        Path base = Files.createTempDirectory("agentcodi-export-reserved-directories-");
+        try {
+            WorkspaceLayout layout = WorkspaceLayout.create(base.toFile());
+            Path workspace = layout.getWorkspace().toPath();
+            String[] unsafeNames = new String[] {
+                "folder?", "folder*", "folder<", "folder>", "folder\"", "folder|"
+            };
+            for (String name : unsafeNames) {
+                Path directory = Files.createDirectories(workspace.resolve(name + "/deep"));
+                Files.write(directory.resolve("hidden.bin"), new byte[5]);
+                Files.write(directory.getParent().resolve("hidden.bin"), new byte[5]);
+            }
+            byte[] safeBytes = new byte[] {4, 2, 0, (byte) 0xff};
+            Files.createDirectories(workspace.resolve("safe"));
+            Files.write(workspace.resolve("safe/kept.bin"), safeBytes);
+
+            WorkspaceArchive.Summary inspected = WorkspaceArchive.inspect(
+                layout.getWorkspace(), 1, 4L, 4L, 256, 8
+            );
+            TestSupport.assertEquals(
+                Integer.valueOf(unsafeNames.length * 4),
+                Integer.valueOf(inspected.getOmittedEntryCount()),
+                "inspection counts each non-portable directory and every hidden descendant"
+            );
+            TestSupport.assertEquals(
+                Integer.valueOf(1), Integer.valueOf(inspected.getFileCount()),
+                "omitted subtrees do not consume the exact file and byte limits"
+            );
+
+            ByteArrayOutputStream destination = new ByteArrayOutputStream();
+            WorkspaceArchive.Summary summary = WorkspaceArchive.write(
+                layout.getWorkspace(), destination, 1, 4L, 4L, 256, 8
+            );
+            Map<String, byte[]> entries = unzip(destination.toByteArray());
+            TestSupport.assertEquals(
+                Integer.valueOf(inspected.getOmittedEntryCount()),
+                Integer.valueOf(summary.getOmittedEntryCount()),
+                "ZIP and inspection report the same omitted subtree entries"
+            );
+            TestSupport.assertEquals(
+                Integer.valueOf(1), Integer.valueOf(entries.size()),
+                "ZIP contains only the safe nested sibling"
+            );
+            TestSupport.assertTrue(
+                java.util.Arrays.equals(safeBytes, entries.get("safe/kept.bin")),
+                "safe nested sibling keeps its archive path and bytes"
+            );
+        } finally {
+            deleteRecursively(base);
+        }
+    }
+
+    private static void archivesPortableContentsFromSelectedNonPortableFolder()
+        throws Exception {
+        Path base = Files.createTempDirectory("agentcodi-export-selected-reserved-folder-");
+        try {
+            WorkspaceLayout layout = WorkspaceLayout.create(base.toFile());
+            String selectedDirectory = "drafts?*<>\"|";
+            Path selected = layout.getWorkspace().toPath().resolve(selectedDirectory);
+            Files.createDirectories(selected.resolve("nested"));
+            String portableName = "Grüße 😀 !#$%&'()+,-;=@[]^_`{}~.txt";
+            byte[] safeBytes = new byte[] {0, (byte) 0xff, 2, 4};
+            Files.write(selected.resolve(portableName), safeBytes);
+            Files.write(selected.resolve("nested/valid.bin"), safeBytes);
+            Files.write(selected.resolve("nested/invalid?.bin"), new byte[5]);
+
+            ByteArrayOutputStream destination = new ByteArrayOutputStream();
+            WorkspaceArchive.Summary summary = WorkspaceArchive.write(
+                layout.getWorkspace(),
+                selectedDirectory,
+                destination,
+                2,
+                32,
+                4L,
+                8L,
+                256,
+                8,
+                WorkspaceDirectoryCatalog.secureNioReader(),
+                WorkspaceFileAccess.secureNioOpener()
+            );
+            Map<String, byte[]> entries = unzip(destination.toByteArray());
+            TestSupport.assertEquals(
+                Integer.valueOf(1), Integer.valueOf(summary.getOmittedEntryCount()),
+                "only the non-portable member inside the selected folder is omitted"
+            );
+            TestSupport.assertEquals(
+                Integer.valueOf(2), Integer.valueOf(summary.getFileCount()),
+                "portable contents remain exportable at the exact file and byte limits"
+            );
+            TestSupport.assertEquals(
+                Integer.valueOf(2), Integer.valueOf(entries.size()),
+                "ZIP paths exclude the selected folder's non-portable name"
+            );
+            TestSupport.assertTrue(
+                java.util.Arrays.equals(safeBytes, entries.get(portableName)),
+                "valid punctuation and Unicode names keep their paths and bytes"
+            );
+            TestSupport.assertTrue(
+                java.util.Arrays.equals(safeBytes, entries.get("nested/valid.bin")),
+                "portable nested contents keep their paths and bytes"
             );
         } finally {
             deleteRecursively(base);
