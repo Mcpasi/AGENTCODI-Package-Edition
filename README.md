@@ -4,7 +4,7 @@
 
 ### Work with Codex and development tools on your Android device
 
-[Download](https://github.com/Mcpasi/AGENTCODI-Package-Edition/releases) · [Website](https://devsblog.com/) · [Report a bug](https://github.com/Mcpasi/AGENTCODI-Package-Edition/issues) · [Changelog](CHANGELOG.md) · [Standard Edition](https://github.com/Mcpasi/AGENTCODI)
+[Download](https://github.com/Mcpasi/AGENTCODI-Package-Edition/releases) ° [Website](https://devsblog.com/) ° [Report a bug](https://github.com/Mcpasi/AGENTCODI-Package-Edition/issues) ° [Changelog](CHANGELOG.md) ° [Standard Edition](https://github.com/Mcpasi/AGENTCODI) ° [Vision](VISION.md)
 
 ![Android](https://img.shields.io/badge/Android-10%2B-3DDC84?logo=android&logoColor=white)
 ![Architecture](https://img.shields.io/badge/Architecture-ARM64-555555)
