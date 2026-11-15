@@ -239,7 +239,7 @@ bool check_arch_command_environment(
         "test \\\"$TMPDIR\\\" = '" + config.temporary_directory + "' && "
         "test x${NPM_CONFIG_PREFIX+set} = x && "
         "test \\\"$XDG_CACHE_HOME\\\" = '" + config.home_directory + "/.cache' && "
-        "case \\\"$PATH\\\" in '" + config.codex_home + "/tmp/arg0/codex-arg0'*:'"
+        "case \\\"$PATH\\\" in '" + config.codex_home + "/tmp/arg0-android/codex-arg0'*:'"
         + package_path + "') :;; *) exit 12;; esac && "
         + (id == 29
             ? "printf '%s' \\\"$PATH\\\" > '" + shared_path + "' && "
