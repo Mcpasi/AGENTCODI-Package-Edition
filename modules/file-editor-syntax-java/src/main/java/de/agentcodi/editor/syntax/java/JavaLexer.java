@@ -23,6 +23,9 @@ public final class JavaLexer {
     private static final Set<String> BUILTINS = words(
         "Boolean Byte Character Class Double Enum Exception Float Integer Long Math Number Object "
         + "Record RuntimeException Short String StringBuffer StringBuilder System Thread Throwable Void");
+    private static final Set<String> TYPE_CONTEXT = words(
+        "class enum interface record extends implements permits throws instanceof new");
+    private static final Set<String> PRIMITIVES = words("boolean byte char double float int long short");
     private static final String[] OPERATORS = {
         ">>>=", "<<=", ">>=", ">>>", "...", "==", "<=", ">=", "!=", "&&", "||", "++", "--",
         "<<", ">>", "+=", "-=", "*=", "/=", "&=", "|=", "^=", "%=", "->", "::"
@@ -88,6 +91,9 @@ public final class JavaLexer {
 
     private void scan() {
         boolean member = false;
+        boolean typePending = false;
+        boolean variablePending = false;
+        Set<String> typeNames = new HashSet<>(BUILTINS);
         // -1: no method context; 0: method name expected; positive: nested type arguments.
         int methodNameDepth = -1;
         boolean annotationArgumentsPending = false;
@@ -107,11 +113,13 @@ public final class JavaLexer {
                 next = quoted(cursor, value == '"' && textBlock(cursor) ? 3 : 1);
                 sink.add(cursor, next, Kind.STRING);
                 member = false;
+                typePending = variablePending = false;
                 if (annotationParentheses == 0) { methodNameDepth = -1; }
             } else if (digit(value, 10) || (value == '.' && next < end && digit(text.charAt(next), 10))) {
                 next = number(cursor);
                 sink.add(cursor, next, Kind.NUMBER);
                 member = false;
+                typePending = variablePending = false;
                 if (annotationParentheses == 0) { methodNameDepth = -1; }
             } else if (value == '@' && next < end && Character.isJavaIdentifierStart(text.codePointAt(next))
                 && !text.substring(next, identifier(next)).equals("interface")) {
@@ -132,6 +140,8 @@ public final class JavaLexer {
                 String word = text.substring(cursor, next);
                 int following = trivia(next);
                 boolean call = following < end && text.charAt(following) == '(';
+                boolean qualifier = typePending && following < end && text.charAt(following) == '.';
+                boolean type = false;
                 if (KEYWORDS.contains(word)) { sink.add(cursor, next, Kind.KEYWORD); }
                 else if (methodNameDepth == 0) { sink.add(cursor, next, Kind.FUNCTION); }
                 else if (!member && word.equals("non") && at(next, "-sealed")
@@ -140,8 +150,20 @@ public final class JavaLexer {
                     sink.add(cursor, next, Kind.KEYWORD);
                 } else if (!member && (!call || word.equals("yield") || word.equals("when")) && CONTEXTUAL.contains(word)) {
                     sink.add(cursor, next, Kind.KEYWORD);
-                } else if (BUILTINS.contains(word)) { sink.add(cursor, next, Kind.BUILTIN); }
-                else if (call) { sink.add(cursor, next, Kind.FUNCTION); }
+                } else if (!variablePending && (BUILTINS.contains(word) || (typePending && !qualifier))) {
+                    type = true;
+                    sink.add(cursor, next, Kind.BUILTIN);
+                } else if (call) { sink.add(cursor, next, Kind.FUNCTION); }
+                else if (!variablePending && (typeNames.contains(word) || Character.isUpperCase(word.codePointAt(0))
+                    || Character.isTitleCase(word.codePointAt(0)))) {
+                    // Java type names conventionally start with a capital, including imported,
+                    // qualified and generic types outside the small java.lang builtin list.
+                    type = true;
+                    sink.add(cursor, next, Kind.BUILTIN);
+                }
+                if (type) { typeNames.add(word); }
+                typePending = qualifier || (!member && TYPE_CONTEXT.contains(word));
+                variablePending = type || PRIMITIVES.contains(word);
                 member = false;
                 if (methodNameDepth == 0) { methodNameDepth = -1; }
             } else {
@@ -172,6 +194,8 @@ public final class JavaLexer {
                     methodNameDepth = -1;
                 }
                 member = value == '.' && next == cursor + 1;
+                if (!member) { typePending = false; }
+                if (value != '[' && value != ']') { variablePending = false; }
             }
             cursor = next;
         }

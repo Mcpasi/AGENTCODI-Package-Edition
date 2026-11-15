@@ -17,6 +17,10 @@ public final class WorkspaceJavaSyntaxTest {
 
     public static int run() {
         detectsJavaFileNames();
+        highlightsImportedAndCustomJavaTypes();
+        highlightsTypeDeclarationsAndConstructors();
+        typeNamesPreserveMethodAndVariableRoles();
+        typeDetectionRecoversWhileEditingAndStaysDocumentLocal();
         highlightsDeclarationsAndLiteralKeywords();
         highlightsModernAndModuleKeywords();
         commentsAndStringsTakePrecedence();
@@ -47,7 +51,7 @@ public final class WorkspaceJavaSyntaxTest {
         toleratesEveryEditingPrefixAndRetokenizes();
         standaloneModulePreservesOffsetsAndRejectsMissingInputs();
         cancelsSupersededJavaScans();
-        return 31;
+        return 35;
     }
 
     private static void detectsJavaFileNames() {
@@ -73,10 +77,80 @@ public final class WorkspaceJavaSyntaxTest {
             token(text, word, KEYWORD);
         }
         token(text, "Object", BUILTIN);
-        plain(text, "Runnable");
+        token(text, "Runnable", BUILTIN);
         token(text, "run", FUNCTION);
         token(text, "Exception", BUILTIN);
         ranges(text);
+    }
+
+    private static void highlightsImportedAndCustomJavaTypes() {
+        String text = "package demo;\nimport android.app.Activity;\nimport java.util.List;\n"
+            + "import java.util.ArrayList;\npublic class MainActivity extends Activity implements Runnable {\n"
+            + "    private final List<WorkspaceEditorDocument> documents = new ArrayList<>();\n"
+            + "    public void run() {\n        for (WorkspaceEditorDocument document : documents) {\n"
+            + "            document.getText();\n        }\n    }\n}";
+        List<SyntaxToken> tokens = SyntaxHighlighter.highlight(JAVA, text);
+        for (String type : new String[] {"Activity", "List", "ArrayList", "MainActivity", "Runnable", "WorkspaceEditorDocument"}) {
+            for (int start = text.indexOf(type); start >= 0; start = text.indexOf(type, start + type.length())) {
+                if (start > 0 && Character.isJavaIdentifierPart(text.charAt(start - 1))) { continue; }
+                tokenAt(tokens, start, start + type.length(), BUILTIN);
+            }
+        }
+        token(tokens, text, "run", FUNCTION);
+        token(tokens, text, "getText", FUNCTION);
+        plain(text, "documents");
+        plain(text, "document");
+        ranges(text);
+    }
+
+    private static void highlightsTypeDeclarationsAndConstructors() {
+        String text = "interface service {} class worker implements service {\n"
+            + "worker() {} service create() { return new worker(); }\n"
+            + "java.util.Map<Key, java.util.List<Value[]>> entries = new java.util.HashMap<>();\n"
+            + "} record Result(Value value) {} enum Mode { READY }\n"
+            + "Object factory = Result::new; Object type = Value.class;";
+        for (String type : new String[] {"service", "worker", "Map", "Key", "List", "Value", "HashMap", "Result", "Mode"}) {
+            token(text, type, BUILTIN);
+        }
+        token(text, "worker", FUNCTION);
+        token(text, "create", FUNCTION);
+        plain(text, "entries");
+        plain(text, "value");
+        ranges(text);
+    }
+
+    private static void typeNamesPreserveMethodAndVariableRoles() {
+        String text = "class Demo { void DemoMethod() {} void run() {\n"
+            + "int Count = 1; String Label = \"List<Demo>\"; Object[] Items = null;\n"
+            + "DemoMethod(); Object method = Demo::DemoMethod;\n"
+            + "/* Activity List Demo */ @Marker class Nested {} } }";
+        for (String name : new String[] {"Count", "Label", "Items"}) { plain(text, name); }
+        token(text, "Demo", BUILTIN);
+        token(text, "Nested", BUILTIN);
+        token(text, "DemoMethod", FUNCTION);
+        int method = text.indexOf("::DemoMethod") + 2;
+        tokenAt(SyntaxHighlighter.highlight(JAVA, text), method, method + "DemoMethod".length(), FUNCTION);
+        token(text, "\"List<Demo>\"", STRING);
+        token(text, "/* Activity List Demo */", COMMENT);
+        token(text, "@Marker", ATTRIBUTE);
+        ranges(text);
+    }
+
+    private static void typeDetectionRecoversWhileEditingAndStaysDocumentLocal() {
+        String text = "class worker {} worker current; int Count = 1;\n"
+            + "Class<?> type = Demo.class; plainValue = 2; List<Value> values = new ArrayList<>();";
+        token(text, "worker", BUILTIN);
+        plain("worker current;", "worker");
+        plain(text, "Count");
+        plain(text, "plainValue");
+        for (int end = 0; end <= text.length(); end++) { ranges(text.substring(0, end)); }
+        for (String prefix : new String[] {"class ", "new java.util.", "List<", "Object[] ", "extends "}) {
+            String edited = prefix + "; int Count = 1; receiver.run();";
+            token(edited, "int", KEYWORD);
+            token(edited, "run", FUNCTION);
+            plain(edited, "Count");
+            ranges(edited);
+        }
     }
 
     private static void highlightsModernAndModuleKeywords() {
@@ -345,7 +419,7 @@ public final class WorkspaceJavaSyntaxTest {
                 for (String comment : new String[] {"/* before */", "// after", "/* call */"}) {
                     token(tokens, text, comment, COMMENT);
                 }
-                plain(text, "Value");
+                token(text, "Value", BUILTIN);
                 plain(text, "untouched");
                 ranges(text);
             }
@@ -383,7 +457,7 @@ public final class WorkspaceJavaSyntaxTest {
             "<java.util.List<? extends Value[]>>"}) {
             String text = "Factory::" + arguments + "create; int untouched = 1;";
             token(text, "create", FUNCTION);
-            plain(text, "Value");
+            token(text, "Value", BUILTIN);
             plain(text, "untouched");
             token(text, "int", KEYWORD);
             ranges(text);
@@ -401,7 +475,7 @@ public final class WorkspaceJavaSyntaxTest {
             token(text, "// inside", COMMENT);
             token(text, "/* after */", COMMENT);
             token(text, "\"text\"", STRING);
-            plain(text, "Value");
+            token(text, "Value", BUILTIN);
             plain(text, "ordinary");
             ranges(text);
         }
@@ -441,7 +515,7 @@ public final class WorkspaceJavaSyntaxTest {
         }
         int type = text.indexOf("String, java.util.List");
         tokenAt(tokens, type, type + "String".length(), BUILTIN);
-        plain(text, "Value");
+        token(text, "Value", BUILTIN);
         plain(text, "untouched");
         ranges(text);
     }
@@ -463,8 +537,8 @@ public final class WorkspaceJavaSyntaxTest {
             token(tokens, text, "String", BUILTIN);
             token(tokens, text, "true", KEYWORD);
             token(tokens, text, "int", KEYWORD);
-            plain(text, "Value");
-            plain(text, "Other");
+            token(text, "Value", BUILTIN);
+            token(text, "Other", BUILTIN);
             plain(text, "untouched");
             ranges(text);
         }
